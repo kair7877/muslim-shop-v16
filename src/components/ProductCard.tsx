@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { ShoppingBag, Zap, Check, Sparkles, MessageCircle } from 'lucide-react';
+import { ShoppingBag, Zap, Check, Sparkles, MessageCircle, Link2 } from 'lucide-react';
 import { Product, Language } from '../types';
 import { translations } from '../translations';
 import { formatTenge, generateSingleProductWhatsAppUrl } from '../utils/formatters';
+import { copyProductLinkToClipboard } from '../utils/productSlug';
 
 interface ProductCardProps {
   product: Product;
@@ -22,11 +23,21 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onBuyNow,
 }) => {
   const [isAdded, setIsAdded] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
   const [imgError, setImgError] = useState(false);
   const t = translations[language];
 
   const title = language === 'ru' ? product.titleRu : (product.titleKz || product.titleRu);
   const description = language === 'ru' ? product.descriptionRu : (product.descriptionKz || product.descriptionRu);
+
+  const handleCopyLink = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const success = await copyProductLinkToClipboard(product);
+    if (success) {
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2200);
+    }
+  };
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -104,14 +115,37 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           )}
         </div>
 
-        {/* Fast WhatsApp Icon top-right */}
-        <button
-          onClick={handleWhatsApp1Click}
-          className="absolute top-2 right-2 z-10 p-1.5 rounded-full bg-[#128C7E]/90 hover:bg-[#25D366] text-white shadow-md transition-all hover:scale-110"
-          title={language === 'ru' ? 'Заказать в 1 клик в WhatsApp' : '1 басумен WhatsApp-та тапсырыс беру'}
-        >
-          <MessageCircle className="w-4 h-4 fill-white" />
-        </button>
+        {/* Fast Actions top-right: WhatsApp + Copy direct Link */}
+        <div className="absolute top-2 right-2 z-10 flex items-center gap-1.5">
+          <button
+            onClick={handleCopyLink}
+            className={`p-1.5 rounded-full backdrop-blur-md shadow-md transition-all active:scale-95 cursor-pointer ${
+              isCopied
+                ? 'bg-[#1C3322] border border-[#276749] text-[#68D391]'
+                : 'bg-[#0B0B0E]/80 hover:bg-[#1A1A24] border border-[#2A2A38] text-[#D4AF37] hover:text-white'
+            }`}
+            title={isCopied ? t.linkCopied : t.copyLink}
+            aria-label={t.copyLink}
+          >
+            {isCopied ? <Check className="w-4 h-4 text-[#68D391]" /> : <Link2 className="w-4 h-4" />}
+          </button>
+
+          <button
+            onClick={handleWhatsApp1Click}
+            className="p-1.5 rounded-full bg-[#128C7E]/90 hover:bg-[#25D366] text-white shadow-md transition-all hover:scale-110 cursor-pointer"
+            title={language === 'ru' ? 'Заказать в 1 клик в WhatsApp' : '1 басумен WhatsApp-та тапсырыс беру'}
+          >
+            <MessageCircle className="w-4 h-4 fill-white" />
+          </button>
+        </div>
+
+        {/* Copy toast feedback on card */}
+        {isCopied && (
+          <div className="absolute top-11 right-2 z-20 px-2 py-1 rounded-md bg-[#1C3322] border border-[#276749] text-[#68D391] text-[10px] font-semibold shadow-lg animate-fadeIn flex items-center gap-1 pointer-events-none">
+            <Check className="w-3 h-3" />
+            <span>{t.linkCopied}</span>
+          </div>
+        )}
 
         {/* Stock status indicator */}
         {!product.inStock && (

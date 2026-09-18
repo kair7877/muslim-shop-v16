@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { 
   X, ArrowLeft, ShoppingBag, Zap, Check, ChevronLeft, ChevronRight, 
-  Maximize2, MessageCircle, Sparkles, HelpCircle 
+  Maximize2, MessageCircle, Sparkles, HelpCircle, Share2, Copy, Link2, Send 
 } from 'lucide-react';
 import { Product, Language, Category } from '../types';
 import { translations } from '../translations';
 import { formatTenge, generateSingleProductWhatsAppUrl } from '../utils/formatters';
+import { getProductDirectUrl, copyProductLinkToClipboard } from '../utils/productSlug';
 
 interface ProductModalProps {
   product: Product | null;
@@ -31,6 +32,8 @@ export const ProductModal: React.FC<ProductModalProps> = ({
   const [quantity, setQuantity] = useState(1);
   const [isAdded, setIsAdded] = useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
+  const [shareSuccessMessage, setShareSuccessMessage] = useState<string | null>(null);
 
   // Prevent background body scroll while modal is active
   useEffect(() => {
@@ -124,6 +127,57 @@ export const ProductModal: React.FC<ProductModalProps> = ({
     window.open(url, '_blank');
   };
 
+  const handleShare = async () => {
+    const url = getProductDirectUrl(product);
+    const shareTitle = `${title} — MUSLIM SHOP`;
+    const shareText = `${title} (${formatTenge(product.price)}) в MUSLIM SHOP Атырау:`;
+
+    // 1. Standard Web Share API for mobile devices (iOS Safari, Android Chrome, etc.)
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      try {
+        await navigator.share({
+          title: shareTitle,
+          text: shareText,
+          url: url,
+        });
+        return;
+      } catch (err: any) {
+        if (err?.name === 'AbortError') {
+          // User dismissed or cancelled the native share dialog
+          return;
+        }
+        console.warn('Web Share failed or cancelled, falling back to copy', err);
+      }
+    }
+
+    // 2. Fallback: Copy link directly to clipboard
+    await handleCopyLink();
+  };
+
+  const handleCopyLink = async () => {
+    const success = await copyProductLinkToClipboard(product);
+    if (success) {
+      setIsCopied(true);
+      setShareSuccessMessage(t.linkCopied || 'Ссылка скопирована ✓');
+      setTimeout(() => {
+        setIsCopied(false);
+        setShareSuccessMessage(null);
+      }, 2600);
+    }
+  };
+
+  const handleShareWhatsApp = () => {
+    const url = getProductDirectUrl(product);
+    const text = `${title} (${formatTenge(product.price)})\n${url}`;
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+  };
+
+  const handleShareTelegram = () => {
+    const url = getProductDirectUrl(product);
+    const text = `${title} (${formatTenge(product.price)}) — MUSLIM SHOP`;
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank');
+  };
+
   return (
     <>
       {/* Outer Backdrop Container - fixed and non-scrolling to prevent mobile page jumping */}
@@ -165,10 +219,29 @@ export const ProductModal: React.FC<ProductModalProps> = ({
 
             <div className="flex items-center gap-2">
               {categoryName && (
-                <span className="sm:hidden text-[11px] text-[#C5A059] font-medium truncate max-w-[140px]">
+                <span className="sm:hidden text-[11px] text-[#C5A059] font-medium truncate max-w-[110px]">
                   {categoryName}
                 </span>
               )}
+              <button
+                id="product-modal-header-share-btn"
+                onClick={handleShare}
+                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full bg-[#1C1C28] hover:bg-[#26263A] text-[#D4AF37] hover:text-[#F4F1EA] border border-[#2D2D3E] hover:border-[#D4AF37]/50 active:scale-95 transition-all text-xs font-semibold cursor-pointer shadow-sm"
+                title={t.share}
+                aria-label={t.share}
+              >
+                {isCopied ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-[#68D391]" />
+                    <span className="text-[11px] text-[#68D391]">{t.linkCopied}</span>
+                  </>
+                ) : (
+                  <>
+                    <Share2 className="w-3.5 h-3.5" />
+                    <span className="hidden xs:inline sm:inline text-[11px]">{t.share}</span>
+                  </>
+                )}
+              </button>
               <button
                 id="product-modal-close-btn"
                 onClick={onClose}
@@ -452,6 +525,90 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                     <HelpCircle className="w-4 h-4 text-[#C5A059]" />
                     <span>{t.askQuestionWhatsApp}</span>
                   </button>
+
+                  {/* Dedicated Direct Share & Instagram Stories Panel */}
+                  <div className="pt-3 mt-1 border-t border-[#22222E] space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-semibold uppercase tracking-wider text-[#C5A059] flex items-center gap-1.5">
+                        <Share2 className="w-3.5 h-3.5" />
+                        <span>{t.share}</span>
+                      </span>
+                      {shareSuccessMessage && (
+                        <span className="text-xs font-semibold text-[#68D391] animate-fadeIn flex items-center gap-1">
+                          <Check className="w-3.5 h-3.5" />
+                          <span>{shareSuccessMessage}</span>
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Primary Web Share API button + Quick Copy button */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <button
+                        id="product-modal-web-share-btn"
+                        onClick={handleShare}
+                        className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-[#1C1C28] to-[#252538] hover:from-[#252538] hover:to-[#303046] text-[#F4F1EA] hover:text-white border border-[#353548] hover:border-[#D4AF37]/60 text-xs font-semibold flex items-center justify-center gap-2 transition-all active:scale-98 shadow-sm cursor-pointer"
+                        title={language === 'ru' ? 'Поделиться в мессенджерах (WhatsApp, Telegram и др.)' : 'Мессенджерлерде бөлісу'}
+                      >
+                        <Share2 className="w-4 h-4 text-[#D4AF37]" />
+                        <span>{t.share}</span>
+                      </button>
+
+                      <button
+                        id="product-modal-copy-link-btn"
+                        onClick={handleCopyLink}
+                        className={`w-full py-2.5 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all active:scale-98 border cursor-pointer ${
+                          isCopied
+                            ? 'bg-[#1C3322] border-[#276749] text-[#68D391]'
+                            : 'bg-[#161620] hover:bg-[#1E1E2C] border-[#2A2A3A] hover:border-[#D4AF37]/40 text-[#D6D2C9]'
+                        }`}
+                        title={t.copyLink}
+                      >
+                        {isCopied ? (
+                          <>
+                            <Check className="w-4 h-4 text-[#68D391]" />
+                            <span>{t.linkCopied}</span>
+                          </>
+                        ) : (
+                          <>
+                            <Link2 className="w-4 h-4 text-[#D4AF37]" />
+                            <span>{t.copyLink}</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Quick Direct Messengers & Instagram Stories Helper */}
+                    <div className="flex items-center gap-1.5 pt-1">
+                      <button
+                        onClick={handleShareWhatsApp}
+                        className="flex-1 py-1.5 px-2 rounded-lg bg-[#14281E]/80 hover:bg-[#1A3828] text-[#68D391] border border-[#276749]/40 text-[11px] font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                        title={t.shareInWhatsApp}
+                      >
+                        <MessageCircle className="w-3.5 h-3.5 fill-[#68D391]" />
+                        <span>WhatsApp</span>
+                      </button>
+
+                      <button
+                        onClick={handleShareTelegram}
+                        className="flex-1 py-1.5 px-2 rounded-lg bg-[#182838]/80 hover:bg-[#20364C] text-[#63B3ED] border border-[#2B6CB0]/40 text-[11px] font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                        title={t.shareInTelegram}
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        <span>Telegram</span>
+                      </button>
+                    </div>
+
+                    {/* Instagram Stories Tag/Hint */}
+                    <div className="px-3 py-2 rounded-xl bg-[#14141D] border border-[#22222E] flex items-center justify-between text-[11px] text-[#8C877D]">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-gradient-to-tr from-[#FD5949] via-[#D6249F] to-[#285AEB]" />
+                        <span className="text-[#B8B4AA]">{t.shareForStories}</span>
+                      </div>
+                      <span className="text-[10px] text-[#D4AF37]">
+                        {language === 'ru' ? 'Стикер «Ссылка»' : '«Сілтеме» стикері'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

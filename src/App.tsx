@@ -20,6 +20,9 @@ import { Footer } from './components/Footer';
 import { PrayerTimesWidget } from './components/PrayerTimesWidget';
 import { ExitConfirmModal } from './components/ExitConfirmModal';
 import { RecentlyViewed } from './components/RecentlyViewed';
+import { 
+  parseProductSlugFromUrl, findProductBySlug, getProductSlug, updateProductSeo 
+} from './utils/productSlug';
 import { Search, SlidersHorizontal, ShoppingBag, X, Clock, Sparkles, Flame, ArrowRight } from 'lucide-react';
 
 const CART_STORAGE_KEY = 'muslim_shop_cart_v1';
@@ -103,6 +106,9 @@ export default function App() {
 
   // Sync state refs for popstate handler
   const selectedProductRef = useRef<Product | null>(null);
+  const productsRef = useRef<Product[]>(products);
+  const languageRef = useRef<Language>(language);
+  const settingsRef = useRef<StoreSettings>(settings);
   const isCartOpenRef = useRef(false);
   const isCheckoutOpenRef = useRef(false);
   const isSearchFilterOpenRef = useRef(false);
@@ -112,6 +118,18 @@ export default function App() {
   useEffect(() => {
     selectedProductRef.current = selectedProduct;
   }, [selectedProduct]);
+
+  useEffect(() => {
+    productsRef.current = products;
+  }, [products]);
+
+  useEffect(() => {
+    languageRef.current = language;
+  }, [language]);
+
+  useEffect(() => {
+    settingsRef.current = settings;
+  }, [settings]);
 
   useEffect(() => {
     isCartOpenRef.current = isCartOpen;
@@ -132,6 +150,29 @@ export default function App() {
   useEffect(() => {
     isPrayerModalOpenRef.current = isPrayerModalOpen;
   }, [isPrayerModalOpen]);
+
+  // Initial check on mount & whenever products load to see if a direct product URL was requested
+  const hasHandledInitialUrlRef = useRef(false);
+  useEffect(() => {
+    if (!products || products.length === 0) return;
+
+    const slug = parseProductSlugFromUrl();
+    if (slug) {
+      const found = findProductBySlug(products, slug);
+      if (found) {
+        setSelectedProduct(found);
+        lastOpenedProductIdRef.current = found.id;
+        updateProductSeo(found, language, settings);
+        hasHandledInitialUrlRef.current = true;
+        return;
+      }
+    }
+
+    if (!hasHandledInitialUrlRef.current) {
+      updateProductSeo(null, language, settings);
+      hasHandledInitialUrlRef.current = true;
+    }
+  }, [products, language, settings]);
 
   // Back button interception & Exit Confirmation Dialog
   const [showExitConfirm, setShowExitConfirm] = useState(false);
@@ -154,13 +195,14 @@ export default function App() {
     }, 40);
   };
 
-  const handleOpenProduct = (product: Product) => {
+  const handleOpenProduct = (product: Product, updateUrl = true) => {
     // Save exact scroll position before opening modal
     const currentScroll = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
     savedScrollPositionRef.current = currentScroll;
     lastOpenedProductIdRef.current = product.id;
 
     setSelectedProduct(product);
+    updateProductSeo(product, language, settings);
 
     // Track recently viewed product in current session (up to 12 items, newest first)
     setRecentlyViewedIds((prev) => {
@@ -173,12 +215,15 @@ export default function App() {
       return updated;
     });
 
-    // Push entry to browser history so mobile/browser "Назад" closes the product modal
-    try {
-      window.history.pushState({ modal: 'product', id: product.id }, '', window.location.href);
-      modalHistoryPushedRef.current = true;
-    } catch (e) {
-      console.error('History pushState failed', e);
+    // Update URL to clean /product/:slug and push to history
+    if (updateUrl && typeof window !== 'undefined') {
+      const slug = getProductSlug(product);
+      try {
+        window.history.pushState({ modal: 'product', id: product.id, slug }, '', `/product/${slug}`);
+        modalHistoryPushedRef.current = true;
+      } catch (e) {
+        console.error('History pushState failed', e);
+      }
     }
   };
 
@@ -187,17 +232,34 @@ export default function App() {
     const prodId = lastOpenedProductIdRef.current;
 
     setSelectedProduct(null);
+    updateProductSeo(null, language, settings);
 
-    // If closed via on-screen button ("Назад", "X", outside click), unwind modal history entry
-    if (!fromPopState && modalHistoryPushedRef.current) {
-      modalHistoryPushedRef.current = false;
-      try {
-        window.history.back();
-      } catch (e) {
-        console.error(e);
+    // If closed via on-screen button ("Назад", "X", outside click), reset URL to root
+    if (!fromPopState) {
+      if (modalHistoryPushedRef.current) {
+        modalHistoryPushedRef.current = false;
+        try {
+          window.history.back();
+        } catch (e) {
+          window.history.replaceState({ guard: 'muslim_shop' }, '', '/');
+        }
+      } else {
+        try {
+          window.history.replaceState({ guard: 'muslim_shop' }, '', '/');
+        } catch (e) {
+          console.error(e);
+        }
       }
-    } else if (fromPopState) {
+    } else {
       modalHistoryPushedRef.current = false;
+      const slug = parseProductSlugFromUrl();
+      if (slug) {
+        try {
+          window.history.replaceState({ guard: 'muslim_shop' }, '', '/');
+        } catch (e) {
+          console.error(e);
+        }
+      }
     }
 
     // Restore scroll position so user returns to the exact same browsing spot
@@ -215,6 +277,17 @@ export default function App() {
     }
 
     const handlePopState = () => {
+      // Check if current URL after popstate points to a specific product
+      const currentSlug = parseProductSlugFromUrl();
+      if (currentSlug) {
+        const matched = findProductBySlug(productsRef.current, currentSlug);
+        if (matched) {
+          setSelectedProduct(matched);
+          updateProductSeo(matched, languageRef.current, settingsRef.current);
+          return;
+        }
+      }
+
       // If user clicked "Да, выйти", allow standard back navigation
       if (allowExitRef.current) {
         return;
