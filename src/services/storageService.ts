@@ -421,7 +421,7 @@ class StorageService {
         await setDoc(doc(db, 'products', prod.id), cleanForFirestore(prod), { merge: true });
       }
     } catch (e) {
-      console.error('Error seeding initial products to Firestore:', e);
+      console.warn('Initial products seed notice:', e);
     }
   }
 
@@ -494,9 +494,8 @@ class StorageService {
       await this.ensureAdminAuth();
       const sanitized = cleanForFirestore(productWithMeta);
       await setDoc(doc(db, 'products', productWithMeta.id), sanitized);
-      console.log('✅ Product successfully saved to Cloud Firestore:', productWithMeta.id);
     } catch (err) {
-      console.error('❌ Error saving product to Firestore:', err);
+      console.warn('Cloud Firestore sync notice (saved locally):', err);
     }
 
     return products;
@@ -509,9 +508,8 @@ class StorageService {
     try {
       await this.ensureAdminAuth();
       await deleteDoc(doc(db, 'products', id));
-      console.log('✅ Product deleted from Cloud Firestore:', id);
     } catch (e) {
-      console.error('Failed to delete product from Firestore:', e);
+      console.warn('Cloud Firestore delete notice (deleted locally):', e);
     }
 
     return products;
@@ -569,7 +567,7 @@ class StorageService {
         await setDoc(doc(db, 'categories', cat.id), cat, { merge: true });
       }
     } catch (e) {
-      console.error('Error seeding initial categories:', e);
+      console.warn('Initial categories seed notice:', e);
     }
   }
 
@@ -616,7 +614,7 @@ class StorageService {
         await setDoc(doc(db, 'categories', cat.id), cleanForFirestore(cat), { merge: true });
       }
     } catch (e) {
-      console.error('Failed to sync categories to Firestore:', e);
+      console.warn('Categories cloud sync notice (saved locally):', e);
     }
   }
 
@@ -634,7 +632,7 @@ class StorageService {
       await this.ensureAdminAuth();
       await setDoc(doc(db, 'categories', category.id), cleanForFirestore(category));
     } catch (e) {
-      console.error('Failed to save category to Firestore:', e);
+      console.warn('Category cloud sync notice (saved locally):', e);
     }
 
     return cats;
@@ -648,7 +646,7 @@ class StorageService {
       await this.ensureAdminAuth();
       await deleteDoc(doc(db, 'categories', id));
     } catch (e) {
-      console.error('Failed to delete category from Firestore:', e);
+      console.warn('Category cloud delete notice (deleted locally):', e);
     }
 
     return cats;
@@ -795,10 +793,10 @@ class StorageService {
 
     this.ensureAdminAuth().then(() => {
       setDoc(doc(db, 'orders', newOrder.id), cleanForFirestore(newOrder)).catch((err) => {
-        console.error('Error saving order to Firestore:', err);
+        console.warn('Order cloud sync notice (saved locally):', err);
       });
     }).catch((e) => {
-      console.error('Failed to authenticate for order saving:', e);
+      console.warn('Auth notice for order saving:', e);
     });
 
     return newOrder;
@@ -810,10 +808,10 @@ class StorageService {
 
     this.ensureAdminAuth().then(() => {
       setDoc(doc(db, 'orders', orderId), { status }, { merge: true }).catch((err) => {
-        console.error('Error updating order status in Firestore:', err);
+        console.warn('Order status cloud sync notice (saved locally):', err);
       });
     }).catch((e) => {
-      console.error('Failed to authenticate for order update:', e);
+      console.warn('Auth notice for order update:', e);
     });
 
     return orders;
@@ -825,10 +823,10 @@ class StorageService {
 
     this.ensureAdminAuth().then(() => {
       deleteDoc(doc(db, 'orders', orderId)).catch((err) => {
-        console.error('Error deleting order from Firestore:', err);
+        console.warn('Order delete cloud notice (deleted locally):', err);
       });
     }).catch((e) => {
-      console.error('Failed to authenticate for order delete:', e);
+      console.warn('Auth notice for order delete:', e);
     });
 
     return orders;
@@ -849,10 +847,10 @@ class StorageService {
           deleteDoc(doc(db, 'orders', d.id)).catch(() => {});
         });
       } catch (err) {
-        console.error('Error clearing orders collection:', err);
+        console.warn('Clear orders cloud notice (cleared locally):', err);
       }
     }).catch((e) => {
-      console.error('Failed to authenticate for clearAllOrders:', e);
+      console.warn('Auth notice for clearAllOrders:', e);
     });
 
     return [];
@@ -938,7 +936,7 @@ class StorageService {
       await this.ensureAdminAuth();
       await setDoc(doc(db, 'settings', 'general'), cleanForFirestore(settings), { merge: true });
     } catch (e) {
-      console.error('Failed to save settings to Firestore:', e);
+      console.warn('Settings cloud sync notice (saved locally):', e);
     }
   }
 
