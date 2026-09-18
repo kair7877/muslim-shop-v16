@@ -30,12 +30,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm install
 
       - name: Build project with Vite
         run: npm run build
+
+      - name: Create 404 fallback for GitHub Pages SPA
+        run: cp dist/index.html dist/404.html
 
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v5
