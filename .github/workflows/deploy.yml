@@ -38,8 +38,10 @@ jobs:
       - name: Build project with Vite
         run: npm run build
 
-      - name: Create 404 fallback for GitHub Pages SPA
-        run: cp dist/index.html dist/404.html
+      - name: Ensure .nojekyll and 404.html exist in dist
+        run: |
+          touch dist/.nojekyll
+          if [ ! -f dist/404.html ]; then cp dist/index.html dist/404.html; fi
 
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v5

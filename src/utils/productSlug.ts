@@ -57,13 +57,32 @@ export function getProductSlug(product: Partial<Product> | null | undefined): st
 }
 
 /**
+ * Detects the current base path (handles root '/', subfolders, and GitHub Pages like '/muslim-shop-v16/')
+ */
+export function getAppBasePath(): string {
+  if (typeof window === 'undefined') return '/';
+  const pathname = window.location.pathname;
+  // If we are on a subpath e.g. /muslim-shop-v16/ or /muslim-shop-v16/product/slug
+  const match = pathname.match(/^(\/[^/]+)/);
+  if (match && match[1] && match[1] !== '/product' && !match[1].includes('.')) {
+    return `${match[1]}/`;
+  }
+  return '/';
+}
+
+/**
  * Returns the full, absolute direct URL for a product
- * e.g. "https://domain.com/product/misk-royal"
+ * e.g. "https://kair7877.github.io/muslim-shop-v16/?product=misk-royal"
  */
 export function getProductDirectUrl(product: Product): string {
-  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://muslimshop.kz';
   const slug = getProductSlug(product);
-  return `${origin}/product/${slug}`;
+  if (typeof window === 'undefined') {
+    return `https://kair7877.github.io/muslim-shop-v16/?product=${slug}`;
+  }
+  const origin = window.location.origin;
+  const basePath = getAppBasePath();
+  // Query parameter (?product=slug) ensures 100% reliability on static hosts like GitHub Pages
+  return `${origin}${basePath}?product=${slug}`;
 }
 
 /**

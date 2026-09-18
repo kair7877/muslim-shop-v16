@@ -21,7 +21,7 @@ import { PrayerTimesWidget } from './components/PrayerTimesWidget';
 import { ExitConfirmModal } from './components/ExitConfirmModal';
 import { RecentlyViewed } from './components/RecentlyViewed';
 import { 
-  parseProductSlugFromUrl, findProductBySlug, getProductSlug, updateProductSeo 
+  parseProductSlugFromUrl, findProductBySlug, getProductSlug, updateProductSeo, getAppBasePath 
 } from './utils/productSlug';
 import { Search, SlidersHorizontal, ShoppingBag, X, Clock, Sparkles, Flame, ArrowRight } from 'lucide-react';
 
@@ -215,11 +215,13 @@ export default function App() {
       return updated;
     });
 
-    // Update URL to clean /product/:slug and push to history
+    // Update URL to clean product URL and push to history without breaking subpath
     if (updateUrl && typeof window !== 'undefined') {
       const slug = getProductSlug(product);
       try {
-        window.history.pushState({ modal: 'product', id: product.id, slug }, '', `/product/${slug}`);
+        const basePath = getAppBasePath();
+        const targetUrl = basePath !== '/' ? `${basePath}?product=${slug}` : `/product/${slug}`;
+        window.history.pushState({ modal: 'product', id: product.id, slug }, '', targetUrl);
         modalHistoryPushedRef.current = true;
       } catch (e) {
         console.error('History pushState failed', e);
@@ -234,6 +236,8 @@ export default function App() {
     setSelectedProduct(null);
     updateProductSeo(null, language, settings);
 
+    const basePath = getAppBasePath();
+
     // If closed via on-screen button ("Назад", "X", outside click), reset URL to root
     if (!fromPopState) {
       if (modalHistoryPushedRef.current) {
@@ -241,11 +245,11 @@ export default function App() {
         try {
           window.history.back();
         } catch (e) {
-          window.history.replaceState({ guard: 'muslim_shop' }, '', '/');
+          window.history.replaceState({ guard: 'muslim_shop' }, '', basePath);
         }
       } else {
         try {
-          window.history.replaceState({ guard: 'muslim_shop' }, '', '/');
+          window.history.replaceState({ guard: 'muslim_shop' }, '', basePath);
         } catch (e) {
           console.error(e);
         }
@@ -255,7 +259,7 @@ export default function App() {
       const slug = parseProductSlugFromUrl();
       if (slug) {
         try {
-          window.history.replaceState({ guard: 'muslim_shop' }, '', '/');
+          window.history.replaceState({ guard: 'muslim_shop' }, '', basePath);
         } catch (e) {
           console.error(e);
         }
