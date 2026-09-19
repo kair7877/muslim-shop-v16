@@ -664,7 +664,7 @@ export default function App() {
   const totalCartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
-    <div className="min-h-screen bg-[#0B0B0E] text-[#F4F1EA] flex flex-col selection:bg-[#D4AF37]/30 selection:text-[#E8D49E]">
+    <div className="min-h-screen bg-[#F8F9FA] text-gray-900 flex flex-col selection:bg-amber-100 selection:text-amber-900">
       {/* 1. Header with Language RU/KZ, 2GIS, Instagram, Prayer Times, Search, Cart */}
       <Header
         language={language}
@@ -711,15 +711,15 @@ export default function App() {
               <section className="max-w-7xl mx-auto px-3 sm:px-6 pt-6 pb-4">
                 <div className="flex items-center justify-between mb-3 sm:mb-4">
                   <div className="flex items-center gap-2">
-                    <span className="text-lg sm:text-xl">🔥</span>
+                    <span className="text-xl">🔥</span>
                     <div>
-                      <h3 className="font-serif text-base sm:text-xl font-bold text-[#F4F1EA] flex items-center gap-2">
+                      <h3 className="font-serif text-base sm:text-xl font-bold text-gray-900 flex items-center gap-2">
                         <span>{language === 'kz' ? 'Хит өнімдер' : 'Хиты продаж'}</span>
-                        <span className="text-[11px] sm:text-xs font-mono text-[#D4AF37] px-2 py-0.5 rounded-full bg-[#1F1B12] border border-[#D4AF37]/30">
+                        <span className="text-xs font-mono font-bold text-amber-800 px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200">
                           {hitProducts.length}
                         </span>
                       </h3>
-                      <p className="text-[11px] text-[#8C877D]">
+                      <p className="text-xs text-gray-500">
                         {language === 'kz' ? 'Ең көп сұранысқа ие тауарлар' : 'Самые популярные позиции каталога'}
                       </p>
                     </div>
@@ -729,7 +729,7 @@ export default function App() {
                       setSelectedCategoryId('cat-hits');
                       handleScrollToCatalog();
                     }}
-                    className="text-xs text-[#D4AF37] hover:text-[#F4E3B2] font-medium flex items-center gap-1 group cursor-pointer"
+                    className="text-xs sm:text-sm text-amber-700 hover:text-amber-800 font-bold flex items-center gap-1 group cursor-pointer"
                   >
                     <span>{language === 'kz' ? 'Барлығын көру' : 'Смотреть все'}</span>
                     <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
@@ -757,15 +757,15 @@ export default function App() {
               <section className="max-w-7xl mx-auto px-3 sm:px-6 pt-6 pb-4">
                 <div className="flex items-center justify-between mb-3 sm:mb-4">
                   <div className="flex items-center gap-2">
-                    <span className="text-lg sm:text-xl">✨</span>
+                    <span className="text-xl">✨</span>
                     <div>
-                      <h3 className="font-serif text-base sm:text-xl font-bold text-[#F4F1EA] flex items-center gap-2">
+                      <h3 className="font-serif text-base sm:text-xl font-bold text-gray-900 flex items-center gap-2">
                         <span>{language === 'kz' ? 'Жаңа өнімдер' : 'Новинки'}</span>
-                        <span className="text-[11px] sm:text-xs font-mono text-[#D4AF37] px-2 py-0.5 rounded-full bg-[#1F1B12] border border-[#D4AF37]/30">
+                        <span className="text-xs font-mono font-bold text-emerald-800 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200">
                           {newProducts.length}
                         </span>
                       </h3>
-                      <p className="text-[11px] text-[#8C877D]">
+                      <p className="text-xs text-gray-500">
                         {language === 'kz' ? 'Жаңадан түскен тауарлар' : 'Свежие поступления в магазин'}
                       </p>
                     </div>
@@ -775,7 +775,7 @@ export default function App() {
                       setSelectedCategoryId('cat-new');
                       handleScrollToCatalog();
                     }}
-                    className="text-xs text-[#D4AF37] hover:text-[#F4E3B2] font-medium flex items-center gap-1 group cursor-pointer"
+                    className="text-xs sm:text-sm text-amber-700 hover:text-amber-800 font-bold flex items-center gap-1 group cursor-pointer"
                   >
                     <span>{language === 'kz' ? 'Барлығын көру' : 'Смотреть все'}</span>
                     <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
@@ -803,15 +803,15 @@ export default function App() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-[#D4AF37]" />
-                    <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#F4F1EA]">
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-600" />
+                    <h2 className="font-serif text-xl sm:text-2xl font-bold text-gray-900">
                       {language === 'kz' ? 'Ұсынылатын тауарлар' : 'Рекомендуемые товары'}
                     </h2>
-                    <span className="text-xs text-[#8C877D] font-mono">
+                    <span className="text-xs text-gray-500 font-mono">
                       ({filteredProducts.length})
                     </span>
                   </div>
-                  <p className="text-xs text-[#8C877D] mt-0.5">
+                  <p className="text-xs text-gray-500 mt-0.5">
                     {language === 'kz' ? 'Ассортименттегі барлық тауарлар' : 'Все товары из ассортимента магазина'}
                   </p>
                 </div>
@@ -819,18 +819,18 @@ export default function App() {
                 {/* Quick search input and filter button */}
                 <div className="flex items-center gap-2">
                   <div className="relative flex-1 sm:w-64">
-                    <Search className="w-4 h-4 text-[#8C877D] absolute left-3 top-1/2 -translate-y-1/2" />
+                    <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder={t.searchPlaceholder}
-                      className="w-full pl-9 pr-8 py-2 rounded-xl bg-[#14141C] border border-[#262634] text-xs text-[#F4F1EA] placeholder-[#706B62] focus:border-[#D4AF37] outline-none transition-colors"
+                      className="w-full pl-9 pr-8 py-2 rounded-xl bg-white border border-gray-300 text-xs sm:text-sm text-gray-900 placeholder-gray-400 focus:border-amber-600 outline-none transition-colors shadow-2xs"
                     />
                     {searchQuery && (
                       <button
                         onClick={() => setSearchQuery('')}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-[#8C877D]"
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400 hover:text-gray-700"
                       >
                         ✕
                       </button>
@@ -839,14 +839,14 @@ export default function App() {
 
                   <button
                     onClick={() => setIsSearchFilterOpen(true)}
-                    className={`p-2 sm:px-3 sm:py-2 rounded-xl border flex items-center gap-1.5 text-xs font-medium transition-colors cursor-pointer ${
+                    className={`p-2 sm:px-3 sm:py-2 rounded-xl border flex items-center gap-1.5 text-xs sm:text-sm font-semibold transition-colors cursor-pointer shadow-2xs ${
                       onlyInStock || onlySale || sortBy !== 'popular'
-                        ? 'bg-[#252535] border-[#D4AF37] text-[#D4AF37]'
-                        : 'bg-[#14141C] border-[#262634] text-[#A6A29A] hover:text-[#F4F1EA]'
+                        ? 'bg-amber-50 border-amber-300 text-amber-800'
+                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                     }`}
                     title={t.filters}
                   >
-                    <SlidersHorizontal className="w-4 h-4 text-[#D4AF37]" />
+                    <SlidersHorizontal className="w-4 h-4 text-amber-600" />
                     <span className="hidden sm:inline">{t.filters}</span>
                   </button>
                 </div>
@@ -854,14 +854,14 @@ export default function App() {
 
               {/* Product Grid: 2 columns on mobile, 4 columns on desktop */}
               {filteredProducts.length === 0 ? (
-                <div className="py-16 text-center bg-[#13131A] rounded-3xl border border-[#242432] p-8">
-                  <div className="w-16 h-16 rounded-full bg-[#181822] border border-[#2B2B3C] flex items-center justify-center mx-auto mb-3 text-[#C5A059]">
+                <div className="py-16 text-center bg-white rounded-3xl border border-gray-200 p-8 shadow-xs">
+                  <div className="w-16 h-16 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center mx-auto mb-3 text-amber-700">
                     <ShoppingBag className="w-7 h-7" />
                   </div>
-                  <h3 className="font-serif text-lg font-bold text-[#F4F1EA] mb-1">
+                  <h3 className="font-serif text-lg font-bold text-gray-900 mb-1">
                     {t.noProductsFound}
                   </h3>
-                  <p className="text-xs text-[#8C877D] max-w-sm mx-auto mb-5">
+                  <p className="text-xs sm:text-sm text-gray-500 max-w-sm mx-auto mb-5">
                     {language === 'kz' 
                       ? 'Іздеу сұрауын өзгертіп көріңіз немесе сүзгілерді тазартыңыз' 
                       : 'Попробуйте изменить поисковый запрос или сбросить фильтры'}
@@ -873,7 +873,7 @@ export default function App() {
                       setOnlyInStock(false);
                       setOnlySale(false);
                     }}
-                    className="px-5 py-2.5 rounded-xl bg-[#C5A059] text-[#0B0B0E] font-bold text-xs cursor-pointer"
+                    className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs sm:text-sm cursor-pointer shadow-xs transition-colors"
                   >
                     {t.resetFilters}
                   </button>
@@ -901,11 +901,11 @@ export default function App() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[#D4AF37]" />
-                  <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#F4F1EA]">
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-600" />
+                  <h2 className="font-serif text-xl sm:text-2xl font-bold text-gray-900">
                     {currentCategoryTitle}
                   </h2>
-                  <span className="text-xs text-[#8C877D] font-mono">
+                  <span className="text-xs text-gray-500 font-mono">
                     ({filteredProducts.length})
                   </span>
                 </div>
@@ -916,14 +916,14 @@ export default function App() {
                         setSelectedCategoryId(null);
                         setSearchQuery('');
                       }}
-                      className="text-xs text-[#D4AF37] hover:underline flex items-center gap-1 cursor-pointer"
+                      className="text-xs sm:text-sm text-amber-700 hover:underline flex items-center gap-1 cursor-pointer font-semibold"
                     >
                       <span>✕ {language === 'kz' ? 'Сүзгіні тазарту' : 'Показать все товары'}</span>
                     </button>
                   </div>
                 )}
                 {searchQuery && (
-                  <div className="text-xs text-[#C5A059] mt-0.5">
+                  <div className="text-xs sm:text-sm text-amber-800 font-medium mt-0.5">
                     {language === 'kz' ? 'Сұраныс бойынша іздеу:' : 'Поиск по запросу:'} «{searchQuery}»
                   </div>
                 )}
@@ -932,18 +932,18 @@ export default function App() {
               {/* Quick search input and filter button */}
               <div className="flex items-center gap-2">
                 <div className="relative flex-1 sm:w-64">
-                  <Search className="w-4 h-4 text-[#8C877D] absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder={t.searchPlaceholder}
-                    className="w-full pl-9 pr-8 py-2 rounded-xl bg-[#14141C] border border-[#262634] text-xs text-[#F4F1EA] placeholder-[#706B62] focus:border-[#D4AF37] outline-none transition-colors"
+                    className="w-full pl-9 pr-8 py-2 rounded-xl bg-white border border-gray-300 text-xs sm:text-sm text-gray-900 placeholder-gray-400 focus:border-amber-600 outline-none transition-colors shadow-2xs"
                   />
                   {searchQuery && (
                     <button
                       onClick={() => setSearchQuery('')}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-[#8C877D]"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400 hover:text-gray-700"
                     >
                       ✕
                     </button>
@@ -952,14 +952,14 @@ export default function App() {
 
                 <button
                   onClick={() => setIsSearchFilterOpen(true)}
-                  className={`p-2 sm:px-3 sm:py-2 rounded-xl border flex items-center gap-1.5 text-xs font-medium transition-colors cursor-pointer ${
+                  className={`p-2 sm:px-3 sm:py-2 rounded-xl border flex items-center gap-1.5 text-xs sm:text-sm font-semibold transition-colors cursor-pointer shadow-2xs ${
                     onlyInStock || onlySale || sortBy !== 'popular'
-                      ? 'bg-[#252535] border-[#D4AF37] text-[#D4AF37]'
-                      : 'bg-[#14141C] border-[#262634] text-[#A6A29A] hover:text-[#F4F1EA]'
+                      ? 'bg-amber-50 border-amber-300 text-amber-800'
+                      : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                   }`}
                   title={t.filters}
                 >
-                  <SlidersHorizontal className="w-4 h-4 text-[#D4AF37]" />
+                  <SlidersHorizontal className="w-4 h-4 text-amber-600" />
                   <span className="hidden sm:inline">{t.filters}</span>
                 </button>
               </div>
@@ -967,14 +967,14 @@ export default function App() {
 
             {/* Product Grid: 2 columns on mobile, 4 columns on desktop */}
             {filteredProducts.length === 0 ? (
-              <div className="py-16 text-center bg-[#13131A] rounded-3xl border border-[#242432] p-8">
-                <div className="w-16 h-16 rounded-full bg-[#181822] border border-[#2B2B3C] flex items-center justify-center mx-auto mb-3 text-[#C5A059]">
+              <div className="py-16 text-center bg-white rounded-3xl border border-gray-200 p-8 shadow-xs">
+                <div className="w-16 h-16 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center mx-auto mb-3 text-amber-700">
                   <ShoppingBag className="w-7 h-7" />
                 </div>
-                <h3 className="font-serif text-lg font-bold text-[#F4F1EA] mb-1">
+                <h3 className="font-serif text-lg font-bold text-gray-900 mb-1">
                   {t.noProductsFound}
                 </h3>
-                <p className="text-xs text-[#8C877D] max-w-sm mx-auto mb-5">
+                <p className="text-xs sm:text-sm text-gray-500 max-w-sm mx-auto mb-5">
                   {language === 'kz' 
                     ? 'Іздеу сұрауын өзгертіп көріңіз немесе сүзгілерді тазартыңыз' 
                     : 'Попробуйте изменить поисковый запрос или сбросить фильтры'}
@@ -986,7 +986,7 @@ export default function App() {
                     setOnlyInStock(false);
                     setOnlySale(false);
                   }}
-                  className="px-5 py-2.5 rounded-xl bg-[#C5A059] text-[#0B0B0E] font-bold text-xs cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs sm:text-sm cursor-pointer shadow-xs transition-colors"
                 >
                   {t.resetFilters}
                 </button>
@@ -1023,16 +1023,16 @@ export default function App() {
         )}
 
         {/* 7. Trust & Quality Banner with 1-click WhatsApp messaging */}
-        <section className="bg-gradient-to-r from-[#121218] via-[#161622] to-[#121218] border-y border-[#22222E] py-8 px-4 my-6">
+        <section className="bg-white border-y border-gray-200 py-8 px-4 my-6 shadow-2xs">
           <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
             <div className="flex flex-col items-center">
-              <span className="w-10 h-10 rounded-xl bg-[#1D1D2C] border border-[#C5A059]/40 flex items-center justify-center text-[#D4AF37] mb-2 font-serif font-bold text-base">
+              <span className="w-12 h-12 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 mb-2 font-serif font-bold text-base shadow-2xs">
                 100%
               </span>
-              <h4 className="text-xs sm:text-sm font-semibold text-[#F4F1EA]">
+              <h4 className="text-xs sm:text-sm font-bold text-gray-900">
                 {language === 'kz' ? 'Табиғи Halal өнімдер' : 'Оригинальная Halal продукция'}
               </h4>
-              <p className="text-[11px] text-[#8C877D] mt-0.5 max-w-xs">
+              <p className="text-xs text-gray-500 mt-0.5 max-w-xs">
                 {language === 'kz' 
                   ? 'Сертификатталған, тікелей сенімді өндірушілерден' 
                   : 'Сертифицированные бренды, натуральные компоненты'}
@@ -1040,13 +1040,13 @@ export default function App() {
             </div>
 
             <div className="flex flex-col items-center">
-              <span className="w-10 h-10 rounded-xl bg-[#1D1D2C] border border-[#C5A059]/40 flex items-center justify-center text-[#D4AF37] mb-2 text-base">
+              <span className="w-12 h-12 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 mb-2 text-lg shadow-2xs">
                 📦
               </span>
-              <h4 className="text-xs sm:text-sm font-semibold text-[#F4F1EA]">
+              <h4 className="text-xs sm:text-sm font-bold text-gray-900">
                 {language === 'kz' ? 'Қазақстан бойынша жеткізу' : 'Доставка по всему Казахстану'}
               </h4>
-              <p className="text-[11px] text-[#8C877D] mt-0.5 max-w-xs">
+              <p className="text-xs text-gray-500 mt-0.5 max-w-xs">
                 {language === 'kz' 
                   ? 'Атырау қаласында сол күні, басқа қалаларға Қазпошта / СДЭК' 
                   : 'Курьером по Атырау в день заказа, по регионам через Казпочту'}
@@ -1054,13 +1054,13 @@ export default function App() {
             </div>
 
             <div className="flex flex-col items-center">
-              <span className="w-10 h-10 rounded-xl bg-[#1D1D2C] border border-[#C5A059]/40 flex items-center justify-center text-[#68D391] mb-2 text-base">
+              <span className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 mb-2 text-lg shadow-2xs">
                 💬
               </span>
-              <h4 className="text-xs sm:text-sm font-semibold text-[#F4F1EA]">
+              <h4 className="text-xs sm:text-sm font-bold text-gray-900">
                 {language === 'kz' ? 'WhatsApp-та 1 басумен тапсырыс' : 'Быстрый заказ через WhatsApp'}
               </h4>
-              <p className="text-[11px] text-[#8C877D] mt-0.5 max-w-xs">
+              <p className="text-xs text-gray-500 mt-0.5 max-w-xs">
                 {language === 'kz' 
                   ? '+7 778 175-42-41 нөміріне бір басумен хабарлама жіберу' 
                   : 'Прямая связь с консультантом бутика в один клик: +7 778 175-42-41'}
@@ -1088,28 +1088,28 @@ export default function App() {
       {/* 9. Dedicated Prayer Times Modal */}
       {isPrayerModalOpen && (
         <div 
-          className="fixed inset-0 z-50 bg-[#000000]/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-200"
           onClick={() => setIsPrayerModalOpen(false)}
         >
           <div 
-            className="relative w-full max-w-2xl bg-[#111116] border border-[#2B2B3A] rounded-3xl overflow-hidden shadow-2xl my-auto"
+            className="relative w-full max-w-2xl bg-white border border-gray-200 rounded-3xl overflow-hidden shadow-2xl my-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#20202C] bg-[#14141E]">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 bg-gray-50">
               <div className="flex items-center gap-2">
                 <span className="text-xl">🕌</span>
                 <div>
-                  <h3 className="font-serif font-bold text-base sm:text-lg text-[#F4F1EA]">
+                  <h3 className="font-serif font-bold text-base sm:text-lg text-gray-900">
                     {t.prayerTimes}
                   </h3>
-                  <p className="text-[11px] text-[#8C877D]">
+                  <p className="text-xs text-gray-500">
                     {language === 'kz' ? 'Қазақстан қалалары үшін ресми есеп' : 'Точное расписание для городов Казахстана'}
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setIsPrayerModalOpen(false)}
-                className="p-1.5 rounded-full bg-[#1C1C26] text-[#A6A29A] hover:text-[#F4F1EA] transition-colors"
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center font-bold transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>

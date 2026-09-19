@@ -16,38 +16,38 @@ export const Footer: React.FC<FooterProps> = ({ settings, language, onOpenAdmin 
   const instagramHandle = (settings?.instagram || 'musliim_shop06').replace('@', '');
 
   return (
-    <footer className="bg-[#0D0D12] border-t border-[#1F1F2A] text-[#9A968E] pt-10 pb-24 sm:pb-12 px-4 sm:px-6">
+    <footer className="bg-white border-t border-gray-200 text-gray-700 pt-10 pb-24 sm:pb-12 px-4 sm:px-6 shadow-xs">
       <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
         {/* Col 1: Store Brand */}
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-[#C5A059] flex items-center justify-center text-[#0B0B0E] font-serif font-bold text-xs">
+            <div className="w-8 h-8 rounded-lg bg-amber-600 flex items-center justify-center text-white font-serif font-bold text-sm shadow-xs">
               M
             </div>
-            <span className="font-brand font-bold text-base tracking-[0.2em] text-[#F5F3EF]">
+            <span className="font-brand font-bold text-base tracking-[0.2em] text-gray-900">
               {settings.storeName || 'MUSLIM SHOP'}
             </span>
           </div>
-          <p className="text-xs leading-relaxed text-[#827D74]">
+          <p className="text-xs sm:text-sm leading-relaxed text-gray-600">
             {t.footerAbout}
           </p>
-          <div className="text-[11px] text-[#C5A059] font-medium tracking-wide">
+          <div className="text-xs text-amber-800 font-bold tracking-wide">
             {settings.city} · {settings.boutiqueNumber}
           </div>
         </div>
 
         {/* Col 2: Location & Hours */}
         <div className="space-y-3">
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-[#C5A059]">
+          <h4 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-gray-900">
             {t.footerWorkingHoursTitle}
           </h4>
-          <div className="space-y-2 text-xs">
-            <div className="flex items-start gap-2 text-[#C4C0B6]">
-              <MapPin className="w-4 h-4 text-[#D4AF37] flex-shrink-0 mt-0.5" />
+          <div className="space-y-2.5 text-xs sm:text-sm">
+            <div className="flex items-start gap-2 text-gray-700">
+              <MapPin className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
               <span>{settings.address}</span>
             </div>
-            <div className="flex items-start gap-2 text-[#C4C0B6]">
-              <Clock className="w-4 h-4 text-[#D4AF37] flex-shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2 text-gray-700">
+              <Clock className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
               <span>{language === 'ru' ? settings.workingHoursRu : settings.workingHoursKz}</span>
             </div>
             <div className="pt-1">
@@ -55,10 +55,10 @@ export const Footer: React.FC<FooterProps> = ({ settings, language, onOpenAdmin 
                 href={gis2Url}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#14261B] hover:bg-[#1E3626] border border-[#276749]/60 hover:border-[#48BB78] text-[#68D391] text-xs font-medium transition-all group"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 text-xs font-bold transition-all group shadow-xs"
               >
                 <span>{t.open2Gis}</span>
-                <ExternalLink className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                <ExternalLink className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
               </a>
             </div>
           </div>
@@ -66,28 +66,28 @@ export const Footer: React.FC<FooterProps> = ({ settings, language, onOpenAdmin 
 
         {/* Col 3: Delivery & Pickup details */}
         <div className="space-y-3">
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-[#C5A059]">
+          <h4 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-gray-900">
             {t.deliveryMethod}
           </h4>
-          <p className="text-xs text-[#827D74] leading-relaxed">
+          <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
             {language === 'ru' ? settings.deliveryInfoRu : settings.deliveryInfoKz}
           </p>
         </div>
 
         {/* Col 4: Contacts & Socials */}
         <div className="space-y-3">
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-[#C5A059]">
+          <h4 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-gray-900">
             {t.footerContacts}
           </h4>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2.5">
             {/* WhatsApp */}
             <a
               href={`https://wa.me/${cleanPhone}`}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#18261D] hover:bg-[#203327] border border-[#276749]/60 text-[#68D391] text-xs font-medium transition-colors"
+              className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-900 text-xs sm:text-sm font-bold transition-colors shadow-xs"
             >
-              <MessageCircle className="w-4 h-4" />
+              <MessageCircle className="w-4 h-4 text-emerald-600" />
               <span>WhatsApp: +{cleanPhone}</span>
             </a>
 
@@ -96,9 +96,9 @@ export const Footer: React.FC<FooterProps> = ({ settings, language, onOpenAdmin 
               href={`https://instagram.com/${instagramHandle}`}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#261524] hover:bg-[#341C31] border border-[#97266D]/50 text-[#F687B3] text-xs font-medium transition-colors"
+              className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-pink-50 hover:bg-pink-100 border border-pink-200 text-pink-900 text-xs sm:text-sm font-bold transition-colors shadow-xs"
             >
-              <Instagram className="w-4 h-4 text-[#ED64A6]" />
+              <Instagram className="w-4 h-4 text-pink-600" />
               <span>Instagram: @{instagramHandle}</span>
             </a>
           </div>
@@ -106,16 +106,16 @@ export const Footer: React.FC<FooterProps> = ({ settings, language, onOpenAdmin 
       </div>
 
       {/* Bottom Sub-footer */}
-      <div className="max-w-7xl mx-auto pt-6 border-t border-[#1C1C26] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#706B62]">
+      <div className="max-w-7xl mx-auto pt-6 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs sm:text-sm text-gray-500">
         <div>
           © {new Date().getFullYear()} {settings.storeName}. {t.footerAllRights}
         </div>
 
         <button
           onClick={onOpenAdmin}
-          className="hover:text-[#D4AF37] transition-colors flex items-center gap-1.5 text-xs text-[#807B72]"
+          className="hover:text-amber-700 transition-colors flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer font-medium"
         >
-          <ShieldCheck className="w-3.5 h-3.5" />
+          <ShieldCheck className="w-4 h-4 text-amber-600" />
           <span>{t.adminTitle}</span>
         </button>
       </div>

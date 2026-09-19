@@ -27,26 +27,26 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
   };
 
   return (
-    <div className="relative py-4 sm:py-6 border-b border-[#1E1E26] bg-[#0E0E13]/60">
+    <div className="relative py-3 sm:py-4 border-b border-gray-200 bg-white/90 backdrop-blur-md shadow-xs">
       <div className="max-w-7xl mx-auto px-3 sm:px-6">
-        <div className="flex items-center justify-between mb-2 sm:mb-3">
-          <h2 className="text-xs uppercase tracking-[0.2em] text-[#C5A059] font-medium flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#C5A059]" />
+        <div className="flex items-center justify-between mb-2 sm:mb-2.5">
+          <h2 className="text-xs uppercase tracking-[0.2em] text-amber-700 font-bold flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-amber-600" />
             {t.categories}
           </h2>
 
           {/* Desktop scroll buttons */}
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden md:flex items-center gap-1.5">
             <button
               onClick={() => scroll('left')}
-              className="p-1 rounded-full bg-[#181822] hover:bg-[#222230] text-[#A6A29A] hover:text-[#D4AF37] border border-[#272734] transition-colors"
+              className="p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-amber-700 border border-gray-300 transition-colors cursor-pointer shadow-xs"
               aria-label="Scroll left"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <button
               onClick={() => scroll('right')}
-              className="p-1 rounded-full bg-[#181822] hover:bg-[#222230] text-[#A6A29A] hover:text-[#D4AF37] border border-[#272734] transition-colors"
+              className="p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-amber-700 border border-gray-300 transition-colors cursor-pointer shadow-xs"
               aria-label="Scroll right"
             >
               <ChevronRight className="w-4 h-4" />
@@ -62,10 +62,10 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
           {/* "All" button */}
           <button
             onClick={() => onSelectCategory(null)}
-            className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all flex items-center gap-1.5 cursor-pointer border ${
+            className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 cursor-pointer border shadow-xs ${
               selectedCategoryId === null
-                ? 'bg-[#C5A059] text-[#0B0B0E] font-bold border-[#C5A059] shadow-[0_2px_12px_rgba(197,160,89,0.3)]'
-                : 'bg-[#14141B] text-[#B8B4AA] hover:text-[#F4F1EA] border-[#22222E] hover:border-[#C5A059]/40'
+                ? 'bg-amber-600 text-white font-extrabold border-amber-600 shadow-sm'
+                : 'bg-white text-gray-800 hover:text-amber-700 border-gray-300 hover:border-amber-400'
             }`}
           >
             <span>💎</span>
@@ -81,13 +81,13 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
               <button
                 key={cat.id}
                 onClick={() => onSelectCategory(cat.id)}
-                className={`flex-shrink-0 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all flex items-center gap-2 cursor-pointer border ${
+                className={`flex-shrink-0 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer border shadow-xs ${
                   isSelected
-                    ? 'bg-[#C5A059] text-[#0B0B0E] font-bold border-[#C5A059] shadow-[0_2px_12px_rgba(197,160,89,0.3)]'
-                    : 'bg-[#14141B] text-[#B8B4AA] hover:text-[#F4F1EA] border-[#22222E] hover:border-[#C5A059]/40'
+                    ? 'bg-amber-600 text-white font-extrabold border-amber-600 shadow-sm'
+                    : 'bg-white text-gray-800 hover:text-amber-700 border-gray-300 hover:border-amber-400'
                 }`}
               >
-                <span className="text-sm">{cat.icon || '🌿'}</span>
+                <span className="text-base">{cat.icon || '🌿'}</span>
                 <span className="whitespace-nowrap">{name}</span>
               </button>
             );

@@ -222,40 +222,40 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({
         exit={{ opacity: 0, y: -10 }}
         transition={{ duration: 0.22 }}
         onClick={() => handleTileClick(cat.id)}
-        className={`group relative flex flex-col items-center justify-center p-3 sm:p-4 rounded-2xl transition-all duration-300 overflow-hidden cursor-pointer w-full text-center select-none active:scale-[0.97] min-h-[92px] sm:min-h-[104px] border ${
+        className={`group relative flex flex-col items-center justify-center p-3 sm:p-4 rounded-2xl transition-all duration-300 overflow-hidden cursor-pointer w-full text-center select-none active:scale-[0.97] min-h-[100px] sm:min-h-[114px] border-2 ${
           isSelected
-            ? 'bg-gradient-to-b from-[#241F16] via-[#1A1710] to-[#12110D] border-[#D4AF37] shadow-[0_0_22px_rgba(212,175,55,0.22)] ring-1 ring-[#D4AF37]/60'
-            : 'bg-gradient-to-b from-[#15151F] to-[#101016] border-[#252533] hover:border-[#D4AF37]/50 hover:bg-[#181824] shadow-[0_2px_8px_rgba(0,0,0,0.25)]'
+            ? 'bg-amber-50 border-amber-500 shadow-md ring-2 ring-amber-400/40'
+            : 'bg-white border-gray-200 hover:border-amber-400 hover:bg-amber-50/30 shadow-sm hover:shadow'
         }`}
         aria-pressed={isSelected}
       >
-        {/* Subtle Luxury Corner Ambient Glow on Hover / Active */}
+        {/* Subtle Ambient Glow on Hover / Active */}
         <div 
           className={`absolute -top-10 -right-10 w-24 h-24 rounded-full blur-2xl pointer-events-none transition-opacity duration-300 ${
-            isSelected ? 'bg-[#D4AF37]/25 opacity-100' : 'bg-[#D4AF37]/10 opacity-0 group-hover:opacity-100'
+            isSelected ? 'bg-amber-400/20 opacity-100' : 'bg-amber-300/10 opacity-0 group-hover:opacity-100'
           }`} 
         />
 
         {/* Selected Checkmark Badge (top-right) */}
         {isSelected && (
-          <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-[#D4AF37] text-[#0B0B0E] flex items-center justify-center shadow-sm">
-            <Check className="w-2.5 h-2.5 stroke-[3]" />
+          <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-amber-600 text-white flex items-center justify-center shadow-sm">
+            <Check className="w-3 h-3 stroke-[3]" />
           </div>
         )}
 
         {/* Optional decorative small pill badge (e.g. "Халяль", "Топ") */}
         {badge && !isSelected && (
-          <span className="absolute top-2 right-2 text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-[#1F1F2B] border border-[#2E2E3E] text-[#C5A059] tracking-wider uppercase">
+          <span className="absolute top-2 right-2 text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-md bg-amber-100 border border-amber-300 text-amber-800 tracking-wide uppercase">
             {badge}
           </span>
         )}
 
         {/* Icon Emblem */}
         <div 
-          className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center text-xl sm:text-2xl mb-2 transition-transform duration-300 group-hover:scale-110 shadow-inner ${
+          className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center text-2xl sm:text-3xl mb-2 transition-transform duration-300 group-hover:scale-110 ${
             isSelected
-              ? 'bg-[#2E2818] border border-[#D4AF37] shadow-[0_0_12px_rgba(212,175,55,0.3)] text-white'
-              : 'bg-[#1C1C28] border border-[#2B2B3C] group-hover:border-[#D4AF37]/40 text-[#E8D49E]'
+              ? 'bg-amber-100 border border-amber-400 text-amber-800 shadow-sm'
+              : 'bg-gray-50 border border-gray-200 group-hover:border-amber-300 text-gray-800'
           }`}
         >
           <span>{cat.icon}</span>
@@ -263,10 +263,10 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({
 
         {/* Category Label */}
         <span 
-          className={`text-xs sm:text-sm font-semibold tracking-wide leading-tight line-clamp-2 transition-colors ${
+          className={`text-xs sm:text-sm font-bold tracking-tight leading-snug line-clamp-2 transition-colors ${
             isSelected 
-              ? 'text-[#F5E2AC]' 
-              : 'text-[#E6E2D8] group-hover:text-[#F4F1EA]'
+              ? 'text-amber-900 font-extrabold' 
+              : 'text-gray-900 group-hover:text-amber-700'
           }`}
         >
           {name}
@@ -276,13 +276,13 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({
   };
 
   return (
-    <section className="w-full bg-[#0B0B0E] border-b border-[#1D1D26] pt-3 pb-5 sm:pt-6 sm:pb-7 px-3 sm:px-6">
+    <section className="w-full bg-gray-50 border-b border-gray-200 pt-4 pb-6 sm:pt-6 sm:pb-8 px-3 sm:px-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header Block: Title with Gold Accent */}
-        <div className="flex items-center justify-between mb-3 sm:mb-4 px-1">
-          <div className="flex items-center gap-2">
-            <span className="w-1.5 h-4 rounded-full bg-gradient-to-b from-[#E5C365] to-[#B38F39]" />
-            <h2 className="font-serif text-base sm:text-lg md:text-xl font-bold tracking-[0.18em] text-[#F4F1EA] uppercase">
+        {/* Header Block: Title with Amber Accent */}
+        <div className="flex items-center justify-between mb-3 sm:mb-5 px-1">
+          <div className="flex items-center gap-2.5">
+            <span className="w-2 h-5 rounded-full bg-amber-600" />
+            <h2 className="font-serif text-lg sm:text-xl md:text-2xl font-bold tracking-wide text-gray-900 uppercase">
               {titleText}
             </h2>
           </div>
@@ -290,20 +290,20 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({
           {selectedCategoryId ? (
             <button
               onClick={() => onSelectCategory(null)}
-              className="text-[11px] sm:text-xs text-[#D4AF37] hover:text-[#F5E2AC] font-medium flex items-center gap-1 bg-[#1A1712] border border-[#D4AF37]/40 hover:border-[#D4AF37] px-2.5 py-1 rounded-full transition-all cursor-pointer shadow-sm"
+              className="text-xs sm:text-sm text-amber-700 hover:text-amber-800 font-bold flex items-center gap-1.5 bg-amber-50 border border-amber-300 hover:border-amber-500 px-3 py-1.5 rounded-full transition-all cursor-pointer shadow-sm"
             >
               <span>✕</span>
               <span>{language === 'kz' ? 'Барлығын көрсету' : 'Сбросить фильтр'}</span>
             </button>
           ) : (
-            <span className="text-[11px] sm:text-xs text-[#8C877D] tracking-wider hidden xs:inline">
+            <span className="text-xs sm:text-sm text-gray-600 tracking-wide hidden xs:inline font-medium">
               {subtitleText}
             </span>
           )}
         </div>
 
         {/* Primary 6 Tiles Grid: Exactly 2 in row × 3 rows on Mobile */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3.5">
           {PRIMARY_CATEGORIES.map((cat) => renderCategoryTile(cat, false))}
         </div>
 
@@ -317,25 +317,25 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({
               transition={{ duration: 0.3, ease: 'easeInOut' }}
               className="overflow-hidden"
             >
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3 pt-2.5 sm:pt-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3.5 pt-2.5 sm:pt-3.5">
                 {EXPANDED_CATEGORIES.map((cat) => renderCategoryTile(cat, true))}
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* "ВСЕ КАТЕГОРИИ →" / "СКРЫТЬ КАТЕГОРИИ ↑" Luxury Toggle Button */}
-        <div className="flex justify-center mt-3.5 sm:mt-5">
+        {/* "ВСЕ КАТЕГОРИИ →" / "СКРЫТЬ КАТЕГОРИИ ↑" Toggle Button */}
+        <div className="flex justify-center mt-4 sm:mt-6">
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="w-full sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl sm:rounded-full bg-gradient-to-r from-[#161622] via-[#1A1A28] to-[#161622] hover:from-[#1F1F30] hover:to-[#1F1F30] border border-[#C5A059]/60 hover:border-[#D4AF37] text-[#D4AF37] hover:text-[#F4E3B2] text-xs sm:text-sm font-bold tracking-[0.12em] uppercase transition-all duration-300 shadow-[0_3px_16px_rgba(212,175,55,0.12)] hover:shadow-[0_4px_22px_rgba(212,175,55,0.28)] flex items-center justify-center gap-2 group cursor-pointer active:scale-[0.98]"
+            className="w-full sm:w-auto px-7 sm:px-9 py-3 rounded-xl sm:rounded-full bg-white hover:bg-amber-50/70 border-2 border-amber-400 hover:border-amber-500 text-amber-800 text-xs sm:text-sm font-bold tracking-wider uppercase transition-all duration-300 shadow-sm hover:shadow flex items-center justify-center gap-2 group cursor-pointer active:scale-[0.98]"
             aria-expanded={isExpanded}
           >
             <span>{allCategoriesBtnText}</span>
             {isExpanded ? (
-              <ChevronUp className="w-4 h-4 text-[#D4AF37] group-hover:-translate-y-0.5 transition-transform" />
+              <ChevronUp className="w-4 h-4 text-amber-700 group-hover:-translate-y-0.5 transition-transform" />
             ) : (
-              <ArrowRight className="w-4 h-4 text-[#D4AF37] group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="w-4 h-4 text-amber-700 group-hover:translate-x-1 transition-transform" />
             )}
           </button>
         </div>

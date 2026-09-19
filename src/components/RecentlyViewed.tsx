@@ -40,23 +40,23 @@ export const RecentlyViewed: React.FC<RecentlyViewedProps> = ({
   };
 
   return (
-    <section className="max-w-7xl mx-auto px-3 sm:px-6 py-6 border-t border-[#1C1C26]">
+    <section className="max-w-7xl mx-auto px-3 sm:px-6 py-6 border-t border-gray-200">
       {/* Header */}
       <div className="flex items-center justify-between gap-3 mb-4">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-[#181824] border border-[#2B2B3E] flex items-center justify-center text-[#D4AF37]">
+          <div className="w-8 h-8 rounded-lg bg-amber-50 border border-amber-300 flex items-center justify-center text-amber-700 shadow-xs">
             <Clock className="w-4 h-4" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="font-serif text-lg sm:text-xl font-bold text-[#F4F1EA]">
+              <h2 className="font-serif text-lg sm:text-xl font-bold text-gray-900">
                 {t.recentlyViewed}
               </h2>
-              <span className="text-xs text-[#8C877D] font-mono">
+              <span className="text-xs sm:text-sm text-gray-500 font-mono font-bold">
                 ({products.length})
               </span>
             </div>
-            <p className="text-[11px] text-[#8C877D] hidden sm:block">
+            <p className="text-xs text-gray-500 hidden sm:block font-medium">
               {t.recentlyViewedSubtitle}
             </p>
           </div>
@@ -65,10 +65,10 @@ export const RecentlyViewed: React.FC<RecentlyViewedProps> = ({
         {/* Controls: Scroll arrows & Clear button */}
         <div className="flex items-center gap-2">
           {products.length > 2 && (
-            <div className="hidden sm:flex items-center gap-1 bg-[#13131A] border border-[#242432] rounded-xl p-0.5">
+            <div className="hidden sm:flex items-center gap-1 bg-white border border-gray-200 rounded-xl p-0.5 shadow-xs">
               <button
                 onClick={() => handleScroll('left')}
-                className="w-7 h-7 rounded-lg flex items-center justify-center text-[#A6A29A] hover:text-[#F4F1EA] hover:bg-[#1C1C28] transition-colors cursor-pointer"
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors cursor-pointer"
                 title={language === 'kz' ? 'Солға' : 'Назад'}
                 aria-label="Scroll left"
               >
@@ -76,7 +76,7 @@ export const RecentlyViewed: React.FC<RecentlyViewedProps> = ({
               </button>
               <button
                 onClick={() => handleScroll('right')}
-                className="w-7 h-7 rounded-lg flex items-center justify-center text-[#A6A29A] hover:text-[#F4F1EA] hover:bg-[#1C1C28] transition-colors cursor-pointer"
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors cursor-pointer"
                 title={language === 'kz' ? 'Оңға' : 'Вперед'}
                 aria-label="Scroll right"
               >
@@ -87,7 +87,7 @@ export const RecentlyViewed: React.FC<RecentlyViewedProps> = ({
 
           <button
             onClick={onClear}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#14141C] border border-[#262634] text-[11px] text-[#8C877D] hover:text-[#F87171] hover:border-[#F87171]/40 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-gray-200 text-xs font-semibold text-gray-600 hover:text-red-600 hover:border-red-300 hover:bg-red-50 transition-colors cursor-pointer shadow-xs"
             title={t.clearRecentlyViewed}
           >
             <Trash2 className="w-3.5 h-3.5" />

@@ -49,54 +49,54 @@ export const PrayerTimesWidget: React.FC<PrayerTimesWidgetProps> = ({
   const getPrayerIcon = (id: string) => {
     switch (id) {
       case 'fajr':
-        return <Moon className="w-4 h-4 text-[#81E6D9]" />;
+        return <Moon className="w-4 h-4 text-sky-600" />;
       case 'sunrise':
-        return <Sunrise className="w-4 h-4 text-[#ECC94B]" />;
+        return <Sunrise className="w-4 h-4 text-amber-500" />;
       case 'dhuhr':
-        return <Sun className="w-4 h-4 text-[#F6AD55]" />;
+        return <Sun className="w-4 h-4 text-amber-600" />;
       case 'asr':
-        return <Sun className="w-4 h-4 text-[#ED8936]" />;
+        return <Sun className="w-4 h-4 text-amber-700" />;
       case 'maghrib':
-        return <Sunset className="w-4 h-4 text-[#F56565]" />;
+        return <Sunset className="w-4 h-4 text-orange-600" />;
       case 'isha':
-        return <Moon className="w-4 h-4 text-[#9F7AEA]" />;
+        return <Moon className="w-4 h-4 text-indigo-600" />;
       default:
-        return <Clock className="w-4 h-4 text-[#D4AF37]" />;
+        return <Clock className="w-4 h-4 text-amber-700" />;
     }
   };
 
   const cityName = language === 'ru' ? currentCity.nameRu : currentCity.nameKz;
 
   const content = (
-    <div className="relative w-full rounded-2xl bg-gradient-to-b from-[#15151F] via-[#101018] to-[#0D0D14] border border-[#C5A059]/30 p-4 sm:p-5 shadow-[0_8px_30px_rgba(0,0,0,0.5)]">
+    <div className="relative w-full rounded-2xl bg-white border border-amber-200/80 p-4 sm:p-5 shadow-sm">
       {/* Top Bar: City selection + Hijri Date + Close button */}
-      <div className="flex items-center justify-between gap-2 pb-3 border-b border-[#242434] mb-3">
+      <div className="flex items-center justify-between gap-2 pb-3 border-b border-gray-200 mb-3">
         {/* City Selector */}
         <div className="relative">
           <button
             onClick={() => setIsCityDropdownOpen(!isCityDropdownOpen)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1A1A26] hover:bg-[#242436] border border-[#C5A059]/40 text-[#E8D49E] text-xs font-semibold transition-all cursor-pointer shadow-sm"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 text-xs sm:text-sm font-bold transition-all cursor-pointer shadow-xs"
           >
-            <MapPin className="w-3.5 h-3.5 text-[#D4AF37]" />
+            <MapPin className="w-4 h-4 text-amber-700" />
             <span>{cityName}</span>
-            <ChevronDown className="w-3 h-3 text-[#A6A29A]" />
+            <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
           </button>
 
           {isCityDropdownOpen && (
-            <div className="absolute top-full left-0 mt-1.5 w-48 max-h-56 overflow-y-auto bg-[#161622] border border-[#2D2D40] rounded-xl shadow-2xl z-30 py-1">
-              <div className="px-3 py-1 text-[10px] uppercase tracking-wider text-[#8A857B] font-semibold">
+            <div className="absolute top-full left-0 mt-1.5 w-52 max-h-56 overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-2xl z-30 py-1.5">
+              <div className="px-3.5 py-1 text-[11px] uppercase tracking-wider text-gray-500 font-bold">
                 {t.citySelector} ({language === 'ru' ? 'Казахстан' : 'Қазақстан'})
               </div>
               {KAZAKHSTAN_CITIES.map((c) => (
                 <button
                   key={c.id}
                   onClick={() => handleSelectCity(c)}
-                  className={`w-full text-left px-3 py-1.5 text-xs flex items-center justify-between hover:bg-[#222234] transition-colors ${
-                    c.id === selectedCityId ? 'text-[#D4AF37] font-bold bg-[#1C1C2C]' : 'text-[#D6D2C9]'
+                  className={`w-full text-left px-3.5 py-2 text-xs sm:text-sm flex items-center justify-between hover:bg-amber-50 transition-colors ${
+                    c.id === selectedCityId ? 'text-amber-900 font-bold bg-amber-50/60' : 'text-gray-700'
                   }`}
                 >
                   <span>{language === 'ru' ? c.nameRu : c.nameKz}</span>
-                  {c.id === selectedCityId && <span className="text-[10px] text-[#D4AF37]">✓</span>}
+                  {c.id === selectedCityId && <span className="text-xs text-amber-700 font-bold">✓</span>}
                 </button>
               ))}
             </div>
@@ -105,10 +105,10 @@ export const PrayerTimesWidget: React.FC<PrayerTimesWidgetProps> = ({
 
         {/* Hijri & Gregorian Dates */}
         <div className="text-right flex-1 min-w-0 pr-1">
-          <div className="text-xs sm:text-sm font-serif font-bold text-[#E8D49E] truncate">
+          <div className="text-xs sm:text-sm font-serif font-bold text-gray-900 truncate">
             {language === 'ru' ? prayerData.hijriStrRu : prayerData.hijriStrKz}
           </div>
-          <div className="text-[10px] text-[#8C877D] truncate">
+          <div className="text-xs text-gray-500 truncate font-medium">
             {language === 'ru' ? prayerData.dateStrRu : prayerData.dateStrKz}
           </div>
         </div>
@@ -116,7 +116,7 @@ export const PrayerTimesWidget: React.FC<PrayerTimesWidgetProps> = ({
         {onClose && (
           <button
             onClick={onClose}
-            className="p-1 rounded-full bg-[#1C1C28] hover:bg-[#252538] text-[#A6A29A] hover:text-[#F4F1EA] transition-colors"
+            className="p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900 transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -125,27 +125,27 @@ export const PrayerTimesWidget: React.FC<PrayerTimesWidgetProps> = ({
 
       {/* Countdown Card */}
       {prayerData.nextPrayer && (
-        <div className="mb-4 p-3 sm:p-3.5 rounded-xl bg-gradient-to-r from-[#17261E] via-[#151D22] to-[#161624] border border-[#2E6A43]/40 flex items-center justify-between gap-3">
+        <div className="mb-4 p-3.5 sm:p-4 rounded-xl bg-emerald-50/90 border border-emerald-300 flex items-center justify-between gap-3 shadow-xs">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-[#22543D]/60 border border-[#38A169]/40 flex items-center justify-center flex-shrink-0 text-white shadow">
-              <Clock className="w-4 h-4 text-[#68D391] animate-pulse" />
+            <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center flex-shrink-0 text-white shadow-xs">
+              <Clock className="w-5 h-5 text-white animate-pulse" />
             </div>
             <div className="min-w-0">
-              <div className="text-[10px] uppercase tracking-wider text-[#A0AEC0] font-medium">
+              <div className="text-xs uppercase tracking-wider text-emerald-800 font-bold">
                 {t.nextPrayerLabel}
               </div>
-              <div className="text-xs sm:text-sm font-bold text-[#F4F1EA] truncate">
+              <div className="text-xs sm:text-sm font-bold text-gray-900 truncate">
                 {language === 'ru' ? prayerData.nextPrayer.nameRu : prayerData.nextPrayer.nameKz} ·{' '}
-                <span className="text-[#D4AF37]">{prayerData.nextPrayer.timeStr}</span>
+                <span className="text-amber-700 font-extrabold">{prayerData.nextPrayer.timeStr}</span>
               </div>
             </div>
           </div>
 
           <div className="text-right flex-shrink-0">
-            <div className="text-[10px] text-[#8C877D] uppercase tracking-wider">
+            <div className="text-[11px] text-gray-600 uppercase tracking-wider font-semibold">
               {t.timeLeftLabel}
             </div>
-            <div className="font-mono text-xs sm:text-sm font-bold text-[#68D391] tracking-wider">
+            <div className="font-mono text-xs sm:text-sm font-extrabold text-emerald-700 tracking-wider">
               {prayerData.timeRemainingStr}
             </div>
           </div>
@@ -162,27 +162,27 @@ export const PrayerTimesWidget: React.FC<PrayerTimesWidgetProps> = ({
               key={prayer.id}
               className={`p-2.5 rounded-xl border flex flex-col items-center text-center transition-all ${
                 prayer.isCurrent
-                  ? 'bg-[#1D211A] border-[#D4AF37] shadow-[0_0_12px_rgba(212,175,55,0.25)] ring-1 ring-[#D4AF37]/50'
+                  ? 'bg-amber-50/80 border-2 border-amber-500 shadow-sm'
                   : prayer.isNext
-                  ? 'bg-[#15201A] border-[#38A169]/60'
-                  : 'bg-[#14141E] border-[#222230] hover:border-[#333345]'
+                  ? 'bg-emerald-50/40 border-emerald-300'
+                  : 'bg-gray-50 border-gray-200 hover:border-gray-300'
               }`}
             >
               <div className="mb-1.5 flex items-center justify-center">
                 {getPrayerIcon(prayer.id)}
               </div>
-              <div className="text-[10px] font-medium text-[#A6A29A] truncate w-full mb-0.5">
+              <div className="text-[11px] font-bold text-gray-600 truncate w-full mb-0.5">
                 {prayerName.split(' ')[0]}
               </div>
               <div
-                className={`font-mono text-xs sm:text-sm font-bold tracking-tight ${
-                  prayer.isCurrent ? 'text-[#D4AF37]' : 'text-[#F4F1EA]'
+                className={`font-mono text-xs sm:text-sm font-extrabold tracking-tight ${
+                  prayer.isCurrent ? 'text-amber-800' : 'text-gray-900'
                 }`}
               >
                 {prayer.timeStr}
               </div>
               {prayer.isCurrent && (
-                <span className="mt-1 px-1.5 py-0.2 rounded-full text-[8px] uppercase tracking-wider bg-[#D4AF37] text-[#0B0B0E] font-bold">
+                <span className="mt-1 px-1.5 py-0.5 rounded-full text-[9px] uppercase tracking-wider bg-amber-600 text-white font-bold">
                   {t.currentPrayerLabel}
                 </span>
               )}
@@ -192,9 +192,9 @@ export const PrayerTimesWidget: React.FC<PrayerTimesWidgetProps> = ({
       </div>
 
       {/* Footer Info: Qibla & Calculation note */}
-      <div className="mt-3 pt-2.5 border-t border-[#1C1C28] flex flex-col sm:flex-row items-center justify-between text-[10px] text-[#7A756D] gap-1.5">
-        <div className="flex items-center gap-1 text-[#8C877D]">
-          <Compass className="w-3 h-3 text-[#C5A059]" />
+      <div className="mt-3 pt-2.5 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-500 gap-1.5 font-medium">
+        <div className="flex items-center gap-1.5 text-gray-600">
+          <Compass className="w-3.5 h-3.5 text-amber-700" />
           <span>{t.qiblaNotice}</span>
         </div>
         <div className="text-center sm:text-right">
@@ -207,7 +207,7 @@ export const PrayerTimesWidget: React.FC<PrayerTimesWidgetProps> = ({
   if (isModal) {
     return (
       <div 
-        className="fixed inset-0 z-50 bg-[#000000]/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+        className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
         onClick={onClose}
       >
         <div 
