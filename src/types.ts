@@ -1,4 +1,28 @@
-export type Language = 'ru' | 'kz';
+export interface Product {
+  id: string;
+  titleRu: string;
+  titleKz: string;
+  price: number;
+  oldPrice?: number;
+  categoryId: string;
+  descriptionRu: string;
+  descriptionKz: string;
+  specsRu?: string;
+  specsKz?: string;
+  benefitsRu?: string[];
+  benefitsKz?: string[];
+  howToUseRu?: string;
+  howToUseKz?: string;
+  inStock: boolean;
+  sku: string;
+  isHit?: boolean;
+  isNew?: boolean;
+  isSale?: boolean;
+  images: string[];
+  volumeOrWeight?: string;
+  country?: string;
+  createdAt?: string;
+}
 
 export interface Category {
   id: string;
@@ -8,71 +32,7 @@ export interface Category {
   order: number;
 }
 
-export interface Product {
-  id: string;
-  slug?: string;
-  titleRu: string;
-  titleKz?: string;
-  price: number;
-  oldPrice?: number;
-  categoryId: string;
-  descriptionRu: string;
-  descriptionKz?: string;
-  specsRu?: string;
-  specsKz?: string;
-  inStock: boolean;
-  sku: string;
-  isHit: boolean;
-  isNew: boolean;
-  isSale: boolean;
-  images: string[];
-  createdAt: string;
-  isHidden?: boolean;
-}
-
-export interface CartItem {
-  productId: string;
-  product: Product;
-  quantity: number;
-}
-
-export type DeliveryMethod = 'pickup' | 'delivery';
-export type PaymentMethod = 'cash' | 'transfer' | 'kaspi' | 'whatsapp' | 'other';
-
-export type OrderStatus =
-  | 'new'
-  | 'confirmed'
-  | 'processing'
-  | 'shipped'
-  | 'completed'
-  | 'cancelled';
-
-export interface OrderItem {
-  productId: string;
-  title: string;
-  price: number;
-  quantity: number;
-  sku: string;
-}
-
-export interface Order {
-  id: string;
-  orderNumber: string;
-  createdAt: string;
-  clientName: string;
-  phone: string;
-  whatsapp?: string;
-  city: string;
-  address: string;
-  comment?: string;
-  deliveryMethod: DeliveryMethod;
-  paymentMethod?: PaymentMethod;
-  items: OrderItem[];
-  totalAmount: number;
-  status: OrderStatus;
-}
-
-export interface StoreSettings {
+export interface StoreConfig {
   storeName: string;
   taglineRu: string;
   taglineKz: string;
@@ -81,9 +41,9 @@ export interface StoreSettings {
   city: string;
   boutiqueNumber: string;
   address: string;
-  whatsappNumber: string; // e.g. "77011234567"
-  instagram: string;      // e.g. "musliim_shop06"
-  gis2Url?: string;       // e.g. "https://2gis.kz/atyrau/geo/70000001094546376"
+  whatsappNumber: string;
+  instagram: string;
+  gis2Url: string;
   workingHoursRu: string;
   workingHoursKz: string;
   deliveryInfoRu: string;
@@ -94,14 +54,18 @@ export interface StoreSettings {
   adminPin: string;
 }
 
-export type SortOption = 'popular' | 'newest' | 'price_asc' | 'price_desc';
-
-export interface FilterState {
-  categoryId: string | null;
-  searchQuery: string;
-  sortBy: SortOption;
-  onlyInStock: boolean;
-  onlySale: boolean;
-  minPrice?: number;
-  maxPrice?: number;
+export interface CartItem {
+  product: Product;
+  quantity: number;
 }
+
+export type Language = 'ru' | 'kz';
+
+export type TextScale = 'normal' | 'large' | 'extra';
+
+export interface AccessibilitySettings {
+  scale: TextScale;
+  highContrast: boolean;
+}
+
+export type DeliveryMethod = 'delivery' | 'pickup' | 'post';

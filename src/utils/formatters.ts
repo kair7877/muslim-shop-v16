@@ -1,155 +1,162 @@
-import { CartItem, OrderItem, Language, Product } from '../types';
+import { CartItem, DeliveryMethod, Language, StoreConfig } from '../types';
 
-/**
- * Formats a number into Kazakhstani Tenge format, e.g. "8 000 ₸"
- */
-export function formatTenge(amount: number): string {
-  return `${amount.toLocaleString('ru-RU')} ₸`;
+export function formatPrice(price: number): string {
+  return new Intl.NumberFormat('ru-RU').format(price) + ' ₸';
 }
 
-/**
- * Builds a direct WhatsApp click-to-chat URL with pre-filled order text
- */
-export function generateWhatsAppOrderUrl({
-  whatsappNumber,
-  items,
-  totalAmount,
-  clientName,
-  phone,
-  address,
-  deliveryMethod,
-  orderNumber,
-  language = 'ru',
-  comment,
-}: {
-  whatsappNumber: string;
-  items: (CartItem | OrderItem)[];
-  totalAmount: number;
-  clientName?: string;
-  phone?: string;
-  address?: string;
-  deliveryMethod?: string;
-  orderNumber?: string;
-  language?: Language;
-  comment?: string;
-}): string {
-  const cleanNumber = (whatsappNumber ? String(whatsappNumber) : '').replace(/\D/g, '') || '77781754241';
-  const isKz = language === 'kz';
+export function isStoreOpen(): { isOpen: boolean; textRu: string; textKz: string } {
+  // Atyrau is UTC+5
+  const now = new Date();
+  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+  const atyrauDate = new Date(utc + 3600000 * 5);
+  const hour = atyrauDate.getHours();
 
-  let text = isKz
-    ? 'Ассалаумағалейкум! MUSLIM SHOP дүкенінен тапсырыс бергім келеді:\n\n'
-    : 'Здравствуйте! Хочу оформить заказ в MUSLIM SHOP:\n\n';
-
-  if (orderNumber) {
-    text = isKz
-      ? `Ассалаумағалейкум! Тапсырыс ${orderNumber} (MUSLIM SHOP):\n\n`
-      : `Здравствуйте! Заказ ${orderNumber} в MUSLIM SHOP:\n\n`;
-  }
-
-  text += isKz ? '📦 Тапсырыс құрамы:\n' : '📦 Состав заказа:\n';
-
-  items.forEach((item, idx) => {
-    let title = '';
-    let price = 0;
-    let sku = '';
-
-    if ('product' in item) {
-      title = isKz ? (item.product.titleKz || item.product.titleRu) : item.product.titleRu;
-      price = item.product.price;
-      sku = item.product.sku;
-    } else {
-      title = item.title;
-      price = item.price;
-      sku = item.sku;
-    }
-
-    const skuPart = sku ? ` [${sku}]` : '';
-    text += `${idx + 1}. ${title}${skuPart}\n   ${formatTenge(price)} × ${item.quantity} = ${formatTenge(price * item.quantity)}\n`;
-  });
-
-  text += `\n💰 ${isKz ? 'Жалпы сомасы' : 'Итоговая сумма'}: ${formatTenge(totalAmount)}\n`;
-
-  if (clientName) {
-    text += `👤 ${isKz ? 'Тапсырыс беруші' : 'Имя'}: ${clientName}\n`;
-  }
-  if (phone) {
-    text += `📞 ${isKz ? 'Телефон' : 'Телефон'}: ${phone}\n`;
-  }
-  if (deliveryMethod) {
-    text += `🚚 ${isKz ? 'Қабылдау әдісі' : 'Способ доставки'}: ${deliveryMethod}\n`;
-  }
-  if (address) {
-    text += `📍 ${isKz ? 'Мекенжай' : 'Адрес'}: ${address}\n`;
-  }
-  if (comment) {
-    text += `💬 ${isKz ? 'Пікір' : 'Комментарий'}: ${comment}\n`;
-  }
-
-  text += isKz
-    ? '\nТауарлар қоймада бар ма және қашан жеткізіледі? Рахмет!'
-    : '\nПодскажите, пожалуйста, по наличию и срокам доставки. Спасибо!';
-
-  return `https://wa.me/${cleanNumber}?text=${encodeURIComponent(text)}`;
-}
-
-/**
- * Generates instant 1-click WhatsApp order URL for a single product
- */
-export function generateSingleProductWhatsAppUrl({
-  whatsappNumber,
-  product,
-  quantity = 1,
-  language = 'ru',
-  isQuestion = false,
-}: {
-  whatsappNumber: string;
-  product: Product;
-  quantity?: number;
-  language?: Language;
-  isQuestion?: boolean;
-}): string {
-  const cleanNumber = (whatsappNumber ? String(whatsappNumber) : '').replace(/\D/g, '') || '77781754241';
-  const isKz = language === 'kz';
-
-  const title = isKz ? (product.titleKz || product.titleRu) : product.titleRu;
-  const total = product.price * quantity;
-
-  let text = '';
-  if (isQuestion) {
-    text = isKz
-      ? `Ассалаумағалейкум! MUSLIM SHOP дүкені, мына тауар бойынша сұрағым бар еді:\n\n`
-      : `Здравствуйте! Подскажите, пожалуйста, по поводу этого товара в MUSLIM SHOP:\n\n`;
+  const isOpen = hour >= 10 && hour < 21;
+  if (isOpen) {
+    return {
+      isOpen: true,
+      textRu: 'Открыто до 21:00',
+      textKz: '21:00-ге дейін ашық',
+    };
   } else {
-    text = isKz
-      ? `Ассалаумағалейкум! 1 басумен тапсырыс бергім келеді:\n\n`
-      : `Здравствуйте! Хочу заказать в 1 клик в MUSLIM SHOP:\n\n`;
+    return {
+      isOpen: false,
+      textRu: 'Откроется в 10:00',
+      textKz: '10:00-де ашылады',
+    };
   }
-
-  text += `🌿 ${title}\n`;
-  if (product.sku) {
-    text += `🔖 ${isKz ? 'Артикул' : 'Артикул'}: ${product.sku}\n`;
-  }
-  text += `💵 ${isKz ? 'Бағасы' : 'Цена'}: ${formatTenge(product.price)}\n`;
-  if (quantity > 1) {
-    text += `🔢 ${isKz ? 'Саны' : 'Количество'}: ${quantity} дана\n`;
-    text += `💰 ${isKz ? 'Жалпы сомасы' : 'Сумма'}: ${formatTenge(total)}\n`;
-  }
-  text += `\n📍 ${isKz ? 'Дүкен: Атырау, ТД «Байзар», бутик №24' : 'Магазин: г. Атырау, ТД «Байзар», 2 этаж, бутик №24'}\n`;
-  text += isKz
-    ? 'Қоймада бар ма және Атырау бойынша қалай жеткізіп бересіздер?'
-    : 'Есть ли в наличии и как оформить доставку по Атырау?';
-
-  return `https://wa.me/${cleanNumber}?text=${encodeURIComponent(text)}`;
 }
 
-/**
- * Formats phone number nicely for display
- */
-export function formatPhone(phone: string): string {
-  if (!phone) return '';
-  const cleaned = String(phone).replace(/\D/g, '');
-  if (cleaned.length === 11 && (cleaned.startsWith('7') || cleaned.startsWith('8'))) {
-    return `+7 (${cleaned.slice(1, 4)}) ${cleaned.slice(4, 7)}-${cleaned.slice(7, 9)}-${cleaned.slice(9, 11)}`;
+export function generateWhatsAppOrderUrl(
+  config: StoreConfig,
+  items: CartItem[],
+  customer: {
+    name: string;
+    phone: string;
+    address: string;
+    deliveryMethod: DeliveryMethod;
+    notes?: string;
+  },
+  lang: Language
+): string {
+  const total = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+
+  const deliveryLabelsRu = {
+    delivery: 'Курьерская доставка по г. Атырау',
+    pickup: 'Самовывоз из Бутика №24 (пр. Султана Бейбарыса, 45а/5)',
+    post: 'Доставка по Казахстану (Казпочта / СДЭК)',
+  };
+
+  const deliveryLabelsKz = {
+    delivery: 'Атырау қаласы бойынша курьерлік жеткізу',
+    pickup: '№24 Бутиктен алып кету (Сұлтан Бейбарыс даңғылы, 45а/5)',
+    post: 'Қазақстан бойынша жеткізу (Қазпошта / СДЭК)',
+  };
+
+  let message = '';
+  if (lang === 'kz') {
+    message += `Сәлеметсіз бе, ${config.storeName}! Мен сайттан тапсырыс бергім келеді:\n\n`;
+    items.forEach((item, index) => {
+      const p = item.product;
+      message += `${index + 1}. ${p.titleKz} (арт: ${p.sku}) — ${item.quantity} дана × ${formatPrice(p.price)} = ${formatPrice(p.price * item.quantity)}\n`;
+    });
+    message += `\nБарлығы: ${formatPrice(total)}\n`;
+    message += `Тапсырыс беруші: ${customer.name}\n`;
+    message += `Телефон: ${customer.phone}\n`;
+    message += `Жеткізу түрі: ${deliveryLabelsKz[customer.deliveryMethod]}\n`;
+    if (customer.address) {
+      message += `Мекенжай: ${customer.address}\n`;
+    }
+    if (customer.notes) {
+      message += `Ескертпе: ${customer.notes}\n`;
+    }
+    message += `\nТөлемді Kaspi арқылы жасауға болады ма? Рахмет!`;
+  } else {
+    message += `Здравствуйте, ${config.storeName}! Хочу оформить заказ с сайта:\n\n`;
+    items.forEach((item, index) => {
+      const p = item.product;
+      message += `${index + 1}. ${p.titleRu} (арт: ${p.sku}) — ${item.quantity} шт × ${formatPrice(p.price)} = ${formatPrice(p.price * item.quantity)}\n`;
+    });
+    message += `\nИтого к оплате: ${formatPrice(total)}\n`;
+    message += `Покупатель: ${customer.name}\n`;
+    message += `Телефон: ${customer.phone}\n`;
+    message += `Способ получения: ${deliveryLabelsRu[customer.deliveryMethod]}\n`;
+    if (customer.address) {
+      message += `Адрес: ${customer.address}\n`;
+    }
+    if (customer.notes) {
+      message += `Комментарий: ${customer.notes}\n`;
+    }
+    message += `\nПодскажите реквизиты Kaspi для оплаты и время доставки. Спасибо!`;
   }
-  return phone;
+
+  const encoded = encodeURIComponent(message);
+  return `https://wa.me/${config.whatsappNumber}?text=${encoded}`;
+}
+
+export function generateQuickOrderUrl(
+  config: StoreConfig,
+  productTitle: string,
+  sku: string,
+  price: number,
+  customerName: string,
+  customerPhone: string,
+  lang: Language
+): string {
+  let message = '';
+  if (lang === 'kz') {
+    message = `Сәлеметсіз бе, ${config.storeName}! Мен мына өнімді 1 басу арқылы сатып алғым келеді:\n\n` +
+      `📦 Өнім: ${productTitle}\n` +
+      `Артикул: ${sku}\n` +
+      `Бағасы: ${formatPrice(price)}\n\n` +
+      `Менің атым: ${customerName}\n` +
+      `Телефон: ${customerPhone}\n\n` +
+      `Тапсырысты растауыңызды күтемін!`;
+  } else {
+    message = `Здравствуйте, ${config.storeName}! Хочу быстро заказать товар:\n\n` +
+      `📦 Товар: ${productTitle}\n` +
+      `Артикул: ${sku}\n` +
+      `Цена: ${formatPrice(price)}\n\n` +
+      `Покупатель: ${customerName}\n` +
+      `Телефон: ${customerPhone}\n\n` +
+      `Свяжитесь со мной для уточнения доставки и оплаты через Kaspi!`;
+  }
+
+  return `https://wa.me/${config.whatsappNumber}?text=${encodeURIComponent(message)}`;
+}
+
+export function getProductDirectUrl(productId: string): string {
+  if (typeof window === 'undefined') return `?p=${encodeURIComponent(productId)}`;
+  const origin = window.location.origin;
+  const pathname = window.location.pathname;
+  return `${origin}${pathname}?p=${encodeURIComponent(productId)}`;
+}
+
+export async function copyTextToClipboard(text: string): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // fallback to execCommand below
+    }
+  }
+  try {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    textarea.style.top = '-9999px';
+    textarea.setAttribute('readonly', '');
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    const success = document.execCommand('copy');
+    document.body.removeChild(textarea);
+    return success;
+  } catch (err) {
+    console.error('Copy failed:', err);
+    return false;
+  }
 }

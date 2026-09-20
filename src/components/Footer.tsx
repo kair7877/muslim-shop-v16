@@ -1,123 +1,141 @@
 import React from 'react';
-import { Instagram, MessageCircle, MapPin, Clock, ShieldCheck, ExternalLink } from 'lucide-react';
-import { StoreSettings, Language } from '../types';
-import { translations } from '../translations';
+import { MapPin, Phone, MessageCircle, Clock, Instagram, ShieldCheck, Lock } from 'lucide-react';
+import { Language, StoreConfig } from '../types';
 
 interface FooterProps {
-  settings: StoreSettings;
-  language: Language;
+  config: StoreConfig;
+  lang: Language;
   onOpenAdmin: () => void;
 }
 
-export const Footer: React.FC<FooterProps> = ({ settings, language, onOpenAdmin }) => {
-  const t = translations[language];
-  const cleanPhone = (settings?.whatsappNumber || '77781754241').replace(/\D/g, '');
-  const gis2Url = settings?.gis2Url || 'https://2gis.kz/atyrau/geo/70000001094546376';
-  const instagramHandle = (settings?.instagram || 'musliim_shop06').replace('@', '');
-
+export const Footer: React.FC<FooterProps> = ({ config, lang, onOpenAdmin }) => {
   return (
-    <footer className="bg-white border-t border-gray-200 text-gray-700 pt-10 pb-24 sm:pb-12 px-4 sm:px-6 shadow-xs">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
-        {/* Col 1: Store Brand */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-amber-600 flex items-center justify-center text-white font-serif font-bold text-sm shadow-xs">
-              M
+    <footer id="main-footer" className="bg-emerald-950 text-stone-300 pt-12 pb-8 border-t border-amber-500/20">
+      <div className="max-w-7xl mx-auto px-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
+          {/* Col 1: Brand & Tagline */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="font-serif font-extrabold text-2xl text-white tracking-wider">
+                {config.storeName}
+              </span>
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-400 text-stone-950">
+                {config.boutiqueNumber}
+              </span>
             </div>
-            <span className="font-brand font-bold text-base tracking-[0.2em] text-gray-900">
-              {settings.storeName || 'MUSLIM SHOP'}
-            </span>
+            <p className="text-amber-300 font-serif italic text-sm">
+              {lang === 'kz' ? config.taglineKz : config.taglineRu}
+            </p>
+            <p className="text-xs text-stone-400 leading-relaxed">
+              {lang === 'kz' ? config.subtitleKz : config.subtitleRu}
+            </p>
+            <div className="pt-2 flex items-center gap-2 text-xs text-emerald-400">
+              <ShieldCheck className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>100% Халяль & Сертифицированная продукция</span>
+            </div>
           </div>
-          <p className="text-xs sm:text-sm leading-relaxed text-gray-600">
-            {t.footerAbout}
-          </p>
-          <div className="text-xs text-amber-800 font-bold tracking-wide">
-            {settings.city} · {settings.boutiqueNumber}
-          </div>
-        </div>
 
-        {/* Col 2: Location & Hours */}
-        <div className="space-y-3">
-          <h4 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-gray-900">
-            {t.footerWorkingHoursTitle}
-          </h4>
-          <div className="space-y-2.5 text-xs sm:text-sm">
-            <div className="flex items-start gap-2 text-gray-700">
-              <MapPin className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-              <span>{settings.address}</span>
-            </div>
-            <div className="flex items-start gap-2 text-gray-700">
-              <Clock className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-              <span>{language === 'ru' ? settings.workingHoursRu : settings.workingHoursKz}</span>
-            </div>
-            <div className="pt-1">
+          {/* Col 2: Contacts & Address */}
+          <div className="space-y-3">
+            <h4 className="text-sm font-bold uppercase tracking-wider text-amber-400 font-serif">
+              {lang === 'kz' ? 'Мекенжай және байланыс' : 'Адрес и контакты'}
+            </h4>
+            <ul className="space-y-2.5 text-xs">
+              <li className="flex items-start gap-2">
+                <MapPin className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <span>
+                  {config.address} ({config.city}, {config.boutiqueNumber})
+                </span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>{lang === 'kz' ? config.workingHoursKz : config.workingHoursRu}</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Phone className="w-4 h-4 text-amber-400 shrink-0" />
+                <a href={`tel:+${config.whatsappNumber}`} className="hover:text-white transition-colors">
+                  +7 778 175 42 41
+                </a>
+              </li>
+              <li className="flex items-center gap-2">
+                <MessageCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+                <a
+                  href={`https://wa.me/${config.whatsappNumber}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white text-emerald-300 transition-colors"
+                >
+                  WhatsApp: +7 778 175 42 41
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          {/* Col 3: Quick Navigation & 2GIS */}
+          <div className="space-y-3">
+            <h4 className="text-sm font-bold uppercase tracking-wider text-amber-400 font-serif">
+              {lang === 'kz' ? 'Навигация & Карта' : 'Навигация и карты'}
+            </h4>
+            <div className="space-y-2 text-xs">
               <a
-                href={gis2Url}
+                href={config.gis2Url}
                 target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 text-xs font-bold transition-all group shadow-xs"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-900/80 hover:bg-emerald-800 text-amber-300 font-medium border border-emerald-700 transition-colors"
               >
-                <span>{t.open2Gis}</span>
-                <ExternalLink className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                <MapPin className="w-4 h-4" />
+                <span>{lang === 'kz' ? '2GIS картасынан ашу' : 'Открыть точку в 2GIS'}</span>
               </a>
+
+              {config.instagram && (
+                <div className="pt-2">
+                  <a
+                    href={`https://instagram.com/${config.instagram}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-xs text-stone-400 hover:text-pink-400 transition-colors"
+                  >
+                    <Instagram className="w-4 h-4" />
+                    <span>@{config.instagram}</span>
+                  </a>
+                </div>
+              )}
+            </div>
+            <p className="text-[11px] text-stone-400 leading-relaxed pt-1">
+              {lang === 'kz' ? config.pickupInfoKz : config.pickupInfoRu}
+            </p>
+          </div>
+
+          {/* Col 4: Delivery in Atyrau & Kazakhstan */}
+          <div className="space-y-3">
+            <h4 className="text-sm font-bold uppercase tracking-wider text-amber-400 font-serif">
+              {lang === 'kz' ? 'Жеткізу шарттары' : 'Доставка и оплата'}
+            </h4>
+            <p className="text-xs text-stone-400 leading-relaxed">
+              {lang === 'kz' ? config.deliveryInfoKz : config.deliveryInfoRu}
+            </p>
+            <div className="p-3 rounded-xl bg-emerald-900/50 border border-emerald-800/80 text-xs text-emerald-200">
+              <p className="font-bold text-amber-300 mb-1">Оплата Kaspi</p>
+              <p className="text-[11px] text-stone-300">
+                Перевод на Kaspi Gold, Kaspi QR или наличными при получении в Бутике №24.
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Col 3: Delivery & Pickup details */}
-        <div className="space-y-3">
-          <h4 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-gray-900">
-            {t.deliveryMethod}
-          </h4>
-          <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
-            {language === 'ru' ? settings.deliveryInfoRu : settings.deliveryInfoKz}
-          </p>
+        {/* Bottom Bar: Copyright & Admin link */}
+        <div className="pt-6 border-t border-emerald-900 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-stone-500">
+          <p>© {new Date().getFullYear()} {config.storeName} — г. Атырау, Бутик №24. Все права защищены.</p>
+
+          <button
+            onClick={onOpenAdmin}
+            className="flex items-center gap-1.5 text-stone-500 hover:text-amber-400 transition-colors cursor-pointer"
+            title="Вход для владельца бутика"
+          >
+            <Lock className="w-3.5 h-3.5" />
+            <span>Панель управления (Бутик №24)</span>
+          </button>
         </div>
-
-        {/* Col 4: Contacts & Socials */}
-        <div className="space-y-3">
-          <h4 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-gray-900">
-            {t.footerContacts}
-          </h4>
-          <div className="flex flex-col gap-2.5">
-            {/* WhatsApp */}
-            <a
-              href={`https://wa.me/${cleanPhone}`}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-900 text-xs sm:text-sm font-bold transition-colors shadow-xs"
-            >
-              <MessageCircle className="w-4 h-4 text-emerald-600" />
-              <span>WhatsApp: +{cleanPhone}</span>
-            </a>
-
-            {/* Instagram */}
-            <a
-              href={`https://instagram.com/${instagramHandle}`}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-pink-50 hover:bg-pink-100 border border-pink-200 text-pink-900 text-xs sm:text-sm font-bold transition-colors shadow-xs"
-            >
-              <Instagram className="w-4 h-4 text-pink-600" />
-              <span>Instagram: @{instagramHandle}</span>
-            </a>
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom Sub-footer */}
-      <div className="max-w-7xl mx-auto pt-6 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs sm:text-sm text-gray-500">
-        <div>
-          © {new Date().getFullYear()} {settings.storeName}. {t.footerAllRights}
-        </div>
-
-        <button
-          onClick={onOpenAdmin}
-          className="hover:text-amber-700 transition-colors flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer font-medium"
-        >
-          <ShieldCheck className="w-4 h-4 text-amber-600" />
-          <span>{t.adminTitle}</span>
-        </button>
       </div>
     </footer>
   );

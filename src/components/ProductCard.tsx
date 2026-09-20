@@ -1,241 +1,207 @@
-import React, { useState } from 'react';
-import { ShoppingBag, Zap, Check, Sparkles, MessageCircle, Link2 } from 'lucide-react';
-import { Product, Language } from '../types';
-import { translations } from '../translations';
-import { formatTenge, generateSingleProductWhatsAppUrl } from '../utils/formatters';
-import { copyProductLinkToClipboard } from '../utils/productSlug';
+import React from 'react';
+import { ShoppingBag, Heart, ZoomIn, Check, Zap } from 'lucide-react';
+import { AccessibilitySettings, Language, Product } from '../types';
+import { formatPrice } from '../utils/formatters';
 
 interface ProductCardProps {
   product: Product;
-  language: Language;
-  whatsappNumber?: string;
-  onSelectProduct: (product: Product) => void;
+  lang: Language;
+  accessibility: AccessibilitySettings;
+  isFavorite: boolean;
+  isInCart: boolean;
+  onToggleFavorite: (product: Product) => void;
   onAddToCart: (product: Product) => void;
-  onBuyNow: (product: Product) => void;
+  onOpenDetail: (product: Product) => void;
+  onQuickOrder: (product: Product) => void;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({
   product,
-  language,
-  whatsappNumber = '77781754241',
-  onSelectProduct,
+  lang,
+  accessibility,
+  isFavorite,
+  isInCart,
+  onToggleFavorite,
   onAddToCart,
-  onBuyNow,
+  onOpenDetail,
+  onQuickOrder,
 }) => {
-  const [isAdded, setIsAdded] = useState(false);
-  const [isCopied, setIsCopied] = useState(false);
-  const [imgError, setImgError] = useState(false);
-  const t = translations[language];
+  const title = (lang === 'kz' && product.titleKz?.trim()) ? product.titleKz : product.titleRu;
+  const description = (lang === 'kz' && product.descriptionKz?.trim()) ? product.descriptionKz : product.descriptionRu;
 
-  const title = language === 'ru' ? product.titleRu : (product.titleKz || product.titleRu);
-  const description = language === 'ru' ? product.descriptionRu : (product.descriptionKz || product.descriptionRu);
+  // Font size multiplier based on accessibility
+  const titleClass =
+    accessibility.scale === 'extra'
+      ? 'text-lg sm:text-xl'
+      : accessibility.scale === 'large'
+      ? 'text-base sm:text-lg'
+      : 'text-sm sm:text-base';
 
-  const handleCopyLink = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const success = await copyProductLinkToClipboard(product);
-    if (success) {
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2200);
-    }
-  };
+  const priceClass =
+    accessibility.scale === 'extra'
+      ? 'text-xl sm:text-2xl'
+      : accessibility.scale === 'large'
+      ? 'text-lg sm:text-xl'
+      : 'text-base sm:text-lg';
 
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onAddToCart(product);
-    setIsAdded(true);
-    setTimeout(() => setIsAdded(false), 1400);
-  };
-
-  const handleBuyNow = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onBuyNow(product);
-  };
-
-  const handleWhatsApp1Click = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const url = generateSingleProductWhatsAppUrl({
-      whatsappNumber,
-      product,
-      quantity: 1,
-      language,
-    });
-    window.open(url, '_blank');
-  };
-
-  const mainImage = product.images && product.images.length > 0 ? product.images[0] : null;
+  const discountPercent =
+    product.oldPrice && product.oldPrice > product.price
+      ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)
+      : null;
 
   return (
     <div
       id={`product-card-${product.id}`}
-      onClick={() => onSelectProduct(product)}
-      className="group relative flex flex-col bg-white rounded-2xl border border-gray-200 hover:border-amber-400 transition-all duration-300 overflow-hidden cursor-pointer shadow-sm hover:shadow-md"
+      className="group bg-white rounded-2xl border border-stone-200/90 overflow-hidden shadow-2xs hover:shadow-md hover:border-amber-400/50 transition-all flex flex-col justify-between"
     >
-      {/* Photo Container */}
-      <div className="relative aspect-square w-full bg-gray-50 overflow-hidden flex items-center justify-center border-b border-gray-100">
-        {mainImage && !imgError ? (
-          <img
-            src={mainImage}
-            alt={title}
-            loading="lazy"
-            referrerPolicy="no-referrer"
-            crossOrigin="anonymous"
-            onError={() => setImgError(true)}
-            className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
-          />
-        ) : (
-          <div className="w-full h-full p-4 flex flex-col items-center justify-center text-center bg-gradient-to-br from-amber-50 to-gray-50">
-            <div className="w-12 h-12 rounded-full border border-amber-300 flex items-center justify-center text-amber-700 mb-2 bg-white shadow-sm">
-              <Sparkles className="w-6 h-6 text-amber-600" />
-            </div>
-            <span className="font-brand text-xs font-bold text-amber-800 tracking-widest uppercase">
-              MUSLIM SHOP
-            </span>
-            <span className="text-[11px] font-semibold text-gray-500 mt-0.5 tracking-wider">
-              АТЫРАУ
-            </span>
-          </div>
-        )}
+      {/* Image & Badges Container (9:16 vertical ratio) */}
+      <div
+        className="relative aspect-[9/16] bg-stone-100 overflow-hidden cursor-pointer"
+        onClick={() => onOpenDetail(product)}
+      >
+        <img
+          id={`product-img-${product.id}`}
+          src={product.images[0]}
+          alt={title}
+          loading="lazy"
+          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
+          onError={(e) => {
+            // Safe fallback image
+            (e.target as HTMLImageElement).src =
+              'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&w=800&q=80';
+          }}
+        />
 
-        {/* Floating Badges */}
-        <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
+        {/* Badges */}
+        <div className="absolute top-2.5 left-2.5 flex flex-col gap-1.5 z-10">
           {product.isHit && (
-            <span className="px-2.5 py-0.5 rounded-md text-xs font-extrabold bg-amber-500 text-gray-950 tracking-wide uppercase shadow-sm">
-              🔥 {t.hitBadge}
+            <span className="px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold bg-amber-500 text-stone-950 uppercase tracking-wider shadow-xs">
+              {lang === 'kz' ? 'Хит' : 'Хит'}
+            </span>
+          )}
+          {discountPercent && (
+            <span className="px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold bg-rose-600 text-white shadow-xs">
+              -{discountPercent}%
             </span>
           )}
           {product.isNew && (
-            <span className="px-2.5 py-0.5 rounded-md text-xs font-extrabold bg-emerald-600 text-white tracking-wide uppercase shadow-sm">
-              ✨ {t.newBadge}
-            </span>
-          )}
-          {product.isSale && product.oldPrice && (
-            <span className="px-2.5 py-0.5 rounded-md text-xs font-extrabold bg-red-600 text-white tracking-wide uppercase shadow-sm">
-              {t.saleBadge}
+            <span className="px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold bg-emerald-700 text-white shadow-xs">
+              {lang === 'kz' ? 'Жаңа' : 'Новинка'}
             </span>
           )}
         </div>
 
-        {/* Fast Actions top-right: WhatsApp + Copy direct Link */}
-        <div className="absolute top-2 right-2 z-10 flex items-center gap-1.5">
-          <button
-            onClick={handleCopyLink}
-            className={`p-2 rounded-full backdrop-blur-md shadow-sm transition-all active:scale-95 cursor-pointer ${
-              isCopied
-                ? 'bg-emerald-50 border border-emerald-400 text-emerald-700'
-                : 'bg-white/95 hover:bg-white border border-gray-300 text-gray-700 hover:text-amber-700'
-            }`}
-            title={isCopied ? t.linkCopied : t.copyLink}
-            aria-label={t.copyLink}
-          >
-            {isCopied ? <Check className="w-4 h-4 text-emerald-600" /> : <Link2 className="w-4 h-4" />}
-          </button>
+        {/* Favorite Heart Button */}
+        <button
+          id={`favorite-btn-${product.id}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleFavorite(product);
+          }}
+          className={`absolute top-2.5 right-2.5 p-2 rounded-xl backdrop-blur-xs transition-colors shadow-xs ${
+            isFavorite
+              ? 'bg-rose-50 text-rose-600 border border-rose-200'
+              : 'bg-white/85 text-stone-600 hover:text-rose-600 hover:bg-white'
+          }`}
+          title={lang === 'kz' ? 'Таңдаулыға қосу' : 'Добавить в избранное'}
+        >
+          <Heart className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isFavorite ? 'fill-rose-600' : ''}`} />
+        </button>
 
-          <button
-            onClick={handleWhatsApp1Click}
-            className="p-2 rounded-full bg-[#25D366] hover:bg-[#20bd5a] text-white shadow-sm transition-all hover:scale-110 cursor-pointer"
-            title={language === 'ru' ? 'Заказать в 1 клик в WhatsApp' : '1 басумен WhatsApp-та тапсырыс беру'}
-          >
-            <MessageCircle className="w-4 h-4 fill-white" />
-          </button>
-        </div>
-
-        {/* Copy toast feedback on card */}
-        {isCopied && (
-          <div className="absolute top-12 right-2 z-20 px-2.5 py-1 rounded-md bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-bold shadow-md animate-fadeIn flex items-center gap-1 pointer-events-none">
-            <Check className="w-3.5 h-3.5 text-emerald-600" />
-            <span>{t.linkCopied}</span>
+        {/* Overlay Magnifier Cue */}
+        <div className="absolute inset-0 bg-stone-950/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+          <div className="px-3 py-1.5 rounded-xl bg-stone-950/80 text-white text-xs font-medium flex items-center gap-1.5 backdrop-blur-xs shadow-md">
+            <ZoomIn className="w-3.5 h-3.5 text-amber-300" />
+            <span>{lang === 'kz' ? 'Толық қарау' : 'Подробнее'}</span>
           </div>
-        )}
+        </div>
 
-        {/* Stock status indicator */}
-        {!product.inStock && (
-          <div className="absolute inset-0 bg-white/80 backdrop-blur-[2px] flex items-center justify-center">
-            <span className="px-3.5 py-1.5 bg-gray-900 text-white text-xs sm:text-sm rounded-full font-bold shadow-md">
-              {t.outOfStock}
-            </span>
+        {product.country && (
+          <div className="absolute bottom-2 left-2.5 px-2 py-0.5 rounded bg-black/60 backdrop-blur-xs text-white text-[10px] font-medium">
+            {product.country}
           </div>
         )}
       </div>
 
-      {/* Product Content Details */}
-      <div className="p-3.5 sm:p-4 flex flex-col flex-grow justify-between">
+      {/* Content Container */}
+      <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between">
         <div>
-          {/* Product Title */}
-          <h3 className="font-semibold text-sm sm:text-base text-gray-900 group-hover:text-amber-700 transition-colors line-clamp-2 min-h-[38px] sm:min-h-[44px] leading-snug">
+          {/* SKU & Stock */}
+          <div className="flex items-center justify-between text-[10px] sm:text-[11px] text-stone-500 mb-1">
+            <span>Арт: {product.sku}</span>
+            <span className="flex items-center gap-1 text-emerald-700 font-semibold">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+              {lang === 'kz' ? 'Қолда бар' : 'В наличии'}
+            </span>
+          </div>
+
+          {/* Title */}
+          <h3
+            id={`product-title-${product.id}`}
+            onClick={() => onOpenDetail(product)}
+            className={`font-bold text-stone-900 leading-snug cursor-pointer hover:text-emerald-800 transition-colors line-clamp-2 ${titleClass}`}
+          >
             {title}
           </h3>
 
-          {/* Short description */}
-          <p className="text-xs sm:text-sm text-gray-600 line-clamp-2 mt-1.5 leading-relaxed">
-            {description}
-          </p>
+          {/* Short description preview */}
+          {description && (
+            <p className="text-[11px] sm:text-xs text-stone-500 line-clamp-2 mt-1 leading-relaxed">
+              {description}
+            </p>
+          )}
         </div>
 
-        <div className="mt-3.5 pt-3 border-t border-gray-100">
-          {/* Price block */}
-          <div className="mb-3">
-            <div className="flex items-baseline gap-2 flex-wrap">
-              <span className="font-extrabold text-base sm:text-xl text-amber-700 tracking-tight">
-                {formatTenge(product.price)}
-              </span>
-              {product.oldPrice && product.oldPrice > product.price && (
-                <span className="text-xs sm:text-sm text-gray-400 line-through decoration-red-500 font-medium">
-                  {formatTenge(product.oldPrice)}
-                </span>
-              )}
-            </div>
-            {product.sku && (
-              <span className="text-[11px] text-gray-500 font-medium tracking-wider uppercase block mt-0.5 font-mono">
-                {t.sku}: {product.sku}
+        {/* Price & Action Footer */}
+        <div className="mt-3 pt-2.5 border-t border-stone-100">
+          <div className="flex items-baseline gap-2 mb-2.5">
+            <span className={`font-extrabold text-emerald-950 ${priceClass}`}>
+              {formatPrice(product.price)}
+            </span>
+            {product.oldPrice && (
+              <span className="text-[11px] sm:text-xs text-stone-400 line-through">
+                {formatPrice(product.oldPrice)}
               </span>
             )}
           </div>
 
-          {/* Action Buttons: "В корзину" + "Купить сейчас" */}
-          <div className="grid grid-cols-2 gap-2">
+          {/* Action Buttons */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            {/* Quick 1-Click Order */}
             <button
-              onClick={handleAddToCart}
-              disabled={!product.inStock}
-              className={`py-2.5 px-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all border cursor-pointer ${
-                isAdded
-                  ? 'bg-emerald-600 border-emerald-600 text-white'
-                  : 'bg-gray-100 hover:bg-gray-200 text-gray-900 border-gray-300 hover:border-gray-400'
-              } disabled:opacity-40 disabled:cursor-not-allowed`}
-              title={t.addToCart}
+              id={`quick-order-btn-${product.id}`}
+              onClick={() => onQuickOrder(product)}
+              className="flex-1 py-2 px-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-950 font-bold text-[11px] sm:text-xs flex items-center justify-center gap-1 transition-colors cursor-pointer whitespace-nowrap"
+              title="Купить в 1 клик через WhatsApp"
             >
-              {isAdded ? (
+              <Zap className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+              <span>{lang === 'kz' ? '1 басу' : '1 клик'}</span>
+            </button>
+
+            {/* Add to Cart */}
+            <button
+              id={`add-cart-btn-${product.id}`}
+              onClick={() => onAddToCart(product)}
+              className={`p-2 sm:px-3 sm:py-2 rounded-xl font-bold text-[11px] sm:text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shrink-0 ${
+                isInCart
+                  ? 'bg-emerald-700 text-white'
+                  : 'bg-emerald-900 hover:bg-emerald-950 text-white'
+              }`}
+              title={lang === 'kz' ? 'Себетке қосу' : 'Добавить в корзину'}
+            >
+              {isInCart ? (
                 <>
-                  <Check className="w-4 h-4 stroke-[3]" />
-                  <span>{language === 'kz' ? 'Қосылды' : 'В корзине'}</span>
+                  <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-300" />
+                  <span className="hidden md:inline">{lang === 'kz' ? 'Қосылды' : 'В корзине'}</span>
                 </>
               ) : (
                 <>
-                  <ShoppingBag className="w-4 h-4 text-amber-700" />
-                  <span>{t.addToCart}</span>
+                  <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-300" />
+                  <span className="hidden md:inline">{lang === 'kz' ? 'Себетке' : 'В корзину'}</span>
                 </>
               )}
             </button>
-
-            <button
-              onClick={handleBuyNow}
-              disabled={!product.inStock}
-              className="py-2.5 px-1.5 rounded-xl text-xs sm:text-sm font-bold bg-amber-600 hover:bg-amber-700 text-white flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-              title={t.buyNow}
-            >
-              <Zap className="w-4 h-4 fill-white text-white" />
-              <span className="truncate">{t.buyNow}</span>
-            </button>
           </div>
-
-          {/* 1-Click WhatsApp direct link bar */}
-          <button
-            onClick={handleWhatsApp1Click}
-            disabled={!product.inStock}
-            className="w-full mt-2 py-2 px-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-          >
-            <MessageCircle className="w-4 h-4 fill-emerald-700 text-emerald-700" />
-            <span>{language === 'kz' ? '1 басумен WhatsApp' : '1 клик в WhatsApp'}</span>
-          </button>
         </div>
       </div>
     </div>

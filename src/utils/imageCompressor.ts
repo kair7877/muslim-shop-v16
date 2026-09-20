@@ -1,24 +1,29 @@
-export async function compressImage(
+/**
+ * Utility to compress an image File from the user's camera / phone gallery
+ * into an optimized Base64 JPEG data URL suitable for Firestore documents.
+ */
+export async function compressImageFile(
   file: File,
-  maxWidth = 640,
-  maxHeight = 640,
-  quality = 0.70
+  maxWidth: number = 800,
+  maxHeight: number = 800,
+  quality: number = 0.78
 ): Promise<string> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = (event) => {
+
+    reader.onload = (readerEvent) => {
       const img = new Image();
-      img.src = event.target?.result as string;
       img.onload = () => {
         let width = img.width;
         let height = img.height;
 
-        if (width > maxWidth || height > maxHeight) {
-          if (width > height) {
+        if (width > height) {
+          if (width > maxWidth) {
             height = Math.round((height * maxWidth) / width);
             width = maxWidth;
-          } else {
+          }
+        } else {
+          if (height > maxHeight) {
             width = Math.round((width * maxHeight) / height);
             height = maxHeight;
           }
@@ -27,33 +32,38 @@ export async function compressImage(
         const canvas = document.createElement('canvas');
         canvas.width = width;
         canvas.height = height;
+
         const ctx = canvas.getContext('2d');
         if (!ctx) {
-          resolve(event.target?.result as string);
+          reject(new Error('Canvas context could not be initialized'));
           return;
         }
 
+        // Fill white background in case of transparent PNGs
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, width, height);
         ctx.drawImage(img, 0, 0, width, height);
-        let dataUrl = canvas.toDataURL('image/jpeg', quality);
 
-        // Guard against oversized base64 (> 100KB) to protect Firestore & client storage quotas
-        if (dataUrl.length > 100000) {
-          const secondCanvas = document.createElement('canvas');
-          const scale = 0.70;
-          secondCanvas.width = Math.round(width * scale);
-          secondCanvas.height = Math.round(height * scale);
-          const ctx2 = secondCanvas.getContext('2d');
-          if (ctx2) {
-            ctx2.drawImage(img, 0, 0, secondCanvas.width, secondCanvas.height);
-            dataUrl = secondCanvas.toDataURL('image/jpeg', 0.60);
-          }
-        }
-
+        // Convert to web-friendly JPEG data URL
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
         resolve(dataUrl);
       };
-      img.onerror = () => resolve(event.target?.result as string);
+
+      img.onerror = () => {
+        reject(new Error('Не удалось прочитать изображение'));
+      };
+
+      if (typeof readerEvent.target?.result === 'string') {
+        img.src = readerEvent.target.result;
+      } else {
+        reject(new Error('Ошибка чтения файла'));
+      }
     };
-    reader.onerror = () => resolve('');
+
+    reader.onerror = () => {
+      reject(new Error('Ошибка при загрузке файла'));
+    };
+
+    reader.readAsDataURL(file);
   });
 }
-

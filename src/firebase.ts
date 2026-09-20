@@ -1,42 +1,36 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { initializeFirestore, setLogLevel } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
-import firebaseConfig from '../firebase-applet-config.json';
+import {
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+} from 'firebase/firestore';
 
-// Filter out benign Firestore offline status messages from triggering fatal console.error traps
-if (typeof window !== 'undefined') {
-  const originalConsoleError = console.error;
-  console.error = (...args: any[]) => {
-    const firstArg = typeof args[0] === 'string' ? args[0] : '';
-    if (
-      firstArg.includes('Could not reach Cloud Firestore backend') ||
-      firstArg.includes('operate in offline mode') ||
-      firstArg.includes('code=unavailable')
-    ) {
-      console.warn('ℹ️ Firestore offline mode active (using local storage & IndexedDB cache):', ...args);
-      return;
-    }
-    originalConsoleError.apply(console, args);
-  };
-}
+// Configuration loaded from firebase-applet-config.json
+const firebaseConfig = {
+  projectId: 'muslim-shop-55c12',
+  appId: '1:716225520823:web:7a82d8b680dd7251489932',
+  apiKey: 'AIzaSyCCNwtzhDTBPB8GU_Ls7ogvN5xyUDOez3M',
+  authDomain: 'muslim-shop-55c12.firebaseapp.com',
+  storageBucket: 'muslim-shop-55c12.firebasestorage.app',
+  messagingSenderId: '716225520823',
+};
 
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+// Initialize Firebase App
+export const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-// Real authentication, used to gate admin writes in firestore.rules
-export const auth = getAuth(app);
-
-// Suppress debug chatter from Firestore
-setLogLevel('error');
-
-// Initialize Firestore with forced long-polling to prevent WebSocket/WebChannel
-// connection drops in iframes and proxies ("Could not reach Cloud Firestore backend")
+/**
+ * Initialize Firestore with:
+ * 1. Dedicated database ID
+ * 2. Multi-tab persistent local cache (enables instant offline load & background sync)
+ * 3. Auto-detect long polling (prevents WebChannel/WebSocket disconnects on mobile or restrictive networks)
+ */
 export const db = initializeFirestore(
   app,
   {
-    experimentalForceLongPolling: true,
+    localCache: persistentLocalCache({
+      tabManager: persistentMultipleTabManager(),
+    }),
+    experimentalAutoDetectLongPolling: true,
   },
-  firebaseConfig.firestoreDatabaseId || undefined
+  'ai-studio-muslimshop-6c5697f5-1412-4eb6-8d95-aa2cc7a70c7b'
 );
-
-export { app };
-
