@@ -31,6 +31,7 @@ import {
   subscribeToCategories,
   subscribeToSettings,
 } from './services/firestoreService';
+import { deduplicateProducts } from './utils/formatters';
 
 export default function App() {
   // Config state
@@ -46,7 +47,7 @@ export default function App() {
   // Categories state (starts with defaults, gets populated from Firestore)
   const [categories, setCategories] = useState<Category[]>(CATEGORIES);
 
-  // Products state (loads directly from Firestore)
+  // Products state (loads directly from Firestore / cached storage)
   const [products, setProducts] = useState<Product[]>(() => {
     try {
       const saved = localStorage.getItem('muslim_shop_products');
@@ -60,13 +61,27 @@ export default function App() {
           localStorage.removeItem('muslim_shop_products');
           return [];
         }
-        return parsed;
+        return deduplicateProducts(parsed);
       }
       return [];
     } catch {
       return [];
     }
   });
+
+  // Immediate cleanup of any existing duplicate entries in state/storage on boot
+  useEffect(() => {
+    setProducts((prev) => {
+      const deduped = deduplicateProducts(prev);
+      if (deduped.length !== prev.length) {
+        try {
+          localStorage.setItem('muslim_shop_products', JSON.stringify(deduped));
+        } catch {}
+        return deduped;
+      }
+      return prev;
+    });
+  }, []);
 
   const [isLoadingProducts, setIsLoadingProducts] = useState<boolean>(products.length === 0);
 
