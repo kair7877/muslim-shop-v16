@@ -129,11 +129,11 @@ export const Footer: React.FC<FooterProps> = ({ config, lang, onOpenAdmin }) => 
 
           <button
             onClick={onOpenAdmin}
-            className="flex items-center gap-1.5 text-stone-500 hover:text-amber-400 transition-colors cursor-pointer"
-            title="Вход для владельца бутика"
+            className="flex items-center gap-1.5 text-stone-400 hover:text-amber-400 transition-colors cursor-pointer"
+            title="Вход для владельца бутика (Товары, Настройки, Посещаемость)"
           >
             <Lock className="w-3.5 h-3.5" />
-            <span>Панель управления (Бутик №24)</span>
+            <span>Панель управления & Статистика (Бутик №24)</span>
           </button>
         </div>
       </div>

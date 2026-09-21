@@ -1,0 +1,77 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "Product in the boutique catalog",
+      "type": "object",
+      "properties": {
+        "titleRu": { "type": "string" },
+        "titleKz": { "type": "string" },
+        "price": { "type": "number" },
+        "categoryId": { "type": "string" },
+        "inStock": { "type": "boolean" }
+      },
+      "required": ["titleRu", "price", "categoryId"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Store categories",
+      "type": "object",
+      "properties": {
+        "nameRu": { "type": "string" },
+        "nameKz": { "type": "string" },
+        "icon": { "type": "string" },
+        "order": { "type": "number" }
+      },
+      "required": ["nameRu"]
+    },
+    "DailyAnalytics": {
+      "title": "DailyAnalytics",
+      "description": "Daily visit and traffic aggregation",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string" },
+        "totalVisits": { "type": "number" },
+        "uniqueVisitors": { "type": "number" },
+        "pageViews": { "type": "number" },
+        "mobileVisits": { "type": "number" },
+        "desktopVisits": { "type": "number" },
+        "ruVisits": { "type": "number" },
+        "kzVisits": { "type": "number" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["date", "totalVisits", "uniqueVisitors"]
+    },
+    "VisitLog": {
+      "title": "VisitLog",
+      "description": "Individual client visit log session",
+      "type": "object",
+      "properties": {
+        "visitorId": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "device": { "type": "string" },
+        "lang": { "type": "string" },
+        "page": { "type": "string" }
+      },
+      "required": ["visitorId", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Product documents"
+    },
+    "/categories/{categoryId}": {
+      "schema": "Category",
+      "description": "Category documents"
+    },
+    "/analytics_daily/{dateId}": {
+      "schema": "DailyAnalytics",
+      "description": "Aggregated daily traffic statistics"
+    },
+    "/analytics_visits/{visitId}": {
+      "schema": "VisitLog",
+      "description": "Recent client visit records"
+    }
+  }
+}

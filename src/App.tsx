@@ -31,6 +31,7 @@ import {
   subscribeToCategories,
   subscribeToSettings,
 } from './services/firestoreService';
+import { trackVisit, trackProductView } from './services/analyticsService';
 import { deduplicateProducts } from './utils/formatters';
 
 export default function App() {
@@ -333,8 +334,14 @@ export default function App() {
     };
   }, [products]);
 
+  // Track visitor traffic safely
+  useEffect(() => {
+    trackVisit({ page: 'Каталог бутика', lang, isInitialLoad: true });
+  }, []);
+
   const handleOpenDetail = (product: Product) => {
     setSelectedProductForDetail(product);
+    trackProductView(product.id, product.titleRu);
     try {
       const url = new URL(window.location.href);
       url.searchParams.set('p', product.id);

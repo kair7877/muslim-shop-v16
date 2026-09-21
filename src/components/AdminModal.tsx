@@ -27,8 +27,10 @@ import {
   Layers,
   FolderPlus,
   AlertTriangle,
+  BarChart3,
 } from 'lucide-react';
 import { Category, Language, Product, StoreConfig } from '../types';
+import { AnalyticsTab } from './AnalyticsTab';
 import {
   saveProductToFirestore,
   deleteProductFromFirestore,
@@ -57,7 +59,7 @@ interface AdminModalProps {
   onAddCategory?: (category: Category) => void;
   onUpdateCategory?: (category: Category) => void;
   onDeleteCategory?: (categoryId: string) => void;
-  initialTab?: 'products' | 'settings' | 'add' | 'categories';
+  initialTab?: 'products' | 'settings' | 'add' | 'categories' | 'stats';
   onClose: () => void;
 }
 
@@ -81,7 +83,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [currentConfig, setCurrentConfig] = useState<StoreConfig>(config);
-  const [activeTab, setActiveTab] = useState<'products' | 'settings' | 'add' | 'categories'>(
+  const [activeTab, setActiveTab] = useState<'products' | 'settings' | 'add' | 'categories' | 'stats'>(
     initialTab || 'products'
   );
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -562,6 +564,22 @@ export const AdminModal: React.FC<AdminModalProps> = ({
               >
                 <Layers className="w-3.5 h-3.5" />
                 <span>Каталоги ({categories.filter((c) => c.id !== 'cat-all').length})</span>
+              </button>
+              <button
+                id="admin-tab-stats"
+                onClick={() => {
+                  setEditingProduct(null);
+                  setActiveTab('stats');
+                }}
+                className={`pb-2.5 border-b-2 transition-colors flex items-center gap-1.5 ${
+                  activeTab === 'stats'
+                    ? 'border-emerald-800 text-emerald-950 font-extrabold'
+                    : 'border-transparent text-stone-500 hover:text-stone-800'
+                }`}
+              >
+                <BarChart3 className="w-3.5 h-3.5 text-emerald-700" />
+                <span>Посещаемость</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               </button>
               <button
                 onClick={() => {
@@ -2137,6 +2155,11 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                   </div>
                 </div>
               ) : null}
+
+              {/* STATS & ANALYTICS TAB */}
+              {activeTab === 'stats' && !editingProduct && (
+                <AnalyticsTab products={products} currency={currentConfig.currency || '₸'} />
+              )}
             </div>
           </div>
         )}

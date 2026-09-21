@@ -23,5 +23,16 @@ service cloud.firestore {
     match /orders/{orderId} {
       allow read, write: if true;
     }
+
+    // Analytics: track daily stats, visits and summary
+    match /analytics_daily/{dateId} {
+      allow read, write: if true;
+    }
+    match /analytics_summary/{docId} {
+      allow read, write: if true;
+    }
+    match /analytics_visits/{visitId} {
+      allow read, write: if true;
+    }
   }
 }
