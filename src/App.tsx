@@ -38,14 +38,64 @@ export default function App() {
   const [config, setConfig] = useState<StoreConfig>(() => {
     try {
       const saved = localStorage.getItem('muslim_shop_config');
-      return saved ? JSON.parse(saved) : INITIAL_CONFIG;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const merged = { ...INITIAL_CONFIG, ...parsed };
+        if (!merged.taglineRu || merged.taglineRu === 'Красота. Здоровье. Вера.') {
+          merged.taglineRu = INITIAL_CONFIG.taglineRu;
+          merged.taglineKz = INITIAL_CONFIG.taglineKz;
+        }
+        if (
+          !merged.subtitleRu ||
+          merged.subtitleRu.includes('Премиальные товары для здоровья, красоты и повседневной')
+        ) {
+          merged.subtitleRu = INITIAL_CONFIG.subtitleRu;
+          merged.subtitleKz = INITIAL_CONFIG.subtitleKz;
+        }
+        return merged;
+      }
+      return INITIAL_CONFIG;
     } catch {
       return INITIAL_CONFIG;
     }
   });
 
-  // Categories state (starts with defaults, gets populated from Firestore)
-  const [categories, setCategories] = useState<Category[]>(CATEGORIES);
+  // Helper for tracking deleted categories to prevent resurrection from static defaults
+  const getDeletedCategoryIds = (): string[] => {
+    try {
+      const raw = localStorage.getItem('muslim_shop_deleted_categories');
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const addDeletedCategoryId = (id: string) => {
+    try {
+      const list = getDeletedCategoryIds();
+      if (!list.includes(id)) {
+        list.push(id);
+        localStorage.setItem('muslim_shop_deleted_categories', JSON.stringify(list));
+      }
+    } catch {}
+  };
+
+  // Categories state (starts with defaults/cache, gets populated from Firestore)
+  const [categories, setCategories] = useState<Category[]>(() => {
+    const deletedIds = getDeletedCategoryIds();
+    try {
+      const saved = localStorage.getItem('muslim_shop_categories');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.filter((c: Category) => !deletedIds.includes(c.id));
+        }
+      }
+      return CATEGORIES.filter((c) => !deletedIds.includes(c.id));
+    } catch {
+      return CATEGORIES.filter((c) => !deletedIds.includes(c.id));
+    }
+  });
 
   // Products state (loads directly from Firestore / cached storage)
   const [products, setProducts] = useState<Product[]>(() => {
@@ -173,18 +223,37 @@ export default function App() {
   // 2. Subscribe to Firestore Categories
   useEffect(() => {
     const unsubscribe = subscribeToCategories((firestoreCategories) => {
-      if (firestoreCategories.length > 0) {
-        // Ensure "cat-all" is the first category
-        const allCat: Category = {
-          id: 'cat-all',
-          nameRu: 'Все товары',
-          nameKz: 'Барлық өнімдер',
-          icon: '✨',
-          order: 0,
-        };
-        const uniqueCats = firestoreCategories.filter((c) => c.id !== 'cat-all');
-        setCategories([allCat, ...uniqueCats]);
-      }
+      const deletedIds = getDeletedCategoryIds();
+
+      // Start with default categories that haven't been deleted
+      const defaultCats = CATEGORIES.filter((c) => !deletedIds.includes(c.id));
+      const catMap = new Map<string, Category>();
+      defaultCats.forEach((c) => catMap.set(c.id, c));
+
+      // Merge Firestore categories (they take precedence and include custom user categories)
+      firestoreCategories.forEach((fc) => {
+        if (!deletedIds.includes(fc.id)) {
+          catMap.set(fc.id, fc);
+        }
+      });
+
+      // Ensure "cat-all" is the first category
+      const allCat: Category = catMap.get('cat-all') || {
+        id: 'cat-all',
+        nameRu: 'Все товары',
+        nameKz: 'Барлық өнімдер',
+        icon: '✨',
+        order: 0,
+      };
+      catMap.delete('cat-all');
+
+      const otherCats = Array.from(catMap.values()).sort((a, b) => a.order - b.order);
+      const merged = [allCat, ...otherCats];
+
+      setCategories(merged);
+      try {
+        localStorage.setItem('muslim_shop_categories', JSON.stringify(merged));
+      } catch {}
     });
 
     return () => unsubscribe();
@@ -459,15 +528,23 @@ export default function App() {
       />
 
       {/* Hero Banner with Islamic Elegance & Boutique Highlights */}
-      <HeroBanner config={config} lang={lang} onScrollToCatalog={scrollToCatalog} />
+      <HeroBanner
+        config={config}
+        lang={lang}
+        onScrollToCatalog={scrollToCatalog}
+        categories={categories}
+        selectedCategoryId={selectedCategoryId}
+        onSelectCategory={setSelectedCategoryId}
+      />
 
-      {/* Category Horizontal Nav Filter */}
+      {/* Category Nav Filter — All visible side-by-side without horizontal scrolling */}
       <CategoryFilter
         categories={categories}
         selectedCategoryId={selectedCategoryId}
         onSelectCategory={setSelectedCategoryId}
         lang={lang}
         productCounts={productCounts}
+        onOpenAdminCategories={() => setIsAdminOpen(true)}
       />
 
       {/* Main Catalog Content */}
@@ -695,6 +772,48 @@ export default function App() {
             showToast(lang === 'kz' ? 'Өнім жойылды' : 'Товар удален из каталога');
           }}
           onPreviewProduct={handleOpenDetail}
+          onAddCategory={(newCat) => {
+            // Remove from deleted list if present
+            try {
+              const currentDeleted = getDeletedCategoryIds().filter((id) => id !== newCat.id);
+              localStorage.setItem('muslim_shop_deleted_categories', JSON.stringify(currentDeleted));
+            } catch {}
+            setCategories((prev) => {
+              const exists = prev.some((c) => c.id === newCat.id);
+              if (exists) return prev;
+              const updated = [...prev, newCat];
+              try {
+                localStorage.setItem('muslim_shop_categories', JSON.stringify(updated));
+              } catch {}
+              return updated;
+            });
+            showToast(lang === 'kz' ? 'Каталог қосылды!' : 'Каталог успешно добавлен!');
+          }}
+          onUpdateCategory={(updatedCat) => {
+            setCategories((prev) => {
+              const updated = prev.map((c) => (c.id === updatedCat.id ? updatedCat : c));
+              try {
+                localStorage.setItem('muslim_shop_categories', JSON.stringify(updated));
+              } catch {}
+              return updated;
+            });
+            showToast(lang === 'kz' ? 'Каталог жаңартылды!' : 'Каталог успешно обновлен!');
+          }}
+          onDeleteCategory={(deletedCatId) => {
+            addDeletedCategoryId(deletedCatId);
+            setCategories((prev) => {
+              const updated = prev.filter((c) => c.id !== deletedCatId);
+              try {
+                localStorage.setItem('muslim_shop_categories', JSON.stringify(updated));
+              } catch {}
+              return updated;
+            });
+            // If the deleted category was currently selected, reset to 'cat-all'
+            if (selectedCategoryId === deletedCatId) {
+              setSelectedCategoryId('cat-all');
+            }
+            showToast(lang === 'kz' ? 'Каталог жойылды' : 'Каталог удален');
+          }}
           onClose={() => setIsAdminOpen(false)}
         />
       )}

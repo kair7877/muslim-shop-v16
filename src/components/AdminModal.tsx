@@ -24,12 +24,17 @@ import {
   Flame,
   Sparkles,
   Clock,
+  Layers,
+  FolderPlus,
+  AlertTriangle,
 } from 'lucide-react';
 import { Category, Language, Product, StoreConfig } from '../types';
 import {
   saveProductToFirestore,
   deleteProductFromFirestore,
   saveSettingsToFirestore,
+  saveCategoryToFirestore,
+  deleteCategoryFromFirestore,
 } from '../services/firestoreService';
 import {
   getProductDirectUrl,
@@ -49,6 +54,10 @@ interface AdminModalProps {
   onAddProduct: (product: Product) => void;
   onDeleteProduct: (productId: string) => void;
   onPreviewProduct?: (product: Product) => void;
+  onAddCategory?: (category: Category) => void;
+  onUpdateCategory?: (category: Category) => void;
+  onDeleteCategory?: (categoryId: string) => void;
+  initialTab?: 'products' | 'settings' | 'add' | 'categories';
   onClose: () => void;
 }
 
@@ -62,16 +71,32 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   onAddProduct,
   onDeleteProduct,
   onPreviewProduct,
+  onAddCategory,
+  onUpdateCategory,
+  onDeleteCategory,
+  initialTab,
   onClose,
 }) => {
   const [pin, setPin] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [currentConfig, setCurrentConfig] = useState<StoreConfig>(config);
-  const [activeTab, setActiveTab] = useState<'products' | 'settings' | 'add'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'settings' | 'add' | 'categories'>(
+    initialTab || 'products'
+  );
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const isSubmittingAddProductRef = useRef(false);
+
+  // Category management state
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+  const [isDeletingCategory, setIsDeletingCategory] = useState(false);
+  const [newCatNameRu, setNewCatNameRu] = useState('');
+  const [newCatNameKz, setNewCatNameKz] = useState('');
+  const [newCatIcon, setNewCatIcon] = useState('💊');
+  const [isCategorySubmitting, setIsCategorySubmitting] = useState(false);
+  const [categoryFeedback, setCategoryFeedback] = useState<string | null>(null);
 
   // Search, Filter & View Mode in Admin products list
   const [adminSearch, setAdminSearch] = useState('');
@@ -79,6 +104,10 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   const [adminViewMode, setAdminViewMode] = useState<'grid' | 'list'>('grid');
   const [copiedProductId, setCopiedProductId] = useState<string | null>(null);
   const [copyFeedbackMsg, setCopyFeedbackMsg] = useState<string | null>(null);
+
+  // Product delete confirmation state
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [isDeletingProduct, setIsDeletingProduct] = useState(false);
 
   // Editing state for existing product
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -196,14 +225,24 @@ export const AdminModal: React.FC<AdminModalProps> = ({
     }
   };
 
-  const handleDelete = async (product: Product) => {
-    if (window.confirm(`Вы действительно хотите удалить товар «${product.titleRu}» из каталога и базы данных?`)) {
+  const handleDelete = (product: Product) => {
+    setProductToDelete(product);
+  };
+
+  const handleConfirmDeleteProduct = async (product: Product) => {
+    setIsDeletingProduct(true);
+    try {
       onDeleteProduct(product.id);
       try {
         await deleteProductFromFirestore(product.id);
       } catch (err: any) {
-        alert('Ошибка при удалении из Firestore: ' + err.message);
+        console.warn('Firestore product delete warning:', err);
       }
+      setProductToDelete(null);
+    } catch (err: any) {
+      console.error('Error deleting product:', err);
+    } finally {
+      setIsDeletingProduct(false);
     }
   };
 
@@ -221,6 +260,102 @@ export const AdminModal: React.FC<AdminModalProps> = ({
       }, 5000);
     } else {
       alert(`Прямая ссылка на товар:\n${url}`);
+    }
+  };
+
+  const handleCreateCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCatNameRu.trim()) return;
+
+    setIsCategorySubmitting(true);
+    const catId = `cat-${Date.now().toString(36)}`;
+    const newCat: Category = {
+      id: catId,
+      nameRu: newCatNameRu.trim(),
+      nameKz: newCatNameKz.trim() || newCatNameRu.trim(),
+      icon: newCatIcon.trim() || '✨',
+      order: categories.length,
+    };
+
+    try {
+      if (onAddCategory) {
+        onAddCategory(newCat);
+      }
+      try {
+        await saveCategoryToFirestore(newCat);
+      } catch (err) {
+        console.warn('Firestore category sync warning:', err);
+      }
+      setCategoryFeedback(`Каталог «${newCat.nameRu}» успешно создан!`);
+      setNewCatNameRu('');
+      setNewCatNameKz('');
+      setNewCatIcon('💊');
+      setTimeout(() => setCategoryFeedback(null), 3000);
+    } catch (err: any) {
+      setCategoryFeedback(`Ошибка: ${err?.message || 'Не удалось сохранить'}`);
+    } finally {
+      setIsCategorySubmitting(false);
+    }
+  };
+
+  const handleSaveEditedCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCategory || !editingCategory.nameRu.trim()) return;
+
+    setIsCategorySubmitting(true);
+    try {
+      if (onUpdateCategory) {
+        onUpdateCategory(editingCategory);
+      }
+      try {
+        await saveCategoryToFirestore(editingCategory);
+      } catch (err) {
+        console.warn('Firestore category update warning:', err);
+      }
+      setCategoryFeedback(`Каталог «${editingCategory.nameRu}» обновлен!`);
+      setEditingCategory(null);
+      setTimeout(() => setCategoryFeedback(null), 3000);
+    } catch (err: any) {
+      setCategoryFeedback(`Ошибка при обновлении: ${err?.message || 'Попробуйте снова'}`);
+    } finally {
+      setIsCategorySubmitting(false);
+    }
+  };
+
+  const handleDeleteCategoryClick = (cat: Category) => {
+    if (cat.id === 'cat-all') {
+      setCategoryFeedback('Нельзя удалить основной каталог «Все товары»');
+      setTimeout(() => setCategoryFeedback(null), 3000);
+      return;
+    }
+    setCategoryToDelete(cat);
+  };
+
+  const handleConfirmDeleteCategory = async (cat: Category) => {
+    if (cat.id === 'cat-all') {
+      setCategoryFeedback('Нельзя удалить основной каталог «Все товары»');
+      setCategoryToDelete(null);
+      setTimeout(() => setCategoryFeedback(null), 3000);
+      return;
+    }
+
+    setIsDeletingCategory(true);
+    try {
+      if (onDeleteCategory) {
+        onDeleteCategory(cat.id);
+      }
+      try {
+        await deleteCategoryFromFirestore(cat.id);
+      } catch (err) {
+        console.warn('Firestore category delete warning:', err);
+      }
+      setCategoryFeedback(`Каталог «${cat.nameRu}» успешно удален!`);
+      setCategoryToDelete(null);
+      setTimeout(() => setCategoryFeedback(null), 3500);
+    } catch (err: any) {
+      setCategoryFeedback(`Ошибка при удалении: ${err?.message || 'Попробуйте снова'}`);
+    } finally {
+      setIsDeletingCategory(false);
     }
   };
 
@@ -412,6 +547,21 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                 }`}
               >
                 + Добавить товар
+              </button>
+              <button
+                id="admin-tab-categories"
+                onClick={() => {
+                  setEditingProduct(null);
+                  setActiveTab('categories');
+                }}
+                className={`pb-2.5 border-b-2 transition-colors flex items-center gap-1.5 ${
+                  activeTab === 'categories'
+                    ? 'border-emerald-800 text-emerald-950 font-extrabold'
+                    : 'border-transparent text-stone-500 hover:text-stone-800'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>Каталоги ({categories.filter((c) => c.id !== 'cat-all').length})</span>
               </button>
               <button
                 onClick={() => {
@@ -1367,7 +1517,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                     <span>{isSaving ? 'Сохранение...' : 'Добавить товар в Firestore'}</span>
                   </button>
                 </form>
-              ) : (
+              ) : activeTab === 'settings' ? (
                 <form onSubmit={handleSaveConfig} className="space-y-4 max-w-xl mx-auto">
                   <h4 className="font-bold text-stone-900 text-sm">
                     Настройки магазина и контактные данные
@@ -1397,6 +1547,76 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                         }
                         className="w-full px-3 py-2 text-xs rounded-xl border border-stone-300"
                       />
+                    </div>
+                  </div>
+
+                  {/* Hero Title & Subtitle block */}
+                  <div className="p-3 bg-amber-500/5 rounded-2xl border border-amber-500/20 space-y-3">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900">
+                      <Sparkles className="w-4 h-4 text-amber-600" />
+                      <span>Главный экран сайта (Заголовок и подзаголовок)</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-bold text-stone-700 mb-1">
+                          Заголовок (RU)
+                        </label>
+                        <input
+                          type="text"
+                          value={currentConfig.taglineRu || ''}
+                          onChange={(e) =>
+                            setCurrentConfig({ ...currentConfig, taglineRu: e.target.value })
+                          }
+                          placeholder="Красота, здоровье и халяль-товары в Атырау"
+                          className="w-full px-3 py-2 text-xs rounded-xl border border-stone-300 bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-stone-700 mb-1">
+                          Заголовок (KZ)
+                        </label>
+                        <input
+                          type="text"
+                          value={currentConfig.taglineKz || ''}
+                          onChange={(e) =>
+                            setCurrentConfig({ ...currentConfig, taglineKz: e.target.value })
+                          }
+                          placeholder="Атыраудағы сұлулық, денсаулық және халал өнімдер"
+                          className="w-full px-3 py-2 text-xs rounded-xl border border-stone-300 bg-white"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-bold text-stone-700 mb-1">
+                          Подзаголовок (RU)
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={currentConfig.subtitleRu || ''}
+                          onChange={(e) =>
+                            setCurrentConfig({ ...currentConfig, subtitleRu: e.target.value })
+                          }
+                          placeholder="Витамины iHerb, БАДы, товары для мужского и женского здоровья..."
+                          className="w-full px-3 py-2 text-xs rounded-xl border border-stone-300 bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-stone-700 mb-1">
+                          Подзаголовок (KZ)
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={currentConfig.subtitleKz || ''}
+                          onChange={(e) =>
+                            setCurrentConfig({ ...currentConfig, subtitleKz: e.target.value })
+                          }
+                          placeholder="iHerb дәрумендері, ББҚ, ерлер мен әйелдер денсаулығына арналған өнімдер..."
+                          className="w-full px-3 py-2 text-xs rounded-xl border border-stone-300 bg-white"
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -1597,7 +1817,371 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                     </p>
                   )}
                 </form>
-              )}
+              ) : activeTab === 'categories' ? (
+                /* CATEGORIES MANAGEMENT TAB */
+                <div className="space-y-6 max-w-2xl mx-auto pb-8">
+                  {/* Header */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-stone-200">
+                    <div>
+                      <h3 className="font-serif font-bold text-lg text-emerald-950 flex items-center gap-2">
+                        <Layers className="w-5 h-5 text-emerald-800" />
+                        <span>Управление каталогами и направлениями</span>
+                      </h3>
+                      <p className="text-xs text-stone-500 mt-0.5">
+                        Добавляйте новые разделы товаров, меняйте иконки и названия. Все изменения сразу видны на сайте.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Feedback message banner */}
+                  {categoryFeedback && (
+                    <div className="p-3 bg-emerald-50 border border-emerald-300 text-emerald-900 rounded-xl text-xs font-bold flex items-center gap-2 shadow-xs">
+                      <Check className="w-4 h-4 text-emerald-700 shrink-0" />
+                      <span>{categoryFeedback}</span>
+                    </div>
+                  )}
+
+                  {/* Add New Category Form */}
+                  <form
+                    onSubmit={handleCreateCategory}
+                    className="p-4 sm:p-5 bg-white rounded-2xl border-2 border-emerald-800/20 shadow-xs space-y-4"
+                  >
+                    <div className="flex items-center gap-2 text-xs font-bold text-emerald-950">
+                      <FolderPlus className="w-4 h-4 text-emerald-700" />
+                      <span>Добавить новый каталог товаров</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                      {/* Emoji Icon picker */}
+                      <div className="sm:col-span-3">
+                        <label className="block text-[11px] font-bold text-stone-700 mb-1">
+                          Иконка (эмодзи)
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={newCatIcon}
+                            onChange={(e) => setNewCatIcon(e.target.value)}
+                            maxLength={4}
+                            className="w-14 text-center text-xl px-2 py-2 rounded-xl border border-stone-300 bg-stone-50 focus:bg-white focus:ring-2 focus:ring-emerald-700"
+                            title="Введите смайлик/эмодзи"
+                          />
+                          <span className="text-xl">{newCatIcon || '✨'}</span>
+                        </div>
+                      </div>
+
+                      {/* Name RU */}
+                      <div className="sm:col-span-5">
+                        <label className="block text-[11px] font-bold text-stone-700 mb-1">
+                          Название каталога (RU) *
+                        </label>
+                        <input
+                          type="text"
+                          value={newCatNameRu}
+                          onChange={(e) => setNewCatNameRu(e.target.value)}
+                          placeholder="Например: Детские витамины"
+                          className="w-full px-3 py-2 text-xs rounded-xl border border-stone-300 focus:ring-2 focus:ring-emerald-700"
+                          required
+                        />
+                      </div>
+
+                      {/* Name KZ */}
+                      <div className="sm:col-span-4">
+                        <label className="block text-[11px] font-bold text-stone-700 mb-1">
+                          Название (KZ)
+                        </label>
+                        <input
+                          type="text"
+                          value={newCatNameKz}
+                          onChange={(e) => setNewCatNameKz(e.target.value)}
+                          placeholder="Мысалы: Балалар дәрумендері"
+                          className="w-full px-3 py-2 text-xs rounded-xl border border-stone-300 focus:ring-2 focus:ring-emerald-700"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Quick emoji suggestions */}
+                    <div>
+                      <span className="text-[10px] text-stone-500 font-semibold block mb-1">
+                        Быстрый выбор подходящей иконки:
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {['💊', '🌿', '💪', '🌸', '🍯', '🩸', '🕌', '🧴', '🧼', '☕', '🫖', '📦', '✨', '🔥', '🌟', '⚖️', '📿', '📖'].map(
+                          (emoji) => (
+                            <button
+                              key={emoji}
+                              type="button"
+                              onClick={() => setNewCatIcon(emoji)}
+                              className={`w-7 h-7 rounded-lg text-sm flex items-center justify-center transition-all cursor-pointer ${
+                                newCatIcon === emoji
+                                  ? 'bg-emerald-900 text-white scale-110 shadow-xs'
+                                  : 'bg-stone-100 hover:bg-stone-200 text-stone-800'
+                              }`}
+                            >
+                              {emoji}
+                            </button>
+                          )
+                        )}
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isCategorySubmitting || !newCatNameRu.trim()}
+                      className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-900 hover:bg-emerald-950 text-white font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>{isCategorySubmitting ? 'Создание...' : 'Создать каталог'}</span>
+                    </button>
+                  </form>
+
+                  {/* Existing Categories List */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-xs font-bold text-stone-700">
+                      <span>Все каталоги бутика ({categories.length})</span>
+                      <span className="text-[11px] text-stone-500 font-normal">
+                        Нажмите «Изменить» для правки или смены названия
+                      </span>
+                    </div>
+
+                    <div className="space-y-2">
+                      {categories.map((cat) => {
+                        const isSystemAll = cat.id === 'cat-all';
+                        const isCurrentlyEditing = editingCategory?.id === cat.id;
+                        const isConfirmingDelete = categoryToDelete?.id === cat.id;
+                        const productCount = products.filter((p) => p.categoryId === cat.id).length;
+
+                        if (isConfirmingDelete) {
+                          return (
+                            <div
+                              key={cat.id}
+                              className="p-3.5 bg-rose-50 border-2 border-rose-300 rounded-2xl space-y-2.5 animate-in fade-in"
+                            >
+                              <div className="flex items-center gap-2 text-rose-950 font-bold text-xs">
+                                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                                <span>Удалить каталог «{cat.nameRu}»?</span>
+                              </div>
+                              <p className="text-[11px] text-rose-800">
+                                {productCount > 0
+                                  ? `В этом каталоге сейчас числится ${productCount} товаров. При удалении каталога они останутся в магазине (в разделе «Все товары»).`
+                                  : 'Раздел будет полностью удален из списка каталогов и базы данных.'}
+                              </p>
+                              <div className="flex items-center gap-2 pt-1">
+                                <button
+                                  type="button"
+                                  onClick={() => handleConfirmDeleteCategory(cat)}
+                                  disabled={isDeletingCategory}
+                                  className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-xs cursor-pointer transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <span>{isDeletingCategory ? 'Удаление...' : 'Да, удалить'}</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setCategoryToDelete(null)}
+                                  disabled={isDeletingCategory}
+                                  className="px-3.5 py-1.5 rounded-xl bg-stone-200 hover:bg-stone-300 text-stone-700 font-semibold text-xs cursor-pointer transition-colors"
+                                >
+                                  Отмена
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        if (isCurrentlyEditing) {
+                          return (
+                            <form
+                              key={cat.id}
+                              onSubmit={handleSaveEditedCategory}
+                              className="p-3.5 bg-amber-500/10 border-2 border-amber-500/40 rounded-2xl space-y-3"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold text-amber-950">
+                                  Редактирование каталога: {cat.nameRu}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingCategory(null)}
+                                  className="text-xs text-stone-500 hover:text-stone-800"
+                                >
+                                  Отмена
+                                </button>
+                              </div>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+                                <div className="sm:col-span-3">
+                                  <label className="block text-[10px] font-bold text-stone-700 mb-1">
+                                    Иконка
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={editingCategory.icon || '✨'}
+                                    onChange={(e) =>
+                                      setEditingCategory({
+                                        ...editingCategory,
+                                        icon: e.target.value,
+                                      })
+                                    }
+                                    maxLength={4}
+                                    className="w-full text-center text-lg px-2 py-1.5 rounded-xl border border-stone-300 bg-white"
+                                  />
+                                </div>
+                                <div className="sm:col-span-5">
+                                  <label className="block text-[10px] font-bold text-stone-700 mb-1">
+                                    Название (RU)
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={editingCategory.nameRu}
+                                    onChange={(e) =>
+                                      setEditingCategory({
+                                        ...editingCategory,
+                                        nameRu: e.target.value,
+                                      })
+                                    }
+                                    className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-stone-300 bg-white"
+                                    required
+                                  />
+                                </div>
+                                <div className="sm:col-span-4">
+                                  <label className="block text-[10px] font-bold text-stone-700 mb-1">
+                                    Название (KZ)
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={editingCategory.nameKz || ''}
+                                    onChange={(e) =>
+                                      setEditingCategory({
+                                        ...editingCategory,
+                                        nameKz: e.target.value,
+                                      })
+                                    }
+                                    className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-stone-300 bg-white"
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="flex gap-2">
+                                <button
+                                  type="submit"
+                                  disabled={isCategorySubmitting}
+                                  className="px-4 py-1.5 rounded-xl bg-emerald-900 text-white font-bold text-xs hover:bg-emerald-950 transition-colors"
+                                >
+                                  {isCategorySubmitting ? 'Сохранение...' : 'Сохранить'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingCategory(null)}
+                                  className="px-3 py-1.5 rounded-xl bg-stone-200 text-stone-700 text-xs font-semibold hover:bg-stone-300"
+                                >
+                                  Отмена
+                                </button>
+                              </div>
+                            </form>
+                          );
+                        }
+
+                        return (
+                          <div
+                            key={cat.id}
+                            className="flex items-center justify-between p-3 bg-white rounded-xl border border-stone-200/90 shadow-2xs hover:border-emerald-700/30 transition-all"
+                          >
+                            <div className="flex items-center gap-3">
+                              <span className="w-9 h-9 rounded-xl bg-stone-100 flex items-center justify-center text-lg shrink-0">
+                                {cat.icon || '✨'}
+                              </span>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <h4 className="font-bold text-xs text-stone-900">{cat.nameRu}</h4>
+                                  {isSystemAll && (
+                                    <span className="text-[10px] px-2 py-0.2 rounded-full bg-stone-100 text-stone-600 font-semibold">
+                                      Основной
+                                    </span>
+                                  )}
+                                  <span className="text-[10px] px-2 py-0.2 rounded-full bg-emerald-100 text-emerald-900 font-bold">
+                                    {isSystemAll ? `${products.length} товаров` : `${productCount} товаров`}
+                                  </span>
+                                </div>
+                                {cat.nameKz && (
+                                  <p className="text-[11px] text-stone-400">{cat.nameKz}</p>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setEditingCategory(cat)}
+                                className="p-1.5 rounded-lg text-stone-500 hover:text-emerald-900 hover:bg-emerald-50 transition-colors"
+                                title="Редактировать название или иконку"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+
+                              {!isSystemAll && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteCategoryClick(cat)}
+                                  className="p-1.5 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                                  title="Удалить каталог"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        )}
+
+        {/* Product delete confirmation modal */}
+        {productToDelete && (
+          <div
+            className="fixed inset-0 z-60 bg-stone-950/70 backdrop-blur-xs flex items-center justify-center p-4"
+            onClick={() => setProductToDelete(null)}
+          >
+            <div
+              className="bg-white rounded-2xl p-5 max-w-md w-full shadow-2xl space-y-3.5 animate-in fade-in zoom-in-95"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-sm text-stone-900">Удалить товар?</h4>
+                  <p className="text-xs text-stone-500 font-medium line-clamp-1">{productToDelete.titleRu}</p>
+                </div>
+              </div>
+              <p className="text-xs text-stone-600">
+                Вы действительно хотите удалить товар «{productToDelete.titleRu}»? Он будет удален из каталога и базы данных.
+              </p>
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-stone-100">
+                <button
+                  type="button"
+                  onClick={() => setProductToDelete(null)}
+                  disabled={isDeletingProduct}
+                  className="px-4 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold cursor-pointer transition-colors"
+                >
+                  Отмена
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleConfirmDeleteProduct(productToDelete)}
+                  disabled={isDeletingProduct}
+                  className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-xs cursor-pointer transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>{isDeletingProduct ? 'Удаление...' : 'Да, удалить'}</span>
+                </button>
+              </div>
             </div>
           </div>
         )}

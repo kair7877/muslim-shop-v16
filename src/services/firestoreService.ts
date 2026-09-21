@@ -156,6 +156,28 @@ export async function saveProductToFirestore(product: Product): Promise<void> {
 }
 
 /**
+ * Create or update category in Firestore
+ */
+export async function saveCategoryToFirestore(category: Category): Promise<void> {
+  const docRef = doc(db, CATEGORIES_COLLECTION, category.id);
+  const cleanData: Record<string, any> = {};
+  for (const [key, val] of Object.entries(category)) {
+    if (val !== undefined) {
+      cleanData[key] = val;
+    }
+  }
+  await setDoc(docRef, cleanData, { merge: true });
+}
+
+/**
+ * Delete category from Firestore
+ */
+export async function deleteCategoryFromFirestore(categoryId: string): Promise<void> {
+  const docRef = doc(db, CATEGORIES_COLLECTION, categoryId);
+  await deleteDoc(docRef);
+}
+
+/**
  * Delete product from Firestore
  */
 export async function deleteProductFromFirestore(productId: string): Promise<void> {
