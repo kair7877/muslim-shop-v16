@@ -4,25 +4,101 @@ export function formatPrice(price: number): string {
   return new Intl.NumberFormat('ru-RU').format(price) + ' ₸';
 }
 
-export function isStoreOpen(): { isOpen: boolean; textRu: string; textKz: string } {
-  // Atyrau is UTC+5
+export function parseWorkingHours(hoursStr?: string): {
+  openMinutes: number;
+  closeMinutes: number;
+  openStr: string;
+  closeStr: string;
+} {
+  const defaultOpen = '10:00';
+  const defaultClose = '19:00';
+
+  if (!hoursStr || typeof hoursStr !== 'string') {
+    return {
+      openMinutes: 10 * 60,
+      closeMinutes: 19 * 60,
+      openStr: defaultOpen,
+      closeStr: defaultClose,
+    };
+  }
+
+  // Regex to match times like 10:00, 19:00, 10.00, 19.00, 9:00, 21:00
+  const timeRegex = /(\d{1,2})[:.](\d{2})/g;
+  const matches = [...hoursStr.matchAll(timeRegex)];
+
+  if (matches.length >= 2) {
+    const openH = parseInt(matches[0][1], 10);
+    const openM = parseInt(matches[0][2], 10);
+    const closeH = parseInt(matches[1][1], 10);
+    const closeM = parseInt(matches[1][2], 10);
+
+    const openStr = `${openH.toString().padStart(2, '0')}:${openM.toString().padStart(2, '0')}`;
+    const closeStr = `${closeH.toString().padStart(2, '0')}:${closeM.toString().padStart(2, '0')}`;
+
+    return {
+      openMinutes: openH * 60 + openM,
+      closeMinutes: closeH * 60 + closeM,
+      openStr,
+      closeStr,
+    };
+  } else if (matches.length === 1) {
+    const h = parseInt(matches[0][1], 10);
+    const m = parseInt(matches[0][2], 10);
+    const timeStr = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+    
+    // If it mentions "до", assume it's closing time
+    if (hoursStr.toLowerCase().includes('до')) {
+      return {
+        openMinutes: 10 * 60,
+        closeMinutes: h * 60 + m,
+        openStr: defaultOpen,
+        closeStr: timeStr,
+      };
+    }
+  }
+
+  return {
+    openMinutes: 10 * 60,
+    closeMinutes: 19 * 60,
+    openStr: defaultOpen,
+    closeStr: defaultClose,
+  };
+}
+
+export function isStoreOpen(config?: StoreConfig): {
+  isOpen: boolean;
+  textRu: string;
+  textKz: string;
+  openStr: string;
+  closeStr: string;
+} {
+  const { openMinutes, closeMinutes, openStr, closeStr } = parseWorkingHours(
+    config?.workingHoursRu || config?.workingHoursKz
+  );
+
+  // Atyrau / Kazakhstan unified timezone is UTC+5
   const now = new Date();
   const utc = now.getTime() + now.getTimezoneOffset() * 60000;
   const atyrauDate = new Date(utc + 3600000 * 5);
-  const hour = atyrauDate.getHours();
+  const currentMinutes = atyrauDate.getHours() * 60 + atyrauDate.getMinutes();
 
-  const isOpen = hour >= 10 && hour < 21;
+  const isOpen = currentMinutes >= openMinutes && currentMinutes < closeMinutes;
+
   if (isOpen) {
     return {
       isOpen: true,
-      textRu: 'Открыто до 21:00',
-      textKz: '21:00-ге дейін ашық',
+      textRu: `Открыто до ${closeStr}`,
+      textKz: `${closeStr}-ге дейін ашық`,
+      openStr,
+      closeStr,
     };
   } else {
     return {
       isOpen: false,
-      textRu: 'Откроется в 10:00',
-      textKz: '10:00-де ашылады',
+      textRu: `Откроется в ${openStr}`,
+      textKz: `${openStr}-де ашылады`,
+      openStr,
+      closeStr,
     };
   }
 }

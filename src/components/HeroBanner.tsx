@@ -138,10 +138,10 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({ config, lang, onScrollTo
             </div>
             <div>
               <h3 className="text-xs sm:text-sm font-bold text-white">
-                {lang === 'kz' ? 'Бутик №24 Атырау' : 'Бутик №24 в Атырау'}
+                {config.boutiqueNumber} • {config.city}
               </h3>
               <p className="text-[11px] sm:text-xs text-emerald-200/80 mt-0.5">
-                {lang === 'kz' ? 'Күн сайын 10:00 - 21:00' : 'Ежедневно с 10:00 до 21:00'}
+                {lang === 'kz' ? config.workingHoursKz : config.workingHoursRu}
               </p>
             </div>
           </div>

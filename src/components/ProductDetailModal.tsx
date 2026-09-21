@@ -289,7 +289,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   <span>{config.city}, {config.boutiqueNumber}</span>
                 </div>
                 <p className="text-[11px] text-emerald-800">
-                  {config.address} • Ежедневно с 10:00 до 21:00
+                  {config.address} • {lang === 'kz' ? config.workingHoursKz : config.workingHoursRu}
                 </p>
               </div>
             </div>

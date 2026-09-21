@@ -44,7 +44,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAdmin,
 }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const status = isStoreOpen();
+  const status = isStoreOpen(config);
 
   const toggleScale = () => {
     if (accessibility.scale === 'normal') {

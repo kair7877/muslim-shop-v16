@@ -148,10 +148,11 @@ export default function App() {
     const unsubscribe = subscribeToProducts(
       (firestoreProducts) => {
         clearTimeout(fallbackTimer);
-        setProducts(firestoreProducts);
+        const deduped = deduplicateProducts(firestoreProducts);
+        setProducts(deduped);
         setIsLoadingProducts(false);
         try {
-          localStorage.setItem('muslim_shop_products', JSON.stringify(firestoreProducts));
+          localStorage.setItem('muslim_shop_products', JSON.stringify(deduped));
         } catch {
           // LocalStorage quota might be reached if base64 images exist
         }
@@ -654,10 +655,15 @@ export default function App() {
           products={products}
           categories={categories}
           lang={lang}
-          onUpdateConfig={setConfig}
+          onUpdateConfig={(newCfg) => {
+            setConfig(newCfg);
+            try {
+              localStorage.setItem('muslim_shop_config', JSON.stringify(newCfg));
+            } catch {}
+          }}
           onUpdateProduct={(updated) => {
             setProducts((prev) => {
-              const next = prev.map((p) => (p.id === updated.id ? updated : p));
+              const next = deduplicateProducts(prev.map((p) => (p.id === updated.id ? updated : p)));
               try {
                 localStorage.setItem('muslim_shop_products', JSON.stringify(next));
               } catch {}
@@ -666,7 +672,11 @@ export default function App() {
           }}
           onAddProduct={(newProd) => {
             setProducts((prev) => {
-              const next = [newProd, ...prev];
+              const alreadyExists = prev.some(
+                (p) => p.id === newProd.id || (p.sku && newProd.sku && p.sku === newProd.sku)
+              );
+              if (alreadyExists) return prev;
+              const next = deduplicateProducts([newProd, ...prev]);
               try {
                 localStorage.setItem('muslim_shop_products', JSON.stringify(next));
               } catch {}

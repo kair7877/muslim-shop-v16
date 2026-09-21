@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
   X,
   Lock,
@@ -23,6 +23,7 @@ import {
   Loader2,
   Flame,
   Sparkles,
+  Clock,
 } from 'lucide-react';
 import { Category, Language, Product, StoreConfig } from '../types';
 import {
@@ -30,7 +31,12 @@ import {
   deleteProductFromFirestore,
   saveSettingsToFirestore,
 } from '../services/firestoreService';
-import { getProductDirectUrl, copyTextToClipboard } from '../utils/formatters';
+import {
+  getProductDirectUrl,
+  copyTextToClipboard,
+  deduplicateProducts,
+  isStoreOpen,
+} from '../utils/formatters';
 import { compressImageFile } from '../utils/imageCompressor';
 
 interface AdminModalProps {
@@ -65,6 +71,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   const [activeTab, setActiveTab] = useState<'products' | 'settings' | 'add'>('products');
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const isSubmittingAddProductRef = useRef(false);
 
   // Search, Filter & View Mode in Admin products list
   const [adminSearch, setAdminSearch] = useState('');
@@ -127,12 +134,21 @@ export const AdminModal: React.FC<AdminModalProps> = ({
     e.preventDefault();
     setIsSaving(true);
     try {
-      await saveSettingsToFirestore(currentConfig);
+      // 1. Immediately update store config locally
       onUpdateConfig(currentConfig);
+      try {
+        localStorage.setItem('muslim_shop_config', JSON.stringify(currentConfig));
+      } catch {}
+
+      // 2. Persist to Firestore
+      await saveSettingsToFirestore(currentConfig);
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 2500);
     } catch (err: any) {
-      alert('Ошибка при сохранении настроек в Firestore: ' + err.message);
+      console.warn('Firestore save config warning:', err);
+      // Still show success since local config was updated
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 2500);
     } finally {
       setIsSaving(false);
     }
@@ -227,8 +243,10 @@ export const AdminModal: React.FC<AdminModalProps> = ({
 
   const handleAddNewProduct = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmittingAddProductRef.current || isSaving) return;
     if (!newTitleRu.trim() || !newPrice) return;
 
+    isSubmittingAddProductRef.current = true;
     setIsSaving(true);
     const newId = `prod-${Date.now()}`;
     const newProd: Product = {
@@ -254,7 +272,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
     };
 
     try {
-      await saveProductToFirestore(newProd);
+      // 1. Immediately add to local state and catalog
       onAddProduct(newProd);
       setNewTitleRu('');
       setNewTitleKz('');
@@ -267,15 +285,24 @@ export const AdminModal: React.FC<AdminModalProps> = ({
       setNewIsHit(false);
       setNewIsNew(true);
       setActiveTab('products');
+
+      // 2. Persist to Firestore asynchronously
+      try {
+        await saveProductToFirestore(newProd);
+      } catch (err: any) {
+        console.warn('Firestore product sync warning (saved locally):', err);
+      }
     } catch (err: any) {
-      alert('Ошибка добавления товара в Firestore: ' + err.message);
+      alert('Ошибка добавления товара: ' + err.message);
     } finally {
       setIsSaving(false);
+      isSubmittingAddProductRef.current = false;
     }
   };
 
   const filteredAdminProducts = useMemo(() => {
-    return products
+    const deduped = deduplicateProducts(products);
+    return deduped
       .filter((p) => {
         if (adminCategoryFilter === 'hits') return Boolean(p.isHit);
         if (adminCategoryFilter === 'new') return Boolean(p.isNew);
@@ -1416,33 +1443,115 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-bold text-stone-700 mb-1">
-                        Часы работы (RU)
+                  <div className="space-y-2 p-3 bg-stone-50 rounded-2xl border border-stone-200">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-stone-800 flex items-center gap-1.5">
+                        <Clock className="w-4 h-4 text-amber-600" />
+                        <span>Часы работы бутика (отображаются в шапке и каталоге)</span>
                       </label>
-                      <input
-                        type="text"
-                        value={currentConfig.workingHoursRu}
-                        onChange={(e) =>
-                          setCurrentConfig({ ...currentConfig, workingHoursRu: e.target.value })
-                        }
-                        className="w-full px-3 py-2 text-xs rounded-xl border border-stone-300"
-                      />
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] text-stone-500 font-medium hidden sm:inline">Быстрый выбор:</span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setCurrentConfig({
+                              ...currentConfig,
+                              workingHoursRu: 'Ежедневно с 10:00 до 19:00',
+                              workingHoursKz: 'Күн сайын сағат 10:00-ден 19:00-ге дейін',
+                            })
+                          }
+                          className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-white border border-stone-300 hover:border-emerald-600 hover:text-emerald-700 transition-colors"
+                        >
+                          до 19:00
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setCurrentConfig({
+                              ...currentConfig,
+                              workingHoursRu: 'Ежедневно с 10:00 до 20:00',
+                              workingHoursKz: 'Күн сайын сағат 10:00-ден 20:00-ге дейін',
+                            })
+                          }
+                          className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-white border border-stone-300 hover:border-emerald-600 hover:text-emerald-700 transition-colors"
+                        >
+                          до 20:00
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setCurrentConfig({
+                              ...currentConfig,
+                              workingHoursRu: 'Ежедневно с 10:00 до 21:00',
+                              workingHoursKz: 'Күн сайын сағат 10:00-ден 21:00-ге дейін',
+                            })
+                          }
+                          className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-white border border-stone-300 hover:border-emerald-600 hover:text-emerald-700 transition-colors"
+                        >
+                          до 21:00
+                        </button>
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-xs font-bold text-stone-700 mb-1">
-                        Часы работы (KZ)
-                      </label>
-                      <input
-                        type="text"
-                        value={currentConfig.workingHoursKz}
-                        onChange={(e) =>
-                          setCurrentConfig({ ...currentConfig, workingHoursKz: e.target.value })
-                        }
-                        className="w-full px-3 py-2 text-xs rounded-xl border border-stone-300"
-                      />
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                      <div>
+                        <label className="block text-[11px] font-bold text-stone-700 mb-1">
+                          Часы работы (на русском)
+                        </label>
+                        <input
+                          type="text"
+                          value={currentConfig.workingHoursRu}
+                          onChange={(e) =>
+                            setCurrentConfig({ ...currentConfig, workingHoursRu: e.target.value })
+                          }
+                          placeholder="Например: Ежедневно с 10:00 до 19:00"
+                          className="w-full px-3 py-2 text-xs rounded-xl border border-stone-300 bg-white focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-stone-700 mb-1">
+                          Часы работы (на казахском)
+                        </label>
+                        <input
+                          type="text"
+                          value={currentConfig.workingHoursKz}
+                          onChange={(e) =>
+                            setCurrentConfig({ ...currentConfig, workingHoursKz: e.target.value })
+                          }
+                          placeholder="Мысалы: Күн сайын 10:00-ден 19:00-ге дейін"
+                          className="w-full px-3 py-2 text-xs rounded-xl border border-stone-300 bg-white focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 outline-none"
+                        />
+                      </div>
                     </div>
+
+                    {/* Live Preview in header */}
+                    {(() => {
+                      const preview = isStoreOpen(currentConfig);
+                      return (
+                        <div className="mt-2 p-2.5 rounded-xl bg-stone-900 text-white flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                            <span className="text-[11px] text-stone-300">
+                              В правом верхнем углу шапки будет показано:
+                            </span>
+                          </div>
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                              preview.isOpen
+                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                                : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                            }`}
+                          >
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full ${
+                                preview.isOpen ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'
+                              }`}
+                            />
+                            {preview.textRu}
+                          </span>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   <div>
