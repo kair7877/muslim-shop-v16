@@ -13,9 +13,8 @@ import {
 } from 'lucide-react';
 import { DailyAnalytics, AnalyticsOverview, VisitLogItem, Product } from '../types';
 import {
-  subscribeToDailyAnalytics,
-  subscribeToAnalyticsOverview,
-  subscribeToRecentVisits,
+  subscribeToAnalytics,
+  recordTestVisit,
   isIgnoreAdminVisits,
   setIgnoreAdminVisits,
   getTodayDateString,
@@ -33,25 +32,33 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ products, currency }
   const [selectedRange, setSelectedRange] = useState<'7' | '14' | '30'>('7');
   const [hoveredDay, setHoveredDay] = useState<DailyAnalytics | null>(null);
   const [ignoreAdmin, setIgnoreAdmin] = useState<boolean>(() => isIgnoreAdminVisits());
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
+  const [testSuccess, setTestSuccess] = useState(false);
 
   useEffect(() => {
-    const unsubDaily = subscribeToDailyAnalytics(30, (data) => {
-      setDailyData(data);
-    });
-    const unsubOverview = subscribeToAnalyticsOverview((data) => {
-      setOverview(data);
-    });
-    const unsubVisits = subscribeToRecentVisits(30, (data) => {
-      setRecentVisits(data);
+    const unsubscribe = subscribeToAnalytics(({ overview, dailyData, recentVisits }) => {
+      setOverview(overview);
+      setDailyData(dailyData);
+      setRecentVisits(recentVisits);
     });
 
     return () => {
-      unsubDaily();
-      unsubOverview();
-      unsubVisits();
+      unsubscribe();
     };
   }, []);
+
+  const handleTestVisit = async () => {
+    setIsTesting(true);
+    try {
+      await recordTestVisit();
+      setTestSuccess(true);
+      setTimeout(() => setTestSuccess(false), 3000);
+    } catch (err) {
+      console.error('Test visit error:', err);
+    } finally {
+      setIsTesting(false);
+    }
+  };
 
   const handleToggleIgnoreAdmin = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.checked;
@@ -212,6 +219,22 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ products, currency }
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          {/* Instant Test Button */}
+          <button
+            type="button"
+            onClick={handleTestVisit}
+            disabled={isTesting}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all shadow-xs cursor-pointer ${
+              testSuccess
+                ? 'bg-emerald-700 text-white border-emerald-800'
+                : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border-emerald-300'
+            }`}
+            title="Зафиксировать проверочный визит, чтобы сразу увидеть рост цифр"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>{isTesting ? 'Запись...' : testSuccess ? '✓ Визит зафиксирован!' : 'Тест счетчика (+1)'}</span>
+          </button>
+
           {/* Admin Exclusion Switch */}
           <label className="flex items-center gap-2 text-xs font-semibold text-stone-700 bg-stone-50 hover:bg-stone-100 px-3 py-2 rounded-xl border border-stone-200 cursor-pointer transition-colors">
             <input
@@ -221,7 +244,7 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ products, currency }
               className="w-4 h-4 rounded text-emerald-700 focus:ring-emerald-600 cursor-pointer"
             />
             <ShieldCheck className="w-3.5 h-3.5 text-stone-500" />
-            <span>Не учитывать мои визиты (я админ)</span>
+            <span>Не учитывать мои визиты</span>
           </label>
 
           {/* Period selector */}

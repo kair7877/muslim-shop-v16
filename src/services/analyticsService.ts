@@ -1,22 +1,16 @@
 import {
-  collection,
   doc,
   setDoc,
-  addDoc,
   increment,
   onSnapshot,
-  query,
-  orderBy,
-  limit,
-  serverTimestamp,
-  getDocs,
+  arrayUnion,
+  getDoc,
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { AnalyticsOverview, DailyAnalytics, VisitLogItem } from '../types';
 
-export const ANALYTICS_DAILY_COLLECTION = 'analytics_daily';
-export const ANALYTICS_SUMMARY_COLLECTION = 'analytics_summary';
-export const ANALYTICS_VISITS_COLLECTION = 'analytics_visits';
+export const SETTINGS_COLLECTION = 'settings';
+export const ANALYTICS_DOC_ID = 'analytics_stats';
 
 const ADMIN_IGNORE_KEY = 'muslim_shop_ignore_admin_visits';
 const VISITOR_ID_KEY = 'muslim_shop_visitor_id';
@@ -30,17 +24,17 @@ export function getVisitorId(): string {
   try {
     let vid = localStorage.getItem(VISITOR_ID_KEY);
     if (!vid) {
-      vid = 'v_' + Math.random().toString(36).substring(2, 11) + Date.now().toString(36);
+      vid = 'v_' + Math.random().toString(36).substring(2, 9) + Date.now().toString(36).slice(-4);
       localStorage.setItem(VISITOR_ID_KEY, vid);
     }
     return vid;
   } catch {
-    return 'v_' + Math.random().toString(36).substring(2, 10);
+    return 'v_' + Math.random().toString(36).substring(2, 8);
   }
 }
 
 /**
- * Check if current browser has admin mode enabled to ignore visits
+ * Check if current browser has admin mode enabled to ignore visits (defaults to false)
  */
 export function isIgnoreAdminVisits(): boolean {
   try {
@@ -103,7 +97,7 @@ function formatReferrer(raw: string): string {
 }
 
 /**
- * Records a client visit / page view in Firestore
+ * Records a client visit / page view in Firestore (stored securely in settings/analytics_stats)
  */
 export async function trackVisit(options: {
   page?: string;
@@ -143,53 +137,49 @@ export async function trackVisit(options: {
   }
 
   try {
-    // 1. Daily aggregated statistics
-    const dailyDocRef = doc(db, ANALYTICS_DAILY_COLLECTION, today);
+    const docRef = doc(db, SETTINGS_COLLECTION, ANALYTICS_DOC_ID);
+    const nowIso = new Date().toISOString();
+    const referrer = typeof document !== 'undefined' ? formatReferrer(document.referrer) : 'Прямой заход';
+
+    const visitItem: VisitLogItem = {
+      id: 'v_' + Math.random().toString(36).substring(2, 9),
+      visitorId: visitorId.slice(-6),
+      timestamp: nowIso,
+      device,
+      lang,
+      page,
+      referrer,
+      isNewVisitor: isNewVisitorToday,
+    };
+
+    // Update in Firestore
     await setDoc(
-      dailyDocRef,
+      docRef,
       {
-        date: today,
-        totalVisits: increment(isNewSession ? 1 : 0),
-        uniqueVisitors: increment(isNewVisitorToday ? 1 : 0),
-        pageViews: increment(1),
-        mobileVisits: increment(device === 'mobile' ? 1 : 0),
-        desktopVisits: increment(device === 'desktop' ? 1 : 0),
-        ruVisits: increment(lang === 'ru' ? 1 : 0),
-        kzVisits: increment(lang === 'kz' ? 1 : 0),
-        updatedAt: new Date().toISOString(),
+        overview: {
+          totalVisits: increment(isNewSession ? 1 : 0),
+          uniqueVisitors: increment(isNewVisitorToday ? 1 : 0),
+          pageViews: increment(1),
+          lastVisitAt: nowIso,
+        },
+        days: {
+          [today]: {
+            date: today,
+            totalVisits: increment(isNewSession ? 1 : 0),
+            uniqueVisitors: increment(isNewVisitorToday ? 1 : 0),
+            pageViews: increment(1),
+            mobileVisits: increment(device === 'mobile' ? 1 : 0),
+            desktopVisits: increment(device === 'desktop' ? 1 : 0),
+            ruVisits: increment(lang === 'ru' ? 1 : 0),
+            kzVisits: increment(lang === 'kz' ? 1 : 0),
+            updatedAt: nowIso,
+          },
+        },
+        recentVisits: arrayUnion(visitItem),
       },
       { merge: true }
     );
-
-    // 2. All-time summary
-    const summaryDocRef = doc(db, ANALYTICS_SUMMARY_COLLECTION, 'overview');
-    await setDoc(
-      summaryDocRef,
-      {
-        totalVisitsAllTime: increment(isNewSession ? 1 : 0),
-        uniqueVisitorsAllTime: increment(isNewVisitorToday ? 1 : 0),
-        totalPageViewsAllTime: increment(1),
-        lastVisitAt: new Date().toISOString(),
-      },
-      { merge: true }
-    );
-
-    // 3. Recent visit item (only on new session or initial load to keep log concise)
-    if (isNewSession) {
-      const visitsColRef = collection(db, ANALYTICS_VISITS_COLLECTION);
-      const referrer = typeof document !== 'undefined' ? formatReferrer(document.referrer) : 'Прямой заход';
-      await addDoc(visitsColRef, {
-        visitorId: visitorId.slice(-6),
-        timestamp: new Date().toISOString(),
-        device,
-        lang,
-        page,
-        referrer,
-        isNewVisitor: isNewVisitorToday,
-      });
-    }
   } catch (err) {
-    // Analytics failures must never interrupt user shopping experience
     console.warn('Analytics tracking notice:', err);
   }
 }
@@ -201,15 +191,26 @@ export async function trackProductView(productId: string, productTitle: string):
   if (isIgnoreAdminVisits()) return;
 
   const today = getTodayDateString();
+  const nowIso = new Date().toISOString();
+
   try {
-    const dailyDocRef = doc(db, ANALYTICS_DAILY_COLLECTION, today);
+    const docRef = doc(db, SETTINGS_COLLECTION, ANALYTICS_DOC_ID);
     await setDoc(
-      dailyDocRef,
+      docRef,
       {
-        pageViews: increment(1),
-        [`productViews.${productId}.title`]: productTitle,
-        [`productViews.${productId}.count`]: increment(1),
-        updatedAt: new Date().toISOString(),
+        overview: {
+          pageViews: increment(1),
+          lastVisitAt: nowIso,
+        },
+        days: {
+          [today]: {
+            date: today,
+            pageViews: increment(1),
+            [`productViews.${productId}.title`]: productTitle,
+            [`productViews.${productId}.count`]: increment(1),
+            updatedAt: nowIso,
+          },
+        },
       },
       { merge: true }
     );
@@ -219,108 +220,126 @@ export async function trackProductView(productId: string, productTitle: string):
 }
 
 /**
- * Subscribe to daily analytics history for admin dashboard (e.g. past 30 days)
+ * Generates an instant test visit so the store owner can verify tracking in real-time
  */
-export function subscribeToDailyAnalytics(
-  daysLimit = 30,
-  callback: (data: DailyAnalytics[]) => void
-): () => void {
-  const colRef = collection(db, ANALYTICS_DAILY_COLLECTION);
-  const q = query(colRef, orderBy('date', 'desc'), limit(daysLimit));
+export async function recordTestVisit(): Promise<void> {
+  const today = getTodayDateString();
+  const nowIso = new Date().toISOString();
+  const device = getDeviceType();
 
-  return onSnapshot(
-    q,
-    (snapshot) => {
-      const list: DailyAnalytics[] = [];
-      snapshot.forEach((d) => {
-        const data = d.data();
-        list.push({
-          id: d.id,
-          date: data.date || d.id,
-          totalVisits: Number(data.totalVisits) || 0,
-          uniqueVisitors: Number(data.uniqueVisitors) || 0,
-          pageViews: Number(data.pageViews) || 0,
-          mobileVisits: Number(data.mobileVisits) || 0,
-          desktopVisits: Number(data.desktopVisits) || 0,
-          ruVisits: Number(data.ruVisits) || 0,
-          kzVisits: Number(data.kzVisits) || 0,
-          productViews: data.productViews || {},
-          updatedAt: data.updatedAt || '',
-        });
-      });
-      // Sort chronologically (oldest to newest) for chart display
-      list.sort((a, b) => a.date.localeCompare(b.date));
-      callback(list);
+  const testVisit: VisitLogItem = {
+    id: 'v_test_' + Date.now().toString(36),
+    visitorId: 'owner',
+    timestamp: nowIso,
+    device,
+    lang: 'ru',
+    page: 'Тестовый визит владельца',
+    referrer: 'Проверка в админке',
+    isNewVisitor: true,
+  };
+
+  const docRef = doc(db, SETTINGS_COLLECTION, ANALYTICS_DOC_ID);
+  await setDoc(
+    docRef,
+    {
+      overview: {
+        totalVisits: increment(1),
+        uniqueVisitors: increment(1),
+        pageViews: increment(1),
+        lastVisitAt: nowIso,
+      },
+      days: {
+        [today]: {
+          date: today,
+          totalVisits: increment(1),
+          uniqueVisitors: increment(1),
+          pageViews: increment(1),
+          mobileVisits: increment(device === 'mobile' ? 1 : 0),
+          desktopVisits: increment(device === 'desktop' ? 1 : 0),
+          ruVisits: increment(1),
+          kzVisits: increment(0),
+          updatedAt: nowIso,
+        },
+      },
+      recentVisits: arrayUnion(testVisit),
     },
-    (err) => {
-      console.warn('Daily analytics snapshot warning:', err);
-      callback([]);
-    }
+    { merge: true }
   );
 }
 
 /**
- * Subscribe to all-time overview stats
+ * Real-time subscription to analytics stats
  */
-export function subscribeToAnalyticsOverview(
-  callback: (overview: AnalyticsOverview | null) => void
+export function subscribeToAnalytics(
+  callback: (data: {
+    overview: AnalyticsOverview;
+    dailyData: DailyAnalytics[];
+    recentVisits: VisitLogItem[];
+  }) => void
 ): () => void {
-  const docRef = doc(db, ANALYTICS_SUMMARY_COLLECTION, 'overview');
+  const docRef = doc(db, SETTINGS_COLLECTION, ANALYTICS_DOC_ID);
 
   return onSnapshot(
     docRef,
     (snapshot) => {
       if (snapshot.exists()) {
-        const data = snapshot.data();
+        const raw = snapshot.data();
+        const overviewRaw = raw.overview || {};
+        const daysRaw = raw.days || {};
+        const recentVisitsRaw: VisitLogItem[] = raw.recentVisits || [];
+
+        const overview: AnalyticsOverview = {
+          totalVisitsAllTime: Number(overviewRaw.totalVisits) || 0,
+          uniqueVisitorsAllTime: Number(overviewRaw.uniqueVisitors) || 0,
+          totalPageViewsAllTime: Number(overviewRaw.pageViews) || 0,
+          lastVisitAt: overviewRaw.lastVisitAt || undefined,
+        };
+
+        const dailyList: DailyAnalytics[] = Object.keys(daysRaw).map((dKey) => {
+          const item = daysRaw[dKey] || {};
+          return {
+            id: dKey,
+            date: item.date || dKey,
+            totalVisits: Number(item.totalVisits) || 0,
+            uniqueVisitors: Number(item.uniqueVisitors) || 0,
+            pageViews: Number(item.pageViews) || 0,
+            mobileVisits: Number(item.mobileVisits) || 0,
+            desktopVisits: Number(item.desktopVisits) || 0,
+            ruVisits: Number(item.ruVisits) || 0,
+            kzVisits: Number(item.kzVisits) || 0,
+            productViews: item.productViews || {},
+            updatedAt: item.updatedAt || '',
+          };
+        });
+
+        // Sort chronologically
+        dailyList.sort((a, b) => a.date.localeCompare(b.date));
+
+        // Sort visits descending
+        const sortedVisits = [...recentVisitsRaw].sort((a, b) =>
+          b.timestamp.localeCompare(a.timestamp)
+        );
+
         callback({
-          totalVisitsAllTime: Number(data.totalVisitsAllTime) || 0,
-          uniqueVisitorsAllTime: Number(data.uniqueVisitorsAllTime) || 0,
-          totalPageViewsAllTime: Number(data.totalPageViewsAllTime) || 0,
-          lastVisitAt: data.lastVisitAt,
+          overview,
+          dailyData: dailyList,
+          recentVisits: sortedVisits.slice(0, 35),
         });
       } else {
-        callback(null);
+        // Document doesn't exist yet, return zero state
+        callback({
+          overview: {
+            totalVisitsAllTime: 0,
+            uniqueVisitorsAllTime: 0,
+            totalPageViewsAllTime: 0,
+          },
+          dailyData: [],
+          recentVisits: [],
+        });
       }
     },
     (err) => {
-      console.warn('Analytics overview snapshot warning:', err);
-      callback(null);
-    }
-  );
-}
-
-/**
- * Subscribe to recent visit logs
- */
-export function subscribeToRecentVisits(
-  limitCount = 35,
-  callback: (visits: VisitLogItem[]) => void
-): () => void {
-  const colRef = collection(db, ANALYTICS_VISITS_COLLECTION);
-  const q = query(colRef, orderBy('timestamp', 'desc'), limit(limitCount));
-
-  return onSnapshot(
-    q,
-    (snapshot) => {
-      const list: VisitLogItem[] = [];
-      snapshot.forEach((d) => {
-        const data = d.data();
-        list.push({
-          id: d.id,
-          visitorId: data.visitorId || 'user',
-          timestamp: data.timestamp || new Date().toISOString(),
-          device: (data.device as any) || 'mobile',
-          lang: data.lang === 'kz' ? 'kz' : 'ru',
-          page: data.page || 'Каталог',
-          referrer: data.referrer || 'Прямой заход',
-          isNewVisitor: Boolean(data.isNewVisitor),
-        });
-      });
-      callback(list);
-    },
-    (err) => {
-      console.warn('Recent visits snapshot warning:', err);
-      callback([]);
+      console.warn('Analytics snapshot error:', err);
     }
   );
 }
