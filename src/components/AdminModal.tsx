@@ -1,8 +1,11 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import {
   X,
   Lock,
+  Unlock,
   KeyRound,
+  LogOut,
+  ShieldCheck,
   Save,
   Plus,
   Check,
@@ -46,6 +49,21 @@ import {
 } from '../utils/formatters';
 import { compressImageFile } from '../utils/imageCompressor';
 
+const ADMIN_SESSION_KEY = 'muslim_shop_admin_session_ts';
+const ADMIN_SESSION_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes of inactivity
+
+const checkSessionValid = (): boolean => {
+  try {
+    const saved = localStorage.getItem(ADMIN_SESSION_KEY);
+    if (!saved) return false;
+    const ts = parseInt(saved, 10);
+    if (isNaN(ts)) return false;
+    return Date.now() - ts < ADMIN_SESSION_TIMEOUT_MS;
+  } catch {
+    return false;
+  }
+};
+
 interface AdminModalProps {
   config: StoreConfig;
   products: Product[];
@@ -80,7 +98,8 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   onClose,
 }) => {
   const [pin, setPin] = useState('');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => checkSessionValid());
+  const [sessionRemainingMinutes, setSessionRemainingMinutes] = useState<number>(10);
   const [errorMsg, setErrorMsg] = useState('');
   const [currentConfig, setCurrentConfig] = useState<StoreConfig>(config);
   const [activeTab, setActiveTab] = useState<'products' | 'settings' | 'add' | 'categories' | 'stats'>(
@@ -89,6 +108,53 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const isSubmittingAddProductRef = useRef(false);
+
+  const refreshAdminSession = useCallback(() => {
+    try {
+      localStorage.setItem(ADMIN_SESSION_KEY, Date.now().toString());
+    } catch {}
+  }, []);
+
+  // Monitor inactivity: 10 minutes timeout
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    // Refresh immediately upon authentication / modal open
+    refreshAdminSession();
+
+    const interval = setInterval(() => {
+      try {
+        const saved = localStorage.getItem(ADMIN_SESSION_KEY);
+        if (!saved) {
+          setIsAuthenticated(false);
+          return;
+        }
+        const ts = parseInt(saved, 10);
+        const elapsed = Date.now() - ts;
+        if (elapsed >= ADMIN_SESSION_TIMEOUT_MS) {
+          setIsAuthenticated(false);
+          localStorage.removeItem(ADMIN_SESSION_KEY);
+          setErrorMsg('Сессия завершена после 10 минут бездействия. Пожалуйста, введите PIN снова.');
+        } else {
+          const remaining = Math.max(1, Math.ceil((ADMIN_SESSION_TIMEOUT_MS - elapsed) / 60000));
+          setSessionRemainingMinutes(remaining);
+        }
+      } catch {
+        setIsAuthenticated(false);
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [isAuthenticated, refreshAdminSession]);
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    try {
+      localStorage.removeItem(ADMIN_SESSION_KEY);
+    } catch {}
+    setPin('');
+    setErrorMsg('');
+  };
 
   // Category management state
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -156,6 +222,10 @@ export const AdminModal: React.FC<AdminModalProps> = ({
     if (pin === config.adminPin || pin === '505534') {
       setIsAuthenticated(true);
       setErrorMsg('');
+      try {
+        localStorage.setItem(ADMIN_SESSION_KEY, Date.now().toString());
+      } catch {}
+      setSessionRemainingMinutes(10);
     } else {
       setErrorMsg('Неверный PIN-код (по умолчанию: 505534)');
     }
@@ -472,34 +542,71 @@ export const AdminModal: React.FC<AdminModalProps> = ({
     >
       <div
         id="admin-modal-container"
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (isAuthenticated) refreshAdminSession();
+        }}
+        onMouseMove={isAuthenticated ? refreshAdminSession : undefined}
+        onKeyDown={isAuthenticated ? refreshAdminSession : undefined}
+        onTouchStart={isAuthenticated ? refreshAdminSession : undefined}
         className="w-full max-w-5xl xl:max-w-6xl bg-white rounded-3xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden"
       >
         {/* Header */}
         <div className="p-4 sm:p-5 bg-stone-900 text-white flex items-center justify-between border-b border-stone-800">
-          <div className="flex items-center gap-2">
-            <Lock className="w-5 h-5 text-amber-400" />
-            <h3 className="font-bold text-sm sm:text-base font-serif">
-              Панель администратора • MUSLIM SHOP (Firestore онлайн)
-            </h3>
+          <div className="flex items-center gap-2.5">
+            <Lock className="w-5 h-5 text-amber-400 shrink-0" />
+            <div>
+              <h3 className="font-bold text-sm sm:text-base font-serif leading-tight">
+                Панель администратора • MUSLIM SHOP
+              </h3>
+              <p className="text-[11px] text-stone-400 hidden sm:block">
+                г. Атырау, Бутик №24 • Firestore онлайн
+              </p>
+            </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-lg text-stone-400 hover:text-white"
-          >
-            <X className="w-5 h-5" />
-          </button>
+
+          <div className="flex items-center gap-2">
+            {isAuthenticated && (
+              <>
+                <div
+                  className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-800/80 text-[11px] text-emerald-300"
+                  title="Сессия автоматически продлевается при любых ваших действиях в панели"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>Сессия: {sessionRemainingMinutes} мин</span>
+                </div>
+                <button
+                  id="admin-logout-btn"
+                  onClick={handleLogout}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-800 hover:bg-rose-950/80 text-stone-300 hover:text-rose-200 border border-stone-700 hover:border-rose-800/60 text-xs font-semibold transition-colors cursor-pointer"
+                  title="Завершить сессию администратора и заблокировать вход"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Выйти</span>
+                </button>
+              </>
+            )}
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-xl text-stone-400 hover:text-white hover:bg-stone-800 transition-colors cursor-pointer"
+              title="Закрыть окно (сессия 10 минут сохраняется)"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {!isAuthenticated ? (
           <div className="p-8 max-w-sm mx-auto w-full text-center space-y-4">
-            <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-900 flex items-center justify-center mx-auto">
+            <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-900 flex items-center justify-center mx-auto shadow-xs">
               <KeyRound className="w-7 h-7" />
             </div>
-            <h4 className="font-bold text-stone-900 text-lg">Вход для владельца</h4>
-            <p className="text-xs text-stone-500">
-              Введите PIN-код для доступа к управлению товарами и настройками магазина
-            </p>
+            <div>
+              <h4 className="font-bold text-stone-900 text-lg">Вход для владельца</h4>
+              <p className="text-xs text-stone-500 mt-1">
+                Введите PIN-код для доступа к управлению бутиком
+              </p>
+            </div>
 
             <form onSubmit={handleLogin} className="space-y-3">
               <input
@@ -507,18 +614,32 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                 value={pin}
                 onChange={(e) => setPin(e.target.value)}
                 placeholder="PIN"
-                className="w-full text-center tracking-widest text-xl px-4 py-2.5 rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-emerald-700"
+                className="w-full text-center tracking-widest text-xl px-4 py-2.5 rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-emerald-700 font-mono"
                 maxLength={8}
                 autoFocus
               />
-              {errorMsg && <p className="text-xs text-rose-600 font-semibold">{errorMsg}</p>}
+              {errorMsg && (
+                <div className="p-2 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium">
+                  {errorMsg}
+                </div>
+              )}
               <button
                 type="submit"
-                className="w-full py-2.5 rounded-xl bg-emerald-900 text-white font-bold text-sm hover:bg-emerald-950 transition-colors"
+                className="w-full py-2.5 rounded-xl bg-emerald-900 text-white font-bold text-sm hover:bg-emerald-950 transition-colors cursor-pointer shadow-xs"
               >
                 Войти в панель
               </button>
             </form>
+
+            <div className="p-3 rounded-xl bg-stone-50 border border-stone-200 text-[11px] text-stone-500 text-left space-y-1">
+              <p className="font-semibold text-stone-700 flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Умная сессия: 10 минут</span>
+              </p>
+              <p className="leading-relaxed">
+                После входа пароль не запрашивается повторно в течение 10 минут бездействия. Вы можете закрывать окно и выкладывать товары.
+              </p>
+            </div>
           </div>
         ) : (
           <div className="flex-1 flex flex-col overflow-hidden">

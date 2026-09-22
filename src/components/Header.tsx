@@ -10,6 +10,7 @@ import {
   X,
   PhoneCall,
   SlidersHorizontal,
+  Lock,
 } from 'lucide-react';
 import { AccessibilitySettings, Language, StoreConfig } from '../types';
 import { isStoreOpen } from '../utils/formatters';
@@ -175,6 +176,17 @@ export const Header: React.FC<HeaderProps> = ({
               <PhoneCall className="w-3 h-3" />
               <span>+7 778 175 42 41</span>
             </a>
+
+            {/* Discrete Admin access on top */}
+            <button
+              id="top-admin-access-btn"
+              onClick={onOpenAdmin}
+              className="flex items-center gap-1 px-2 py-0.5 rounded text-emerald-400/90 hover:text-amber-300 hover:bg-emerald-900/80 transition-colors text-[11px] font-medium ml-1 cursor-pointer"
+              title="Панель управления (Бутик №24)"
+            >
+              <Lock className="w-3 h-3 text-emerald-400" />
+              <span className="font-semibold text-emerald-300">Бутик №24</span>
+            </button>
           </div>
         </div>
       </div>
