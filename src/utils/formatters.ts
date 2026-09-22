@@ -177,25 +177,46 @@ export function generateQuickOrderUrl(
   price: number,
   customerName: string,
   customerPhone: string,
-  lang: Language
+  lang: Language,
+  inStock: boolean = true
 ): string {
   let message = '';
-  if (lang === 'kz') {
-    message = `Сәлеметсіз бе, ${config.storeName}! Мен мына өнімді 1 басу арқылы сатып алғым келеді:\n\n` +
-      `📦 Өнім: ${productTitle}\n` +
-      `Артикул: ${sku}\n` +
-      `Бағасы: ${formatPrice(price)}\n\n` +
-      `Менің атым: ${customerName}\n` +
-      `Телефон: ${customerPhone}\n\n` +
-      `Тапсырысты растауыңызды күтемін!`;
+  if (!inStock) {
+    if (lang === 'kz') {
+      message = `Сәлеметсіз бе, ${config.storeName}! Мына өнім қашан сатылымға шығады? Жақында келуін күтіп, алдын ала жазылғым келеді:\n\n` +
+        `📦 Өнім: ${productTitle}\n` +
+        `Артикул: ${sku}\n` +
+        `Бағасы: ${formatPrice(price)}\n\n` +
+        `Менің атым: ${customerName}\n` +
+        `Телефон: ${customerPhone}\n\n` +
+        `Бутик №24-ке тауар түскенде маған хабарласыңызшы!`;
+    } else {
+      message = `Здравствуйте, ${config.storeName}! Подскажите, когда появится в наличии этот товар? Хочу оформить предзаказ / узнать о поступлении:\n\n` +
+        `📦 Товар: ${productTitle}\n` +
+        `Артикул: ${sku}\n` +
+        `Цена: ${formatPrice(price)}\n\n` +
+        `Покупатель: ${customerName}\n` +
+        `Телефон: ${customerPhone}\n\n` +
+        `Сообщите мне, пожалуйста, как товар поступит в Бутик №24!`;
+    }
   } else {
-    message = `Здравствуйте, ${config.storeName}! Хочу быстро заказать товар:\n\n` +
-      `📦 Товар: ${productTitle}\n` +
-      `Артикул: ${sku}\n` +
-      `Цена: ${formatPrice(price)}\n\n` +
-      `Покупатель: ${customerName}\n` +
-      `Телефон: ${customerPhone}\n\n` +
-      `Свяжитесь со мной для уточнения доставки и оплаты через Kaspi!`;
+    if (lang === 'kz') {
+      message = `Сәлеметсіз бе, ${config.storeName}! Мен мына өнімді 1 басу арқылы сатып алғым келеді:\n\n` +
+        `📦 Өнім: ${productTitle}\n` +
+        `Артикул: ${sku}\n` +
+        `Бағасы: ${formatPrice(price)}\n\n` +
+        `Менің атым: ${customerName}\n` +
+        `Телефон: ${customerPhone}\n\n` +
+        `Тапсырысты растауыңызды күтемін!`;
+    } else {
+      message = `Здравствуйте, ${config.storeName}! Хочу быстро заказать товар:\n\n` +
+        `📦 Товар: ${productTitle}\n` +
+        `Артикул: ${sku}\n` +
+        `Цена: ${formatPrice(price)}\n\n` +
+        `Покупатель: ${customerName}\n` +
+        `Телефон: ${customerPhone}\n\n` +
+        `Свяжитесь со мной для уточнения доставки и оплаты через Kaspi!`;
+    }
   }
 
   return `https://wa.me/${config.whatsappNumber}?text=${encodeURIComponent(message)}`;

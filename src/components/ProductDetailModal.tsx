@@ -75,9 +75,13 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const dynamicLineHeight = `${(zoomLevel / 100) * 1.75}rem`;
 
   const waDirectMessage = encodeURIComponent(
-    lang === 'kz'
-      ? `Сәлеметсіз бе, ${config.storeName}! Маған мына өнім бойынша толық ақпарат беріңізші:\n${title} (арт: ${product.sku}, бағасы: ${formatPrice(product.price)})`
-      : `Здравствуйте, ${config.storeName}! Меня интересует товар:\n${title} (арт: ${product.sku}, цена: ${formatPrice(product.price)}). Хочу заказать!`
+    !product.inStock
+      ? (lang === 'kz'
+          ? `Сәлеметсіз бе, ${config.storeName}! Мына өнім қашан сатылымға шығады? Келуін күтіп жатырмын:\n${title} (арт: ${product.sku}, бағасы: ${formatPrice(product.price)}). Келгенде хабарласыңызшы!`
+          : `Здравствуйте, ${config.storeName}! Подскажите, когда появится в наличии товар:\n${title} (арт: ${product.sku}, цена: ${formatPrice(product.price)}). Хочу забронировать / оформить предзаказ!`)
+      : (lang === 'kz'
+          ? `Сәлеметсіз бе, ${config.storeName}! Маған мына өнім бойынша толық ақпарат беріңізші:\n${title} (арт: ${product.sku}, бағасы: ${formatPrice(product.price)})`
+          : `Здравствуйте, ${config.storeName}! Меня интересует товар:\n${title} (арт: ${product.sku}, цена: ${formatPrice(product.price)}). Хочу заказать!`)
   );
 
   return (
@@ -237,9 +241,16 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
                 {/* Stock badge */}
                 <div className="absolute top-3 left-3 flex flex-col gap-1.5">
-                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-700 text-white shadow-xs">
-                    100% Халяль
-                  </span>
+                  {!product.inStock ? (
+                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-rose-600 text-white shadow-xs flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                      {lang === 'kz' ? 'Қолда жоқ • Жақында' : 'Нет в наличии • Скоро будет'}
+                    </span>
+                  ) : (
+                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-700 text-white shadow-xs">
+                      100% Халяль
+                    </span>
+                  )}
                   {product.isHit && (
                     <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500 text-stone-950 shadow-xs">
                       Хит продаж
@@ -330,9 +341,17 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       {formatPrice(product.oldPrice)}
                     </span>
                   )}
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
-                    {lang === 'kz' ? 'Қолда бар' : 'В наличии'}
-                  </span>
+                  {product.inStock ? (
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                      {lang === 'kz' ? 'Бутик №24 • Қолда бар' : 'Бутик №24 • В наличии'}
+                    </span>
+                  ) : (
+                    <span className="text-xs font-bold px-2.5 py-0.5 rounded-md bg-rose-100 text-rose-800 border border-rose-200 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse" />
+                      {lang === 'kz' ? 'Қолда жоқ • Жақында болады' : 'Нет в наличии • Скоро будет'}
+                    </span>
+                  )}
                 </div>
 
                 {/* Tabs Navigation */}
@@ -474,45 +493,69 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     href={`https://wa.me/${config.whatsappNumber}?text=${waDirectMessage}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-sm transition-all"
+                    className={`px-5 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-sm transition-all text-white ${
+                      product.inStock
+                        ? 'bg-emerald-600 hover:bg-emerald-700'
+                        : 'bg-emerald-700 hover:bg-emerald-800'
+                    }`}
                   >
                     <MessageCircle className="w-5 h-5" />
-                    <span>{lang === 'kz' ? 'WhatsApp арқылы тапсырыс' : 'Заказать в WhatsApp'}</span>
+                    <span>
+                      {product.inStock
+                        ? (lang === 'kz' ? 'WhatsApp арқылы тапсырыс' : 'Заказать в WhatsApp')
+                        : (lang === 'kz' ? 'Келуін WhatsApp-тан сұрау' : 'Узнать о поступлении')}
+                    </span>
                   </a>
 
-                  {/* 1-Click Fast Order */}
+                  {/* 1-Click Fast Order / Pre-order */}
                   <button
                     id="modal-quick-order-btn"
                     onClick={() => onQuickOrder(product)}
                     className="px-5 py-3 rounded-xl bg-amber-400 hover:bg-amber-500 text-stone-950 font-bold text-sm flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
                   >
                     <Zap className="w-5 h-5 text-stone-950" />
-                    <span>{lang === 'kz' ? '1 басу арқылы сатып алу' : 'Купить в 1 клик'}</span>
+                    <span>
+                      {product.inStock
+                        ? (lang === 'kz' ? '1 басу арқылы сатып алу' : 'Купить в 1 клик')
+                        : (lang === 'kz' ? 'Алдын ала тапсырыс беру' : 'Оформить предзаказ')}
+                    </span>
                   </button>
                 </div>
 
-                {/* Add to Cart full width button with dynamic status */}
-                <button
-                  id="modal-add-cart-btn"
-                  onClick={handleAddToCartClick}
-                  className={`w-full px-5 py-3.5 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all cursor-pointer shadow-md ${
-                    isAddedToCartFeedback
-                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white ring-4 ring-emerald-500/20 scale-[1.01]'
-                      : 'bg-emerald-950 hover:bg-black text-white'
-                  }`}
-                >
-                  {isAddedToCartFeedback ? (
-                    <>
-                      <CheckCircle2 className="w-5 h-5 text-amber-300 animate-bounce" />
-                      <span>{lang === 'kz' ? '✓ Өнім себетке жіберілді!' : '✓ Товар отправлен в корзину!'}</span>
-                    </>
-                  ) : (
-                    <>
-                      <ShoppingBag className="w-5 h-5 text-amber-400" />
-                      <span>{lang === 'kz' ? 'Себетке қосу' : 'Добавить в корзину'}</span>
-                    </>
-                  )}
-                </button>
+                {/* Add to Cart button OR Out of Stock reservation info */}
+                {product.inStock ? (
+                  <button
+                    id="modal-add-cart-btn"
+                    onClick={handleAddToCartClick}
+                    className={`w-full px-5 py-3.5 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all cursor-pointer shadow-md ${
+                      isAddedToCartFeedback
+                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white ring-4 ring-emerald-500/20 scale-[1.01]'
+                        : 'bg-emerald-950 hover:bg-black text-white'
+                    }`}
+                  >
+                    {isAddedToCartFeedback ? (
+                      <>
+                        <CheckCircle2 className="w-5 h-5 text-amber-300 animate-bounce" />
+                        <span>{lang === 'kz' ? '✓ Өнім себетке жіберілді!' : '✓ Товар отправлен в корзину!'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <ShoppingBag className="w-5 h-5 text-amber-400" />
+                        <span>{lang === 'kz' ? 'Себетке қосу' : 'Добавить в корзину'}</span>
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <div className="w-full p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-center">
+                    <p className="text-xs sm:text-sm font-bold text-rose-800 flex items-center justify-center gap-2">
+                      <Clock className="w-4 h-4 text-rose-600" />
+                      <span>{lang === 'kz' ? 'Өнім уақытша бітті • Жақында түседі' : 'Товар временно закончился • Скоро будет'}</span>
+                    </p>
+                    <p className="text-[11px] text-stone-500 mt-1">
+                      {lang === 'kz' ? 'Бутик №24-тен алдын ала брондау үшін түймелерді басыңыз' : 'Нажмите кнопку «Оформить предзаказ», чтобы забронировать к новому завозу'}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

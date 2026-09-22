@@ -118,9 +118,16 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     />
 
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-xs sm:text-sm font-bold text-stone-900 truncate">
-                        {title}
-                      </h4>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <h4 className="text-xs sm:text-sm font-bold text-stone-900 truncate">
+                          {title}
+                        </h4>
+                        {!item.product.inStock && (
+                          <span className="text-[10px] text-rose-700 font-bold bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">
+                            {lang === 'kz' ? 'Жақында' : 'Скоро в наличии'}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-stone-500 mt-0.5">
                         {formatPrice(item.product.price)} × {item.quantity} ={' '}
                         <strong className="text-emerald-950 font-bold">

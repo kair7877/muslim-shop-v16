@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShoppingBag, Heart, ZoomIn, Check, Zap } from 'lucide-react';
+import { ShoppingBag, Heart, ZoomIn, Check, Zap, Clock } from 'lucide-react';
 import { AccessibilitySettings, Language, Product } from '../types';
 import { formatPrice } from '../utils/formatters';
 
@@ -74,6 +74,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Badges */}
         <div className="absolute top-2.5 left-2.5 flex flex-col gap-1.5 z-10">
+          {!product.inStock && (
+            <span className="px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold bg-rose-600 text-white shadow-xs flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+              {lang === 'kz' ? 'Жақында' : 'Скоро в наличии'}
+            </span>
+          )}
           {product.isHit && (
             <span className="px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold bg-amber-500 text-stone-950 uppercase tracking-wider shadow-xs">
               {lang === 'kz' ? 'Хит' : 'Хит'}
@@ -121,6 +127,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             {product.country}
           </div>
         )}
+
+        {/* Out of Stock Bottom Banner on Image */}
+        {!product.inStock && (
+          <div className="absolute inset-x-0 bottom-0 py-1 bg-rose-950/85 backdrop-blur-xs text-white text-[10px] sm:text-[11px] font-bold text-center tracking-wide z-10">
+            {lang === 'kz' ? 'Қолда жоқ • Жақында болады' : 'Нет в наличии • Скоро будет'}
+          </div>
+        )}
       </div>
 
       {/* Content Container */}
@@ -129,10 +142,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           {/* SKU & Stock */}
           <div className="flex items-center justify-between text-[10px] sm:text-[11px] text-stone-500 mb-1">
             <span>Арт: {product.sku}</span>
-            <span className="flex items-center gap-1 text-emerald-700 font-semibold">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
-              {lang === 'kz' ? 'Қолда бар' : 'В наличии'}
-            </span>
+            {product.inStock ? (
+              <span className="flex items-center gap-1 text-emerald-700 font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                {lang === 'kz' ? 'Қолда бар' : 'В наличии'}
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-rose-700 font-bold bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse" />
+                {lang === 'kz' ? 'Қолда жоқ • Жақында' : 'Нет в наличии • Скоро'}
+              </span>
+            )}
           </div>
 
           {/* Title */}
@@ -167,40 +187,55 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
           {/* Action Buttons */}
           <div className="flex items-center gap-1.5 sm:gap-2">
-            {/* Quick 1-Click Order */}
-            <button
-              id={`quick-order-btn-${product.id}`}
-              onClick={() => onQuickOrder(product)}
-              className="flex-1 py-2 px-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-950 font-bold text-[11px] sm:text-xs flex items-center justify-center gap-1 transition-colors cursor-pointer whitespace-nowrap"
-              title="Купить в 1 клик через WhatsApp"
-            >
-              <Zap className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-              <span>{lang === 'kz' ? '1 басу' : '1 клик'}</span>
-            </button>
+            {product.inStock ? (
+              <>
+                {/* Quick 1-Click Order */}
+                <button
+                  id={`quick-order-btn-${product.id}`}
+                  onClick={() => onQuickOrder(product)}
+                  className="flex-1 py-2 px-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-950 font-bold text-[11px] sm:text-xs flex items-center justify-center gap-1 transition-colors cursor-pointer whitespace-nowrap"
+                  title="Купить в 1 клик через WhatsApp"
+                >
+                  <Zap className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                  <span>{lang === 'kz' ? '1 басу' : '1 клик'}</span>
+                </button>
 
-            {/* Add to Cart */}
-            <button
-              id={`add-cart-btn-${product.id}`}
-              onClick={() => onAddToCart(product)}
-              className={`p-2 sm:px-3 sm:py-2 rounded-xl font-bold text-[11px] sm:text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shrink-0 ${
-                isInCart
-                  ? 'bg-emerald-700 text-white'
-                  : 'bg-emerald-900 hover:bg-emerald-950 text-white'
-              }`}
-              title={lang === 'kz' ? 'Себетке қосу' : 'Добавить в корзину'}
-            >
-              {isInCart ? (
-                <>
-                  <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-300" />
-                  <span className="hidden md:inline">{lang === 'kz' ? 'Қосылды' : 'В корзине'}</span>
-                </>
-              ) : (
-                <>
-                  <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-300" />
-                  <span className="hidden md:inline">{lang === 'kz' ? 'Себетке' : 'В корзину'}</span>
-                </>
-              )}
-            </button>
+                {/* Add to Cart */}
+                <button
+                  id={`add-cart-btn-${product.id}`}
+                  onClick={() => onAddToCart(product)}
+                  className={`p-2 sm:px-3 sm:py-2 rounded-xl font-bold text-[11px] sm:text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shrink-0 ${
+                    isInCart
+                      ? 'bg-emerald-700 text-white'
+                      : 'bg-emerald-900 hover:bg-emerald-950 text-white'
+                  }`}
+                  title={lang === 'kz' ? 'Себетке қосу' : 'Добавить в корзину'}
+                >
+                  {isInCart ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-300" />
+                      <span className="hidden md:inline">{lang === 'kz' ? 'Қосылды' : 'В корзине'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-300" />
+                      <span className="hidden md:inline">{lang === 'kz' ? 'Себетке' : 'В корзину'}</span>
+                    </>
+                  )}
+                </button>
+              </>
+            ) : (
+              /* Out of stock: Fast Pre-order / Inquiry in WhatsApp */
+              <button
+                id={`ask-stock-btn-${product.id}`}
+                onClick={() => onQuickOrder(product)}
+                className="w-full py-2 px-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-900 border border-rose-200 font-bold text-[11px] sm:text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                title="Уточнить поступление или оформить предзаказ в Бутик №24"
+              >
+                <Clock className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                <span>{lang === 'kz' ? 'Жақында • Сұрау (WhatsApp)' : 'Скоро • Уточнить наличие'}</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
