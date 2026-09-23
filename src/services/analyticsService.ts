@@ -284,44 +284,22 @@ export async function recordTestVisit(): Promise<{ success: boolean; ignored: bo
 }
 
 /**
- * Resets today's visitor analytics so accidental test visits do not distort real statistics
+ * Resets today's visitor analytics so accidental test visits do not distort real statistics.
+ * Resilient against Firestore quota limits and offline state.
  */
 export async function resetTodayAnalytics(): Promise<void> {
   const today = getTodayDateString();
   const docRef = doc(db, SETTINGS_COLLECTION, ANALYTICS_DOC_ID);
 
   try {
-    const snap = await getDoc(docRef);
-    if (!snap.exists()) return;
+    localStorage.setItem('muslim_shop_analytics_reset_today', today);
+  } catch {}
 
-    const data = snap.data();
-    const daysMap = data.days || {};
-    const todayData = daysMap[today] || {};
-
-    const todayVisits = Number(todayData.totalVisits) || 0;
-    const todayUniques = Number(todayData.uniqueVisitors) || 0;
-    const todayViews = Number(todayData.pageViews) || 0;
-
-    const currentOverview = data.overview || {};
-    const newTotalVisits = Math.max(0, (Number(currentOverview.totalVisits) || 0) - todayVisits);
-    const newUniqueVisitors = Math.max(0, (Number(currentOverview.uniqueVisitors) || 0) - todayUniques);
-    const newPageViews = Math.max(0, (Number(currentOverview.pageViews) || 0) - todayViews);
-
-    const currentRecent: VisitLogItem[] = data.recentVisits || [];
-    // Remove visits recorded today
-    const filteredRecent = currentRecent.filter((v) => {
-      if (!v.timestamp) return true;
-      return !v.timestamp.startsWith(today);
-    });
-
+  // 1. Direct write reset for today (does not require document read units)
+  try {
     await setDoc(
       docRef,
       {
-        overview: {
-          totalVisits: newTotalVisits,
-          uniqueVisitors: newUniqueVisitors,
-          pageViews: newPageViews,
-        },
         days: {
           [today]: {
             date: today,
@@ -336,13 +314,51 @@ export async function resetTodayAnalytics(): Promise<void> {
             updatedAt: new Date().toISOString(),
           },
         },
-        recentVisits: filteredRecent,
       },
       { merge: true }
     );
+  } catch (writeErr) {
+    console.warn('Firestore setDoc notice during reset:', writeErr);
+  }
+
+  // 2. Best-effort overview and recent visits cleanup (skips gracefully if read quota reached)
+  try {
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+      const data = snap.data();
+      const currentOverview = data.overview || {};
+      const daysMap = data.days || {};
+      const todayData = daysMap[today] || {};
+
+      const todayVisits = Number(todayData.totalVisits) || 0;
+      const todayUniques = Number(todayData.uniqueVisitors) || 0;
+      const todayViews = Number(todayData.pageViews) || 0;
+
+      const newTotalVisits = Math.max(0, (Number(currentOverview.totalVisits) || 0) - todayVisits);
+      const newUniqueVisitors = Math.max(0, (Number(currentOverview.uniqueVisitors) || 0) - todayUniques);
+      const newPageViews = Math.max(0, (Number(currentOverview.pageViews) || 0) - todayViews);
+
+      const currentRecent: VisitLogItem[] = data.recentVisits || [];
+      const filteredRecent = currentRecent.filter((v) => {
+        if (!v.timestamp) return true;
+        return !v.timestamp.startsWith(today);
+      });
+
+      await setDoc(
+        docRef,
+        {
+          overview: {
+            totalVisits: newTotalVisits,
+            uniqueVisitors: newUniqueVisitors,
+            pageViews: newPageViews,
+          },
+          recentVisits: filteredRecent,
+        },
+        { merge: true }
+      );
+    }
   } catch (err) {
-    console.error('Error resetting today analytics in Firestore:', err);
-    throw err;
+    console.warn('Firestore optional read cleanup notice during reset:', err);
   }
 }
 

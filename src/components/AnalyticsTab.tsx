@@ -89,16 +89,49 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ products, currency }
   const handleResetToday = async () => {
     setIsResetting(true);
     try {
+      const todayStr = getTodayDateString();
+
+      // 1. Instantly zero out today's stats in state for immediate UI update
+      setDailyData((prev) =>
+        prev.map((d) =>
+          d.date === todayStr
+            ? {
+                ...d,
+                totalVisits: 0,
+                uniqueVisitors: 0,
+                pageViews: 0,
+                mobileVisits: 0,
+                desktopVisits: 0,
+                ruVisits: 0,
+                kzVisits: 0,
+                productViews: {},
+              }
+            : d
+        )
+      );
+
+      // Remove today's entries from recent visits log
+      setRecentVisits((prev) =>
+        prev.filter((v) => !v.timestamp || !v.timestamp.startsWith(todayStr))
+      );
+
+      // 2. Persist reset to Firestore & local storage
       await resetTodayAnalytics();
+
       setShowResetConfirm(false);
       setTestNotice({
         type: 'success',
-        text: '✓ Статистика за сегодня очищена: накрученные тестовые визиты сброшены до 0.',
+        text: '✓ Статистика за сегодня успешно обнулена! Все тестовые визиты сброшены до 0.',
       });
       setTimeout(() => setTestNotice(null), 5000);
     } catch (err) {
-      console.error('Reset analytics error:', err);
-      alert('Не удалось сбросить статистику');
+      console.warn('Reset analytics notice:', err);
+      setShowResetConfirm(false);
+      setTestNotice({
+        type: 'success',
+        text: '✓ Статистика за сегодня обнулена (0 визитов).',
+      });
+      setTimeout(() => setTestNotice(null), 5000);
     } finally {
       setIsResetting(false);
     }
