@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, MessageCircle, Zap, ShieldCheck, Clock } from 'lucide-react';
 import { Language, Product, StoreConfig } from '../types';
 import { formatPrice, generateQuickOrderUrl } from '../utils/formatters';
@@ -19,6 +20,21 @@ export const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
 
+  useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
+
   const title = lang === 'kz' ? product.titleKz : product.titleRu;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -37,16 +53,16 @@ export const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
     onClose();
   };
 
-  return (
+  return createPortal(
     <div
       id="quick-order-backdrop"
-      className="fixed inset-0 z-50 bg-stone-950/70 backdrop-blur-xs flex items-center justify-center p-4"
+      className="fixed inset-0 z-[100] bg-stone-950/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto overscroll-contain"
       onClick={onClose}
     >
       <div
         id="quick-order-container"
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl border border-stone-200"
+        className="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl border border-stone-200 my-auto"
       >
         <div className="flex items-center justify-between pb-3 border-b border-stone-100">
           <div className="flex items-center gap-2 text-emerald-950">
@@ -151,6 +167,7 @@ export const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
           </p>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

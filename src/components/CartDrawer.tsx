@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Plus, Minus, Trash2, ShoppingBag, MessageCircle, MapPin, Truck, Check } from 'lucide-react';
 import { CartItem, DeliveryMethod, Language, StoreConfig } from '../types';
 import { formatPrice, generateWhatsAppOrderUrl } from '../utils/formatters';
@@ -28,6 +29,21 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>('delivery');
   const [orderNotes, setOrderNotes] = useState('');
 
+  useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
+
   const total = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
 
   const handleWhatsAppCheckout = (e: React.FormEvent) => {
@@ -50,10 +66,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
-  return (
+  return createPortal(
     <div
       id="cart-drawer-backdrop"
-      className="fixed inset-0 z-50 bg-stone-950/70 backdrop-blur-xs flex justify-end"
+      className="fixed inset-0 z-[100] bg-stone-950/70 backdrop-blur-xs flex justify-end overflow-hidden"
       onClick={onClose}
     >
       <div
@@ -279,6 +295,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

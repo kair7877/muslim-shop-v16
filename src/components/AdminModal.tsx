@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X,
   Lock,
@@ -142,6 +143,22 @@ export const AdminModal: React.FC<AdminModalProps> = ({
       localStorage.setItem(ADMIN_SESSION_KEY, Date.now().toString());
     } catch {}
   }, []);
+
+  // Lock body scroll while AdminModal is open
+  useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
 
   // Monitor inactivity: 10 minutes timeout
   useEffect(() => {
@@ -591,10 +608,10 @@ export const AdminModal: React.FC<AdminModalProps> = ({
       });
   }, [products, adminCategoryFilter, adminSearch]);
 
-  return (
+  return createPortal(
     <div
       id="admin-modal-backdrop"
-      className="fixed inset-0 z-50 bg-stone-950/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
+      className="fixed inset-0 z-[100] bg-stone-950/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto overscroll-contain"
       onClick={onClose}
     >
       <div
@@ -2460,6 +2477,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

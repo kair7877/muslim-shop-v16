@@ -500,13 +500,13 @@ export default function App() {
       id="app-root"
       className={`min-h-screen flex flex-col transition-colors ${
         accessibility.highContrast
-          ? 'bg-amber-50/30 text-stone-950 font-normal contrast-125'
+          ? 'bg-white text-black font-semibold selection:bg-amber-300 selection:text-black'
           : 'bg-[#FAF8F5] text-stone-900'
       } ${
         accessibility.scale === 'extra'
-          ? 'text-lg'
+          ? 'text-lg sm:text-xl'
           : accessibility.scale === 'large'
-          ? 'text-base'
+          ? 'text-base sm:text-lg'
           : 'text-sm'
       }`}
     >

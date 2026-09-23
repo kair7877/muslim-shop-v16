@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X,
   Maximize2,
@@ -38,6 +39,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   product,
   config,
   lang,
+  accessibility,
   isFavorite,
   onToggleFavorite,
   onAddToCart,
@@ -45,12 +47,39 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   onClose,
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [zoomLevel, setZoomLevel] = useState<number>(100); // 100% to 220%
+  const [zoomLevel, setZoomLevel] = useState<number>(
+    accessibility.scale === 'extra' ? 150 : accessibility.scale === 'large' ? 125 : 100
+  );
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [activeTab, setActiveTab] = useState<'desc' | 'benefits' | 'howTo' | 'specs'>('desc');
   const [isHighContrastReader, setIsHighContrastReader] = useState(false);
   const [isLinkCopied, setIsLinkCopied] = useState(false);
   const [isAddedToCartFeedback, setIsAddedToCartFeedback] = useState(false);
+
+  const backdropRef = useRef<HTMLDivElement>(null);
+  const scrollBodyRef = useRef<HTMLDivElement>(null);
+
+  // Lock background scroll & handle Escape key
+  useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    // Ensure modal scroll starts from the top
+    if (backdropRef.current) backdropRef.current.scrollTop = 0;
+    if (scrollBodyRef.current) scrollBodyRef.current.scrollTop = 0;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
 
   const handleAddToCartClick = () => {
     onAddToCart(product);
@@ -68,11 +97,14 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
   const handleZoomIn = () => setZoomLevel((prev) => Math.min(prev + 25, 225));
   const handleZoomOut = () => setZoomLevel((prev) => Math.max(prev - 25, 100));
-  const handleResetZoom = () => setZoomLevel(100);
+  const handleResetZoom = () =>
+    setZoomLevel(accessibility.scale === 'extra' ? 150 : accessibility.scale === 'large' ? 125 : 100);
 
   // Dynamic font size and line height based on zoomLevel
   const dynamicFontSize = `${(zoomLevel / 100) * 1.05}rem`;
   const dynamicLineHeight = `${(zoomLevel / 100) * 1.75}rem`;
+
+  const isHighContrast = isHighContrastReader || accessibility.highContrast;
 
   const waDirectMessage = encodeURIComponent(
     !product.inStock
@@ -84,10 +116,11 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           : `Здравствуйте, ${config.storeName}! Меня интересует товар:\n${title} (арт: ${product.sku}, цена: ${formatPrice(product.price)}). Хочу заказать!`)
   );
 
-  return (
+  const modalElement = (
     <div
+      ref={backdropRef}
       id="product-modal-backdrop"
-      className="fixed inset-0 z-50 bg-stone-950/80 backdrop-blur-sm flex items-center justify-center p-0 sm:p-4 overflow-y-auto"
+      className="fixed inset-0 z-[100] bg-stone-950/85 backdrop-blur-xs flex items-start sm:items-center justify-center p-0 sm:p-4 overflow-y-auto overscroll-contain"
       onClick={onClose}
     >
       <div
@@ -95,9 +128,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         onClick={(e) => e.stopPropagation()}
         className={`bg-white transition-all overflow-hidden flex flex-col ${
           isFullscreen
-            ? 'fixed inset-0 w-screen h-screen rounded-none z-50'
-            : 'w-full max-w-4xl max-h-[92vh] sm:rounded-3xl shadow-2xl border border-amber-900/20'
-        } ${isHighContrastReader ? 'bg-amber-50/40 text-stone-950' : 'bg-white text-stone-900'}`}
+            ? 'fixed inset-0 w-full h-full rounded-none z-[110]'
+            : 'w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-4xl sm:rounded-3xl shadow-2xl my-0 sm:my-auto'
+        } ${isHighContrast ? 'bg-white text-black border-2 border-stone-950 font-medium' : 'bg-white text-stone-900 border border-amber-900/20'}`}
       >
         {/* Top Control Bar: Magnifier / Zoom tools & Fullscreen toggler */}
         <div
@@ -226,7 +259,11 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         </div>
 
         {/* Modal Scrollable Body */}
-        <div id="modal-scroll-body" className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-6">
+        <div
+          ref={scrollBodyRef}
+          id="modal-scroll-body"
+          className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 lg:p-8 space-y-6"
+        >
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-8">
             {/* Left Column: Images & Badges (9:16 vertical ratio) */}
             <div className="md:col-span-5 space-y-4">
@@ -563,4 +600,6 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       </div>
     </div>
   );
+
+  return createPortal(modalElement, document.body);
 };

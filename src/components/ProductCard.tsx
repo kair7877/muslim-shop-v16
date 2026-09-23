@@ -52,7 +52,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   return (
     <div
       id={`product-card-${product.id}`}
-      className="group bg-white rounded-2xl border border-stone-200/90 overflow-hidden shadow-2xs hover:shadow-md hover:border-amber-400/50 transition-all flex flex-col justify-between"
+      className={`group bg-white rounded-2xl overflow-hidden transition-all flex flex-col justify-between ${
+        accessibility.highContrast
+          ? 'border-2 border-black shadow-md text-black'
+          : 'border border-stone-200/90 shadow-2xs hover:shadow-md hover:border-amber-400/50'
+      }`}
     >
       {/* Image & Badges Container (9:16 vertical ratio) */}
       <div
