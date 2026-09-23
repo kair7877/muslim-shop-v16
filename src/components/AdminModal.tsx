@@ -20,6 +20,7 @@ import {
   LayoutGrid,
   List,
   Eye,
+  EyeOff,
   Camera,
   Upload,
   Image as ImageIcon,
@@ -107,6 +108,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   );
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showPinInSettings, setShowPinInSettings] = useState(false);
   const isSubmittingAddProductRef = useRef(false);
 
   const refreshAdminSession = useCallback(() => {
@@ -219,7 +221,8 @@ export const AdminModal: React.FC<AdminModalProps> = ({
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (pin === config.adminPin || pin === '505534') {
+    const targetPin = config.adminPin?.trim() || '505534';
+    if (pin.trim() === targetPin) {
       setIsAuthenticated(true);
       setErrorMsg('');
       try {
@@ -227,7 +230,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
       } catch {}
       setSessionRemainingMinutes(10);
     } else {
-      setErrorMsg('Неверный PIN-код (по умолчанию: 505534)');
+      setErrorMsg('Неверный PIN-код');
     }
   };
 
@@ -615,7 +618,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                 onChange={(e) => setPin(e.target.value)}
                 placeholder="PIN"
                 className="w-full text-center tracking-widest text-xl px-4 py-2.5 rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-emerald-700 font-mono"
-                maxLength={8}
+                maxLength={32}
                 autoFocus
               />
               {errorMsg && (
@@ -1931,14 +1934,32 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                     <label className="block text-xs font-bold text-stone-700 mb-1">
                       PIN-код для входа администратора
                     </label>
-                    <input
-                      type="text"
-                      value={currentConfig.adminPin}
-                      onChange={(e) =>
-                        setCurrentConfig({ ...currentConfig, adminPin: e.target.value })
-                      }
-                      className="w-48 px-3 py-2 text-xs rounded-xl border border-stone-300"
-                    />
+                    <div className="relative w-56">
+                      <input
+                        type={showPinInSettings ? 'text' : 'password'}
+                        value={currentConfig.adminPin || ''}
+                        onChange={(e) =>
+                          setCurrentConfig({ ...currentConfig, adminPin: e.target.value })
+                        }
+                        className="w-full px-3 py-2 pr-10 text-xs rounded-xl border border-stone-300 font-mono tracking-wider"
+                        placeholder="Введите PIN-код"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPinInSettings(!showPinInSettings)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 p-1 cursor-pointer"
+                        title={showPinInSettings ? 'Скрыть PIN' : 'Показать PIN'}
+                      >
+                        {showPinInSettings ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-stone-400 mt-1">
+                      Обязательно запомните измененный код перед сохранением настроек.
+                    </p>
                   </div>
 
                   <button
