@@ -571,8 +571,25 @@ export const AdminModal: React.FC<AdminModalProps> = ({
           <div className="flex items-center gap-2">
             {isAuthenticated && (
               <>
+                <button
+                  id="admin-header-settings-btn"
+                  onClick={() => {
+                    setEditingProduct(null);
+                    setActiveTab('settings');
+                  }}
+                  className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                    activeTab === 'settings'
+                      ? 'bg-amber-400 text-stone-950 shadow-xs'
+                      : 'bg-stone-800 hover:bg-stone-700 text-stone-200'
+                  }`}
+                  title="Перейти к смене пароля и настройкам бутика"
+                >
+                  <KeyRound className="w-3.5 h-3.5 text-amber-300" />
+                  <span>Сменить пароль</span>
+                </button>
+
                 <div
-                  className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-800/80 text-[11px] text-emerald-300"
+                  className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-800/80 text-[11px] text-emerald-300"
                   title="Сессия автоматически продлевается при любых ваших действиях в панели"
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -647,13 +664,13 @@ export const AdminModal: React.FC<AdminModalProps> = ({
         ) : (
           <div className="flex-1 flex flex-col overflow-hidden">
             {/* Nav Tabs */}
-            <div className="px-5 pt-3 border-b border-stone-200 flex gap-4 text-xs font-bold bg-stone-50/60">
+            <div className="px-4 sm:px-5 pt-3 border-b border-stone-200 flex gap-2 sm:gap-4 text-xs font-bold bg-stone-50/60 overflow-x-auto scrollbar-none whitespace-nowrap">
               <button
                 onClick={() => {
                   setEditingProduct(null);
                   setActiveTab('products');
                 }}
-                className={`pb-2.5 border-b-2 transition-colors ${
+                className={`pb-2.5 border-b-2 transition-colors shrink-0 ${
                   activeTab === 'products' && !editingProduct
                     ? 'border-emerald-800 text-emerald-950'
                     : 'border-transparent text-stone-500 hover:text-stone-800'
@@ -666,7 +683,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                   setEditingProduct(null);
                   setActiveTab('add');
                 }}
-                className={`pb-2.5 border-b-2 transition-colors ${
+                className={`pb-2.5 border-b-2 transition-colors shrink-0 ${
                   activeTab === 'add'
                     ? 'border-emerald-800 text-emerald-950'
                     : 'border-transparent text-stone-500 hover:text-stone-800'
@@ -680,7 +697,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                   setEditingProduct(null);
                   setActiveTab('categories');
                 }}
-                className={`pb-2.5 border-b-2 transition-colors flex items-center gap-1.5 ${
+                className={`pb-2.5 border-b-2 transition-colors flex items-center gap-1.5 shrink-0 ${
                   activeTab === 'categories'
                     ? 'border-emerald-800 text-emerald-950 font-extrabold'
                     : 'border-transparent text-stone-500 hover:text-stone-800'
@@ -695,7 +712,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                   setEditingProduct(null);
                   setActiveTab('stats');
                 }}
-                className={`pb-2.5 border-b-2 transition-colors flex items-center gap-1.5 ${
+                className={`pb-2.5 border-b-2 transition-colors flex items-center gap-1.5 shrink-0 ${
                   activeTab === 'stats'
                     ? 'border-emerald-800 text-emerald-950 font-extrabold'
                     : 'border-transparent text-stone-500 hover:text-stone-800'
@@ -706,17 +723,19 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               </button>
               <button
+                id="admin-tab-settings"
                 onClick={() => {
                   setEditingProduct(null);
                   setActiveTab('settings');
                 }}
-                className={`pb-2.5 border-b-2 transition-colors ${
+                className={`pb-2.5 border-b-2 transition-colors flex items-center gap-1.5 shrink-0 ${
                   activeTab === 'settings'
-                    ? 'border-emerald-800 text-emerald-950'
+                    ? 'border-emerald-800 text-emerald-950 font-extrabold'
                     : 'border-transparent text-stone-500 hover:text-stone-800'
                 }`}
               >
-                Настройки бутика
+                <KeyRound className="w-3.5 h-3.5 text-amber-600" />
+                <span>Настройки и пароль</span>
               </button>
             </div>
 
@@ -1660,8 +1679,72 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                   </button>
                 </form>
               ) : activeTab === 'settings' ? (
-                <form onSubmit={handleSaveConfig} className="space-y-4 max-w-xl mx-auto">
-                  <h4 className="font-bold text-stone-900 text-sm">
+                <form onSubmit={handleSaveConfig} className="space-y-4 max-w-xl mx-auto pb-8">
+                  {/* Dedicated Security & Password Card at the very top */}
+                  <div
+                    id="admin-settings-password-card"
+                    className="p-4 sm:p-5 bg-gradient-to-br from-amber-50 via-emerald-50/40 to-stone-50 rounded-2xl border-2 border-amber-400/80 shadow-xs space-y-3"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-xl bg-amber-500 text-stone-950 flex items-center justify-center font-bold shadow-xs shrink-0">
+                          <KeyRound className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-stone-900 text-sm sm:text-base flex items-center gap-2 flex-wrap">
+                            <span>Смена пароля (PIN-код администратора)</span>
+                            <span className="text-[10px] bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full font-bold">
+                              Безопасность
+                            </span>
+                          </h4>
+                          <p className="text-xs text-stone-600 mt-0.5">
+                            Задайте здесь новый код для входа в панель управления
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-1 flex flex-col sm:flex-row sm:items-center gap-3">
+                      <div className="relative w-full sm:w-64">
+                        <input
+                          type={showPinInSettings ? 'text' : 'password'}
+                          value={currentConfig.adminPin || ''}
+                          onChange={(e) =>
+                            setCurrentConfig({ ...currentConfig, adminPin: e.target.value })
+                          }
+                          className="w-full px-4 py-2.5 pr-10 text-sm font-bold rounded-xl border-2 border-amber-400/90 focus:border-emerald-700 bg-white font-mono tracking-widest shadow-xs outline-none"
+                          placeholder="Новый PIN-код"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPinInSettings(!showPinInSettings)}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-500 hover:text-stone-800 p-1 cursor-pointer"
+                          title={showPinInSettings ? 'Скрыть PIN' : 'Показать PIN'}
+                        >
+                          {showPinInSettings ? (
+                            <EyeOff className="w-4 h-4 text-emerald-700" />
+                          ) : (
+                            <Eye className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={isSaving}
+                        className="px-4 py-2.5 rounded-xl bg-emerald-900 hover:bg-emerald-950 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer shrink-0"
+                      >
+                        <Save className="w-4 h-4" />
+                        <span>{isSaving ? 'Сохранение...' : 'Сохранить новый пароль'}</span>
+                      </button>
+                    </div>
+
+                    <p className="text-[11px] text-stone-500">
+                      После нажатия кнопки «Сохранить» новый пароль сразу запишется в Firestore и будет действовать для всех будущих входов.
+                    </p>
+                  </div>
+
+                  <h4 className="font-bold text-stone-900 text-sm pt-2 border-t border-stone-200">
                     Настройки магазина и контактные данные
                   </h4>
 
@@ -1930,45 +2013,13 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-stone-700 mb-1">
-                      PIN-код для входа администратора
-                    </label>
-                    <div className="relative w-56">
-                      <input
-                        type={showPinInSettings ? 'text' : 'password'}
-                        value={currentConfig.adminPin || ''}
-                        onChange={(e) =>
-                          setCurrentConfig({ ...currentConfig, adminPin: e.target.value })
-                        }
-                        className="w-full px-3 py-2 pr-10 text-xs rounded-xl border border-stone-300 font-mono tracking-wider"
-                        placeholder="Введите PIN-код"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPinInSettings(!showPinInSettings)}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 p-1 cursor-pointer"
-                        title={showPinInSettings ? 'Скрыть PIN' : 'Показать PIN'}
-                      >
-                        {showPinInSettings ? (
-                          <EyeOff className="w-4 h-4" />
-                        ) : (
-                          <Eye className="w-4 h-4" />
-                        )}
-                      </button>
-                    </div>
-                    <p className="text-[11px] text-stone-400 mt-1">
-                      Обязательно запомните измененный код перед сохранением настроек.
-                    </p>
-                  </div>
-
                   <button
                     type="submit"
                     disabled={isSaving}
-                    className="px-5 py-2.5 rounded-xl bg-emerald-900 text-white font-bold text-xs hover:bg-emerald-950 transition-colors flex items-center gap-1.5"
+                    className="px-5 py-2.5 rounded-xl bg-emerald-900 text-white font-bold text-xs hover:bg-emerald-950 transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
                   >
                     <Save className="w-4 h-4" />
-                    <span>{isSaving ? 'Сохранение...' : 'Сохранить настройки в Firestore'}</span>
+                    <span>{isSaving ? 'Сохранение...' : 'Сохранить все настройки в Firestore'}</span>
                   </button>
 
                   {savedSuccess && (
