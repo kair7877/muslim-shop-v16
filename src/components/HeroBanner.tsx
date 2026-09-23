@@ -66,7 +66,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
   return (
     <div
       id="hero-section"
-      className="relative overflow-hidden bg-radial-[at_50%_-20%] from-emerald-900 via-[#051F17] to-[#03140F] text-white border-b border-amber-500/25"
+      className="relative w-full max-w-full overflow-hidden bg-radial-[at_50%_-20%] from-emerald-900 via-[#051F17] to-[#03140F] text-white border-b border-amber-500/25"
     >
       {/* Decorative ambient gold lighting aura */}
       <div className="absolute top-0 right-1/4 w-96 h-96 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
@@ -81,14 +81,14 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
         }}
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-16 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-16 relative z-10 w-full overflow-hidden">
         <div className="max-w-3xl">
           {/* Boutique Tag */}
           <div
             id="hero-boutique-badge"
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-300 text-xs sm:text-sm font-semibold tracking-wide mb-5 backdrop-blur-md shadow-xs"
+            className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-300 text-xs sm:text-sm font-semibold tracking-wide mb-4 sm:mb-5 backdrop-blur-md shadow-xs flex-wrap max-w-full"
           >
-            <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+            <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400 shrink-0" />
             <span className="font-serif tracking-wider font-bold">MUSLIM SHOP</span>
             <span className="text-amber-400/40">•</span>
             <span>{config.city}</span>
@@ -99,7 +99,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
           {/* Heading */}
           <h1
             id="hero-main-title"
-            className="font-serif text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.18] mb-5 drop-shadow-sm"
+            className="font-serif text-2xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.2] sm:leading-[1.18] mb-4 sm:mb-5 drop-shadow-sm text-balance"
           >
             {isKz ? (
               <>
@@ -121,7 +121,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
           {/* Subtitle */}
           <p
             id="hero-subtitle"
-            className="text-emerald-100/90 text-base sm:text-xl font-normal leading-relaxed mb-6 max-w-2xl text-balance"
+            className="text-emerald-100/90 text-sm sm:text-xl font-normal leading-relaxed mb-6 max-w-2xl text-balance"
           >
             {isKz ? subtitleKz : subtitleRu}
           </p>
@@ -129,7 +129,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
           {/* Quick Category Visual Chips (Наглядные акценты каталогов) */}
           <div
             id="hero-quick-chips"
-            className="flex flex-wrap items-center gap-2 sm:gap-2.5 mb-8"
+            className="flex flex-wrap items-center gap-1.5 sm:gap-2.5 mb-6 sm:mb-8"
           >
             {activeChips.map((chip) => {
               const isSelected = selectedCategoryId === chip.id;
@@ -146,7 +146,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                     }
                     onScrollToCatalog();
                   }}
-                  className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer select-none active:scale-97 ${
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer select-none active:scale-97 ${
                     isSelected
                       ? 'bg-amber-400 text-stone-950 font-bold shadow-md shadow-amber-500/25 ring-2 ring-amber-300'
                       : 'bg-emerald-900/60 hover:bg-emerald-800/80 border border-emerald-600/40 hover:border-amber-400/50 text-emerald-200 hover:text-white backdrop-blur-xs'
@@ -160,11 +160,11 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
           </div>
 
           {/* Action Buttons */}
-          <div id="hero-actions" className="flex flex-wrap items-center gap-3 sm:gap-4">
+          <div id="hero-actions" className="flex flex-wrap items-center gap-2.5 sm:gap-4">
             <button
               id="hero-view-catalog-btn"
               onClick={onScrollToCatalog}
-              className="inline-flex items-center gap-2 px-6 sm:px-7 py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-300 to-amber-400 hover:from-amber-300 hover:to-amber-200 text-stone-950 font-bold text-sm sm:text-base shadow-xl shadow-amber-500/20 active:scale-98 transition-all cursor-pointer"
+              className="inline-flex items-center justify-center gap-2 px-5 sm:px-7 py-3 sm:py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-300 to-amber-400 hover:from-amber-300 hover:to-amber-200 text-stone-950 font-bold text-xs sm:text-base shadow-xl shadow-amber-500/20 active:scale-98 transition-all cursor-pointer"
             >
               <span>{isKz ? 'Каталогты қарау' : 'Перейти в каталог'}</span>
               <ArrowRight className="w-4 h-4" />
@@ -179,9 +179,9 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
               )}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-emerald-800/70 hover:bg-emerald-700/80 text-white font-medium text-sm sm:text-base border border-emerald-500/40 transition-colors shadow-xs"
+              className="inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-3 sm:py-3.5 rounded-2xl bg-emerald-800/70 hover:bg-emerald-700/80 text-white font-medium text-xs sm:text-base border border-emerald-500/40 transition-colors shadow-xs"
             >
-              <MessageCircle className="w-4 h-4 text-emerald-400" />
+              <MessageCircle className="w-4 h-4 text-emerald-400 shrink-0" />
               <span>{isKz ? 'WhatsApp кеңес' : 'WhatsApp заказ / Консультация'}</span>
             </a>
 
@@ -190,9 +190,9 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
               href={config.gis2Url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-3.5 rounded-2xl bg-emerald-950/60 hover:bg-emerald-900/60 text-emerald-200 hover:text-white font-medium text-sm sm:text-base border border-emerald-700/40 transition-colors"
+              className="inline-flex items-center justify-center gap-2 px-3.5 sm:px-4 py-3 sm:py-3.5 rounded-2xl bg-emerald-950/60 hover:bg-emerald-900/60 text-emerald-200 hover:text-white font-medium text-xs sm:text-base border border-emerald-700/40 transition-colors"
             >
-              <MapPin className="w-4 h-4 text-amber-400" />
+              <MapPin className="w-4 h-4 text-amber-400 shrink-0" />
               <span>{isKz ? '2GIS Бутик №24' : 'Бутик №24 в 2GIS'}</span>
             </a>
           </div>
@@ -201,18 +201,18 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
         {/* 4 Trust Feature Blocks */}
         <div
           id="hero-features-grid"
-          className="mt-12 pt-8 border-t border-emerald-800/60 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4"
+          className="mt-10 sm:mt-12 pt-6 sm:pt-8 border-t border-emerald-800/60 grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4"
         >
           <div
             id="feature-halal"
-            className="flex items-start gap-3 p-3 rounded-2xl bg-white/[0.03] border border-amber-400/15 backdrop-blur-xs"
+            className="flex items-start gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-2xl bg-white/[0.03] border border-amber-400/15 backdrop-blur-xs min-w-0"
           >
-            <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center shrink-0 border border-amber-400/30">
-              <ShieldCheck className="w-5 h-5" />
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center shrink-0 border border-amber-400/30">
+              <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div>
-              <h3 className="text-xs sm:text-sm font-bold text-white">100% Халяль</h3>
-              <p className="text-[11px] sm:text-xs text-emerald-200/80 mt-0.5">
+            <div className="min-w-0">
+              <h3 className="text-xs sm:text-sm font-bold text-white truncate">100% Халяль</h3>
+              <p className="text-[10px] sm:text-xs text-emerald-200/80 mt-0.5 line-clamp-2">
                 {isKz ? 'Тексерілген табиғи құрамдар' : 'Проверенные чистые составы'}
               </p>
             </div>
@@ -220,16 +220,16 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
 
           <div
             id="feature-direct"
-            className="flex items-start gap-3 p-3 rounded-2xl bg-white/[0.03] border border-amber-400/15 backdrop-blur-xs"
+            className="flex items-start gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-2xl bg-white/[0.03] border border-amber-400/15 backdrop-blur-xs min-w-0"
           >
-            <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center shrink-0 border border-amber-400/30">
-              <Award className="w-5 h-5" />
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center shrink-0 border border-amber-400/30">
+              <Award className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div>
-              <h3 className="text-xs sm:text-sm font-bold text-white">
-                {isKz ? 'iHerb & Тікелей импорт' : 'iHerb & Прямой импорт'}
+            <div className="min-w-0">
+              <h3 className="text-xs sm:text-sm font-bold text-white truncate">
+                {isKz ? 'iHerb импорт' : 'iHerb & Импорт'}
               </h3>
-              <p className="text-[11px] sm:text-xs text-emerald-200/80 mt-0.5">
+              <p className="text-[10px] sm:text-xs text-emerald-200/80 mt-0.5 line-clamp-2">
                 {isKz ? 'АҚШ, Дубай, Мекке, Египет' : 'Оригинал из США, ОАЭ, Мекки'}
               </p>
             </div>
@@ -237,16 +237,16 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
 
           <div
             id="feature-delivery"
-            className="flex items-start gap-3 p-3 rounded-2xl bg-white/[0.03] border border-amber-400/15 backdrop-blur-xs"
+            className="flex items-start gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-2xl bg-white/[0.03] border border-amber-400/15 backdrop-blur-xs min-w-0"
           >
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center shrink-0 border border-emerald-400/30">
-              <Truck className="w-5 h-5" />
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center shrink-0 border border-emerald-400/30">
+              <Truck className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div>
-              <h3 className="text-xs sm:text-sm font-bold text-white">
-                {isKz ? 'Атырауда жылдам жеткізу' : 'Быстрая доставка'}
+            <div className="min-w-0">
+              <h3 className="text-xs sm:text-sm font-bold text-white truncate">
+                {isKz ? 'Жылдам жеткізу' : 'Быстрая доставка'}
               </h3>
-              <p className="text-[11px] sm:text-xs text-emerald-200/80 mt-0.5">
+              <p className="text-[10px] sm:text-xs text-emerald-200/80 mt-0.5 line-clamp-2">
                 {isKz ? 'Күні бойы курьермен' : 'В день заказа по городу и РК'}
               </p>
             </div>
@@ -254,16 +254,16 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
 
           <div
             id="feature-boutique"
-            className="flex items-start gap-3 p-3 rounded-2xl bg-white/[0.03] border border-emerald-500/20 backdrop-blur-xs"
+            className="flex items-start gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-2xl bg-white/[0.03] border border-emerald-500/20 backdrop-blur-xs min-w-0"
           >
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center shrink-0 border border-emerald-400/30">
-              <CheckCircle2 className="w-5 h-5" />
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center shrink-0 border border-emerald-400/30">
+              <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div>
-              <h3 className="text-xs sm:text-sm font-bold text-white">
+            <div className="min-w-0">
+              <h3 className="text-xs sm:text-sm font-bold text-white truncate">
                 {config.boutiqueNumber} • {config.city}
               </h3>
-              <p className="text-[11px] sm:text-xs text-emerald-200/80 mt-0.5">
+              <p className="text-[10px] sm:text-xs text-emerald-200/80 mt-0.5 line-clamp-2">
                 {isKz ? config.workingHoursKz : config.workingHoursRu}
               </p>
             </div>

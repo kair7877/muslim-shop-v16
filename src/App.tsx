@@ -498,7 +498,7 @@ export default function App() {
   return (
     <div
       id="app-root"
-      className={`min-h-screen flex flex-col transition-colors ${
+      className={`min-h-screen w-full max-w-full overflow-x-hidden flex flex-col transition-colors ${
         accessibility.highContrast
           ? 'bg-white text-black font-semibold selection:bg-amber-300 selection:text-black'
           : 'bg-[#FAF8F5] text-stone-900'

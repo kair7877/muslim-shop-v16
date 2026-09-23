@@ -25,7 +25,7 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
     <section
       id="category-nav-bar"
       aria-label={isKz ? 'Санаттар каталогы' : 'Каталог категорий'}
-      className="w-full bg-[#FAF8F5] border-b border-stone-200/90 py-5 sm:py-6"
+      className="w-full max-w-full overflow-x-hidden bg-[#FAF8F5] border-b border-stone-200/90 py-5 sm:py-6"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {/* Header toolbar for Categories */}

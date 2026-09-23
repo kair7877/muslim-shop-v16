@@ -10,7 +10,7 @@ interface FooterProps {
 
 export const Footer: React.FC<FooterProps> = ({ config, lang }) => {
   return (
-    <footer id="main-footer" className="bg-emerald-950 text-stone-300 pt-12 pb-8 border-t border-amber-500/20">
+    <footer id="main-footer" className="w-full max-w-full overflow-x-hidden bg-emerald-950 text-stone-300 pt-12 pb-8 border-t border-amber-500/20">
       <div className="max-w-7xl mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
           {/* Col 1: Brand & Tagline */}

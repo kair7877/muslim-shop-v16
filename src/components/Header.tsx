@@ -73,7 +73,7 @@ export const Header: React.FC<HeaderProps> = ({
     <>
       <header
         id="main-header"
-        className={`sticky top-0 z-40 transition-colors ${
+        className={`sticky top-0 z-40 w-full max-w-full overflow-x-hidden transition-colors ${
           accessibility.highContrast
             ? 'bg-white border-b-2 border-stone-900 shadow-md text-black'
             : 'bg-white/95 backdrop-blur-md border-b border-amber-900/10 shadow-xs'
@@ -82,21 +82,21 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Top Utility Bar */}
         <div
           id="top-utility-bar"
-          className={`py-2 px-3 sm:px-4 text-xs transition-colors ${
+          className={`py-1.5 sm:py-2 px-3 sm:px-4 text-xs transition-colors w-full overflow-hidden ${
             accessibility.highContrast
               ? 'bg-black text-white border-b-2 border-amber-400'
               : 'bg-emerald-950 text-emerald-100 border-b border-emerald-900/50'
           }`}
         >
-          <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2.5">
+          <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-1.5 sm:gap-2.5">
             {/* Address & Working Hours */}
-            <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+            <div className="flex items-center gap-2 sm:gap-4 flex-wrap text-[11px] sm:text-xs">
               <a
                 id="top-address-link"
                 href={config.gis2Url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 hover:text-amber-300 transition-colors"
+                className="flex items-center gap-1 hover:text-amber-300 transition-colors"
                 title="Открыть в 2GIS"
               >
                 <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
@@ -104,13 +104,13 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="hidden md:inline text-emerald-400">({config.address})</span>
               </a>
 
-              <div id="top-hours-badge" className="flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <div id="top-hours-badge" className="flex items-center gap-1">
+                <Clock className="w-3 h-3 text-amber-400 shrink-0" />
                 <span className="hidden lg:inline">
                   {isKz ? config.workingHoursKz : config.workingHoursRu}
                 </span>
                 <span
-                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                  className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold ${
                     status.isOpen
                       ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
                       : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
@@ -123,17 +123,17 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
 
             {/* Right Tools: Accessibility Switchers, Language, Phone, Admin */}
-            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+            <div className="flex items-center gap-1.5 sm:gap-2.5 flex-wrap">
               {/* Accessibility Controls Group */}
               <div
                 id="accessibility-controls"
-                className="flex items-center gap-1.5 bg-emerald-900/70 p-1 rounded-xl border border-emerald-700/60"
+                className="flex items-center gap-1 bg-emerald-900/70 p-0.5 sm:p-1 rounded-xl border border-emerald-700/60"
               >
                 {/* 1. Modal trigger button (Very intuitive for elderly) */}
                 <button
                   id="open-accessibility-modal-btn"
                   onClick={() => setIsAccessModalOpen(true)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  className={`flex items-center gap-1 px-2 py-0.5 sm:py-1 rounded-lg text-[11px] sm:text-xs font-bold transition-all cursor-pointer ${
                     isCustomAccessibility
                       ? 'bg-amber-400 text-stone-950 shadow-xs ring-1 ring-amber-300'
                       : 'bg-emerald-800 text-amber-200 hover:bg-emerald-700 hover:text-white'
@@ -143,7 +143,7 @@ export const Header: React.FC<HeaderProps> = ({
                   <Eye className="w-3.5 h-3.5 shrink-0" />
                   <span>{isKz ? 'Нашар көретіндерге' : 'Для слабовидящих'}</span>
                   {isCustomAccessibility && (
-                    <span className="w-2 h-2 rounded-full bg-emerald-950 animate-pulse" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-950 animate-pulse" />
                   )}
                 </button>
 
@@ -263,31 +263,31 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Main Navigation Bar */}
-        <div id="main-nav-container" className="max-w-7xl mx-auto px-4 py-3 sm:py-3.5 flex items-center justify-between gap-3 sm:gap-4">
+        <div id="main-nav-container" className="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-3.5 flex items-center justify-between gap-1.5 sm:gap-4 w-full overflow-hidden">
           {/* Boutique Brand */}
-          <div id="boutique-brand" className="flex items-center gap-3">
+          <div id="boutique-brand" className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             <div
               id="boutique-logo-icon"
-              className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-900 to-emerald-950 border border-amber-500/30 text-amber-400 flex items-center justify-center font-serif text-lg font-bold shadow-xs cursor-pointer"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-emerald-900 to-emerald-950 border border-amber-500/30 text-amber-400 flex items-center justify-center font-serif text-base sm:text-lg font-bold shadow-xs cursor-pointer shrink-0"
               onClick={onOpenAdmin}
               title="MUSLIM SHOP • Атырау"
             >
               <span>М</span>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 <span
                   id="brand-name-title"
-                  className="font-serif tracking-widest font-extrabold text-xl sm:text-2xl text-emerald-950 leading-none"
+                  className="font-serif tracking-wider sm:tracking-widest font-extrabold text-base sm:text-xl md:text-2xl text-emerald-950 leading-none truncate block"
                 >
                   MUSLIM SHOP
                 </span>
-                <span className="hidden sm:inline-block px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider bg-amber-100 text-amber-900 border border-amber-300">
+                <span className="hidden sm:inline-block px-1.5 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider bg-amber-100 text-amber-900 border border-amber-300 shrink-0">
                   {config.boutiqueNumber}
                 </span>
               </div>
-              <p id="brand-location-subtitle" className="text-xs text-stone-500 font-medium mt-0.5">
-                {config.city} • {isKz ? 'Халал & Премиум сапа' : 'Халяль & Премиум качество'}
+              <p id="brand-location-subtitle" className="text-[10px] sm:text-xs text-stone-500 font-medium mt-0.5 truncate">
+                {config.city} • {isKz ? 'Халал сапа' : 'Халяль & Премиум'}
               </p>
             </div>
           </div>
@@ -321,12 +321,12 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* Action Buttons: Accessibility Quick Switch, Search Toggle, WhatsApp, Favorites, Cart */}
-          <div id="header-actions" className="flex items-center gap-1.5 sm:gap-2.5">
+          <div id="header-actions" className="flex items-center gap-1 sm:gap-2 shrink-0">
             {/* Quick Accessibility Button in Main Row (Especially helpful for elderly on mobile & desktop) */}
             <button
               id="main-nav-accessibility-btn"
               onClick={() => setIsAccessModalOpen(true)}
-              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+              className={`flex items-center gap-1 px-1.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border shrink-0 ${
                 isCustomAccessibility
                   ? 'bg-amber-100 text-amber-950 border-amber-300 shadow-xs ring-1 ring-amber-300'
                   : 'bg-stone-100/90 text-stone-700 hover:bg-stone-200/80 border-stone-200'
@@ -337,7 +337,7 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="hidden sm:inline">
                 {isKz ? 'Шрифт' : 'Шрифт'}
               </span>
-              <span className="text-[11px] font-extrabold px-1.5 py-0.2 rounded bg-white text-emerald-900 border border-emerald-300/80">
+              <span className="text-[10px] sm:text-[11px] font-extrabold px-1 sm:px-1.5 py-0.2 rounded bg-white text-emerald-900 border border-emerald-300/80">
                 {accessibility.scale === 'normal'
                   ? '100%'
                   : accessibility.scale === 'large'
@@ -350,10 +350,10 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="mobile-search-toggle-btn"
               onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className="md:hidden p-2 rounded-xl text-stone-700 hover:bg-stone-100 transition-colors cursor-pointer"
+              className="md:hidden p-1.5 sm:p-2 rounded-xl text-stone-700 hover:bg-stone-100 transition-colors cursor-pointer shrink-0"
               title="Поиск"
             >
-              <Search className="w-5 h-5" />
+              <Search className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
 
             {/* Quick WhatsApp Chat */}
@@ -366,7 +366,7 @@ export const Header: React.FC<HeaderProps> = ({
               )}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden lg:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 font-medium text-xs transition-colors shadow-2xs"
+              className="hidden lg:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 font-medium text-xs transition-colors shadow-2xs shrink-0"
               title="Написать в WhatsApp менеджеру"
             >
               <MessageCircle className="w-4 h-4 text-emerald-600" />
@@ -377,14 +377,14 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="favorites-drawer-btn"
               onClick={onOpenFavorites}
-              className="relative p-2.5 rounded-xl text-stone-700 hover:text-amber-700 hover:bg-amber-50/60 border border-transparent hover:border-amber-200 transition-colors cursor-pointer"
+              className="relative p-1.5 sm:p-2.5 rounded-xl text-stone-700 hover:text-amber-700 hover:bg-amber-50/60 transition-colors cursor-pointer shrink-0"
               title={isKz ? 'Таңдаулылар' : 'Избранное'}
             >
-              <Heart className="w-5 h-5" />
+              <Heart className="w-4 h-4 sm:w-5 sm:h-5" />
               {favoritesCount > 0 && (
                 <span
                   id="favorites-badge-count"
-                  className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-amber-500 text-white text-[11px] font-bold flex items-center justify-center shadow-xs"
+                  className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-amber-500 text-white text-[10px] sm:text-[11px] font-bold flex items-center justify-center shadow-xs"
                 >
                   {favoritesCount}
                 </span>
@@ -395,14 +395,14 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="cart-drawer-btn"
               onClick={onOpenCart}
-              className="flex items-center gap-2 px-3 sm:px-3.5 py-2 rounded-xl bg-emerald-900 hover:bg-emerald-950 text-white font-medium text-sm transition-all shadow-xs cursor-pointer"
+              className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-emerald-900 hover:bg-emerald-950 text-white font-medium text-xs sm:text-sm transition-all shadow-xs cursor-pointer shrink-0"
             >
               <div className="relative">
-                <ShoppingBag className="w-5 h-5 text-amber-300" />
+                <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5 text-amber-300" />
                 {cartCount > 0 && (
                   <span
                     id="cart-badge-count"
-                    className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-amber-500 text-stone-950 text-[11px] font-extrabold flex items-center justify-center shadow-xs"
+                    className="absolute -top-1.5 -right-1.5 sm:-top-2 sm:-right-2 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-amber-500 text-stone-950 text-[10px] sm:text-[11px] font-extrabold flex items-center justify-center shadow-xs"
                   >
                     {cartCount}
                   </span>
