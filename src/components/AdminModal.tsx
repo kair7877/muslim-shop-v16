@@ -262,6 +262,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
         localStorage.setItem(ADMIN_SESSION_KEY, Date.now().toString());
         localStorage.removeItem(ADMIN_ATTEMPTS_KEY);
         localStorage.removeItem(ADMIN_LOCKOUT_KEY);
+        localStorage.setItem('muslim_shop_ignore_admin_visits', 'true');
       } catch {}
       setSessionRemainingMinutes(10);
       setLockoutRemainingMs(0);

@@ -10,11 +10,15 @@ import {
   Package,
   Calendar,
   Sparkles,
+  RotateCcw,
+  CheckCircle2,
+  AlertTriangle,
 } from 'lucide-react';
 import { DailyAnalytics, AnalyticsOverview, VisitLogItem, Product } from '../types';
 import {
   subscribeToAnalytics,
   recordTestVisit,
+  resetTodayAnalytics,
   isIgnoreAdminVisits,
   setIgnoreAdminVisits,
   getTodayDateString,
@@ -33,7 +37,9 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ products, currency }
   const [hoveredDay, setHoveredDay] = useState<DailyAnalytics | null>(null);
   const [ignoreAdmin, setIgnoreAdmin] = useState<boolean>(() => isIgnoreAdminVisits());
   const [isTesting, setIsTesting] = useState(false);
-  const [testSuccess, setTestSuccess] = useState(false);
+  const [testNotice, setTestNotice] = useState<{ text: string; type: 'blocked' | 'success' } | null>(null);
+  const [isResetting, setIsResetting] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   useEffect(() => {
     const unsubscribe = subscribeToAnalytics(({ overview, dailyData, recentVisits }) => {
@@ -50,9 +56,29 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ products, currency }
   const handleTestVisit = async () => {
     setIsTesting(true);
     try {
-      await recordTestVisit();
-      setTestSuccess(true);
-      setTimeout(() => setTestSuccess(false), 3000);
+      if (ignoreAdmin) {
+        // Safe protection: do NOT increment Firestore when owner has "Не учитывать мои визиты" checked
+        setTestNotice({
+          type: 'blocked',
+          text: '🛡️ Защита работает! Ваш визит заблокирован и НЕ добавлен в счетчик, так как включена галочка «Не учитывать мои визиты». Цифры клиентов не накручиваются.',
+        });
+        setTimeout(() => setTestNotice(null), 6000);
+        return;
+      }
+
+      const res = await recordTestVisit();
+      if (res.ignored) {
+        setTestNotice({
+          type: 'blocked',
+          text: '🛡️ Защита работает! Визит заблокирован режимом исключения владельца.',
+        });
+      } else {
+        setTestNotice({
+          type: 'success',
+          text: '✓ Тестовый визит успешно добавлен (+1 к счетчикам магазина).',
+        });
+      }
+      setTimeout(() => setTestNotice(null), 5000);
     } catch (err) {
       console.error('Test visit error:', err);
     } finally {
@@ -60,10 +86,35 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ products, currency }
     }
   };
 
+  const handleResetToday = async () => {
+    setIsResetting(true);
+    try {
+      await resetTodayAnalytics();
+      setShowResetConfirm(false);
+      setTestNotice({
+        type: 'success',
+        text: '✓ Статистика за сегодня очищена: накрученные тестовые визиты сброшены до 0.',
+      });
+      setTimeout(() => setTestNotice(null), 5000);
+    } catch (err) {
+      console.error('Reset analytics error:', err);
+      alert('Не удалось сбросить статистику');
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   const handleToggleIgnoreAdmin = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.checked;
     setIgnoreAdmin(val);
     setIgnoreAdminVisits(val);
+    if (val) {
+      setTestNotice({
+        type: 'blocked',
+        text: '✓ Режим «Не учитывать мои визиты» активирован: ваши переходы по сайту и тесты не попадают в счетчик.',
+      });
+      setTimeout(() => setTestNotice(null), 4000);
+    }
   };
 
   const todayStr = getTodayDateString();
@@ -218,34 +269,60 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ products, currency }
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Instant Test Button */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Instant Test / Verify Protection Button */}
           <button
             type="button"
             onClick={handleTestVisit}
             disabled={isTesting}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all shadow-xs cursor-pointer ${
-              testSuccess
-                ? 'bg-emerald-700 text-white border-emerald-800'
-                : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border-emerald-300'
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-all shadow-xs cursor-pointer ${
+              ignoreAdmin
+                ? 'bg-amber-50 hover:bg-amber-100 text-amber-950 border-amber-300'
+                : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-950 border-emerald-300'
             }`}
-            title="Зафиксировать проверочный визит, чтобы сразу увидеть рост цифр"
+            title={
+              ignoreAdmin
+                ? 'Проверка защиты: визит будет заблокирован, так как включена галочка «Не учитывать мои визиты»'
+                : 'Зафиксировать проверочный визит (+1), чтобы сразу увидеть рост цифр'
+            }
           >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>{isTesting ? 'Запись...' : testSuccess ? '✓ Визит зафиксирован!' : 'Тест счетчика (+1)'}</span>
+            {ignoreAdmin ? (
+              <ShieldCheck className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+            ) : (
+              <Sparkles className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+            )}
+            <span>
+              {isTesting
+                ? 'Проверка...'
+                : ignoreAdmin
+                ? 'Тест защиты (визит блокируется)'
+                : 'Тест счетчика (+1)'}
+            </span>
           </button>
 
           {/* Admin Exclusion Switch */}
-          <label className="flex items-center gap-2 text-xs font-semibold text-stone-700 bg-stone-50 hover:bg-stone-100 px-3 py-2 rounded-xl border border-stone-200 cursor-pointer transition-colors">
+          <label className="flex items-center gap-2 text-xs font-semibold text-stone-700 bg-stone-50 hover:bg-stone-100 px-3 py-2 rounded-xl border border-stone-200 cursor-pointer transition-colors select-none">
             <input
               type="checkbox"
               checked={ignoreAdmin}
               onChange={handleToggleIgnoreAdmin}
               className="w-4 h-4 rounded text-emerald-700 focus:ring-emerald-600 cursor-pointer"
             />
-            <ShieldCheck className="w-3.5 h-3.5 text-stone-500" />
+            <ShieldCheck className={`w-3.5 h-3.5 ${ignoreAdmin ? 'text-emerald-700' : 'text-stone-400'}`} />
             <span>Не учитывать мои визиты</span>
           </label>
+
+          {/* Reset Today stats button */}
+          <button
+            type="button"
+            onClick={() => setShowResetConfirm(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-stone-200 hover:border-rose-300 bg-white hover:bg-rose-50 text-stone-600 hover:text-rose-700 text-xs font-semibold transition-colors cursor-pointer shadow-xs"
+            title="Обнулить счетчик за сегодня (удалить тестовые клики)"
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-stone-500 hover:text-rose-600" />
+            <span className="hidden sm:inline">Сбросить за сегодня</span>
+            <span className="sm:hidden">Сброс</span>
+          </button>
 
           {/* Period selector */}
           <div className="flex items-center bg-stone-100 p-1 rounded-xl text-xs font-bold text-stone-600 border border-stone-200">
@@ -266,6 +343,79 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ products, currency }
           </div>
         </div>
       </div>
+
+      {/* Test / Protection Notification Banner */}
+      {testNotice && (
+        <div
+          className={`p-3.5 rounded-2xl border text-xs font-medium flex items-center justify-between gap-3 shadow-xs animate-in fade-in slide-in-from-top-1 duration-200 ${
+            testNotice.type === 'blocked'
+              ? 'bg-amber-50 border-amber-300 text-amber-950'
+              : 'bg-emerald-50 border-emerald-300 text-emerald-950'
+          }`}
+        >
+          <div className="flex items-center gap-2.5">
+            {testNotice.type === 'blocked' ? (
+              <div className="w-6 h-6 rounded-lg bg-amber-200/80 flex items-center justify-center shrink-0">
+                <ShieldCheck className="w-4 h-4 text-amber-800" />
+              </div>
+            ) : (
+              <div className="w-6 h-6 rounded-lg bg-emerald-200/80 flex items-center justify-center shrink-0">
+                <CheckCircle2 className="w-4 h-4 text-emerald-800" />
+              </div>
+            )}
+            <span className="leading-snug">{testNotice.text}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setTestNotice(null)}
+            className="text-stone-400 hover:text-stone-800 p-1 rounded-lg cursor-pointer shrink-0"
+            title="Закрыть уведомление"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* Reset Confirmation Modal */}
+      {showResetConfirm && (
+        <div className="fixed inset-0 bg-stone-950/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-5 max-w-sm w-full space-y-4 shadow-2xl border border-stone-200 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center shrink-0 text-rose-700">
+                <RotateCcw className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="font-bold text-stone-900 text-sm">Сбросить счетчик за сегодня?</h4>
+                <p className="text-[11px] text-stone-500">Дата: {todayStr}</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-stone-600 leading-relaxed">
+              Все уникальные посетители ({todayStats.uniqueVisitors}) и заходы ({todayStats.totalVisits}) за сегодня вернутся к <strong>0</strong>. Это очистит тестовые клики, сделанные во время проверки.
+            </p>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-stone-100">
+              <button
+                type="button"
+                onClick={() => setShowResetConfirm(false)}
+                disabled={isResetting}
+                className="px-3.5 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold cursor-pointer"
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                onClick={handleResetToday}
+                disabled={isResetting}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50"
+              >
+                <RotateCcw className={`w-3.5 h-3.5 ${isResetting ? 'animate-spin' : ''}`} />
+                <span>{isResetting ? 'Сброс...' : 'Да, обнулить'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

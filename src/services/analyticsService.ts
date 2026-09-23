@@ -38,7 +38,15 @@ export function getVisitorId(): string {
  */
 export function isIgnoreAdminVisits(): boolean {
   try {
-    return localStorage.getItem(ADMIN_IGNORE_KEY) === 'true';
+    const val = localStorage.getItem(ADMIN_IGNORE_KEY);
+    if (val !== null) {
+      return val === 'true';
+    }
+    // If the browser has an active admin session, default to true
+    if (localStorage.getItem('muslim_shop_admin_session_ts')) {
+      return true;
+    }
+    return false;
   } catch {
     return false;
   }
@@ -220,9 +228,15 @@ export async function trackProductView(productId: string, productTitle: string):
 }
 
 /**
- * Generates an instant test visit so the store owner can verify tracking in real-time
+ * Generates an instant test visit so the store owner can verify tracking in real-time.
+ * If "isIgnoreAdminVisits()" is enabled, this is safely blocked to protect statistics.
  */
-export async function recordTestVisit(): Promise<void> {
+export async function recordTestVisit(): Promise<{ success: boolean; ignored: boolean }> {
+  if (isIgnoreAdminVisits()) {
+    console.info('Test visit skipped: admin exclusion mode is active.');
+    return { success: false, ignored: true };
+  }
+
   const today = getTodayDateString();
   const nowIso = new Date().toISOString();
   const device = getDeviceType();
@@ -233,8 +247,8 @@ export async function recordTestVisit(): Promise<void> {
     timestamp: nowIso,
     device,
     lang: 'ru',
-    page: 'Тестовый визит владельца',
-    referrer: 'Проверка в админке',
+    page: 'Тестовый визит',
+    referrer: 'Тест счетчика в админке',
     isNewVisitor: true,
   };
 
@@ -265,6 +279,71 @@ export async function recordTestVisit(): Promise<void> {
     },
     { merge: true }
   );
+
+  return { success: true, ignored: false };
+}
+
+/**
+ * Resets today's visitor analytics so accidental test visits do not distort real statistics
+ */
+export async function resetTodayAnalytics(): Promise<void> {
+  const today = getTodayDateString();
+  const docRef = doc(db, SETTINGS_COLLECTION, ANALYTICS_DOC_ID);
+
+  try {
+    const snap = await getDoc(docRef);
+    if (!snap.exists()) return;
+
+    const data = snap.data();
+    const daysMap = data.days || {};
+    const todayData = daysMap[today] || {};
+
+    const todayVisits = Number(todayData.totalVisits) || 0;
+    const todayUniques = Number(todayData.uniqueVisitors) || 0;
+    const todayViews = Number(todayData.pageViews) || 0;
+
+    const currentOverview = data.overview || {};
+    const newTotalVisits = Math.max(0, (Number(currentOverview.totalVisits) || 0) - todayVisits);
+    const newUniqueVisitors = Math.max(0, (Number(currentOverview.uniqueVisitors) || 0) - todayUniques);
+    const newPageViews = Math.max(0, (Number(currentOverview.pageViews) || 0) - todayViews);
+
+    const currentRecent: VisitLogItem[] = data.recentVisits || [];
+    // Remove visits recorded today
+    const filteredRecent = currentRecent.filter((v) => {
+      if (!v.timestamp) return true;
+      return !v.timestamp.startsWith(today);
+    });
+
+    await setDoc(
+      docRef,
+      {
+        overview: {
+          totalVisits: newTotalVisits,
+          uniqueVisitors: newUniqueVisitors,
+          pageViews: newPageViews,
+        },
+        days: {
+          [today]: {
+            date: today,
+            totalVisits: 0,
+            uniqueVisitors: 0,
+            pageViews: 0,
+            mobileVisits: 0,
+            desktopVisits: 0,
+            ruVisits: 0,
+            kzVisits: 0,
+            productViews: {},
+            updatedAt: new Date().toISOString(),
+          },
+        },
+        recentVisits: filteredRecent,
+      },
+      { merge: true }
+    );
+  } catch (err) {
+    console.error('Error resetting today analytics in Firestore:', err);
+    throw err;
+  }
 }
 
 /**
@@ -277,10 +356,11 @@ export function subscribeToAnalytics(
     recentVisits: VisitLogItem[];
   }) => void
 ): () => void {
-  const docRef = doc(db, SETTINGS_COLLECTION, ANALYTICS_DOC_ID);
+  try {
+    const docRef = doc(db, SETTINGS_COLLECTION, ANALYTICS_DOC_ID);
 
-  return onSnapshot(
-    docRef,
+    return onSnapshot(
+      docRef,
     (snapshot) => {
       if (snapshot.exists()) {
         const raw = snapshot.data();
@@ -339,7 +419,11 @@ export function subscribeToAnalytics(
       }
     },
     (err) => {
-      console.warn('Analytics snapshot error:', err);
+      console.warn('Analytics snapshot notice:', err);
     }
   );
+  } catch (err) {
+    console.warn('Analytics subscribe initialization notice:', err);
+    return () => {};
+  }
 }

@@ -30,6 +30,7 @@ import {
   subscribeToProducts,
   subscribeToCategories,
   subscribeToSettings,
+  isQuotaOrNetworkError,
 } from './services/firestoreService';
 import { trackVisit, trackProductView } from './services/analyticsService';
 import { deduplicateProducts } from './utils/formatters';
@@ -210,7 +211,11 @@ export default function App() {
       },
       (error) => {
         clearTimeout(fallbackTimer);
-        console.error('Failed to load products from Firestore:', error);
+        if (isQuotaOrNetworkError(error)) {
+          console.warn('Firestore notice: daily read quota reached for today. Running in cached offline mode.');
+        } else {
+          console.warn('Could not load products from Firestore:', error);
+        }
         setIsLoadingProducts(false);
       }
     );

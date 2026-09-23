@@ -65,132 +65,259 @@ export function normalizeCategory(id: string, data: any): Category {
 }
 
 /**
- * Real-time subscription to products collection
+ * Determines whether an error is caused by Firebase Free Tier quota exhaustion or network offline
+ */
+export function isQuotaOrNetworkError(err: any): boolean {
+  if (!err) return false;
+  const msg = (err.message || err.toString() || '').toLowerCase();
+  const code = (err.code || '').toLowerCase();
+  return (
+    code === 'resource-exhausted' ||
+    code === 'unavailable' ||
+    msg.includes('quota') ||
+    msg.includes('resource-exhausted') ||
+    msg.includes('resource_exhausted') ||
+    msg.includes('limit exceeded') ||
+    msg.includes('read units') ||
+    msg.includes('offline')
+  );
+}
+
+/**
+ * Real-time subscription to products collection with local fallback
  */
 export function subscribeToProducts(
   onSuccess: (products: Product[]) => void,
   onError?: (error: Error) => void
 ) {
-  const colRef = collection(db, PRODUCTS_COLLECTION);
-  return onSnapshot(
-    colRef,
-    (snapshot) => {
-      const items: Product[] = [];
-      snapshot.forEach((docSnap) => {
-        items.push(normalizeProduct(docSnap.id, docSnap.data()));
-      });
-      onSuccess(items);
-    },
-    (err) => {
-      console.error('Firestore subscribeToProducts error:', err);
-      if (onError) onError(err);
-    }
-  );
+  try {
+    const colRef = collection(db, PRODUCTS_COLLECTION);
+    return onSnapshot(
+      colRef,
+      (snapshot) => {
+        const items: Product[] = [];
+        snapshot.forEach((docSnap) => {
+          items.push(normalizeProduct(docSnap.id, docSnap.data()));
+        });
+        if (items.length > 0) {
+          try {
+            localStorage.setItem('muslim_shop_products_cache', JSON.stringify(items));
+          } catch {}
+        }
+        onSuccess(items);
+      },
+      (err) => {
+        if (isQuotaOrNetworkError(err)) {
+          console.warn('Firestore notice: daily read quota reached or offline. Loading cached products.');
+          try {
+            const cached =
+              localStorage.getItem('muslim_shop_products_cache') ||
+              localStorage.getItem('muslim_shop_products');
+            if (cached) {
+              const parsed = JSON.parse(cached);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                onSuccess(parsed);
+                return;
+              }
+            }
+          } catch {}
+        } else {
+          console.warn('Firestore subscribeToProducts notice:', err);
+        }
+        if (onError) onError(err);
+      }
+    );
+  } catch (err: any) {
+    console.warn('Firestore subscribeToProducts initialization notice:', err);
+    if (onError) onError(err);
+    return () => {};
+  }
 }
 
 /**
- * Real-time subscription to categories collection
+ * Real-time subscription to categories collection with local fallback
  */
 export function subscribeToCategories(
   onSuccess: (categories: Category[]) => void,
   onError?: (error: Error) => void
 ) {
-  const colRef = collection(db, CATEGORIES_COLLECTION);
-  return onSnapshot(
-    colRef,
-    (snapshot) => {
-      const items: Category[] = [];
-      snapshot.forEach((docSnap) => {
-        items.push(normalizeCategory(docSnap.id, docSnap.data()));
-      });
-      // Sort by order
-      items.sort((a, b) => a.order - b.order);
-      onSuccess(items);
-    },
-    (err) => {
-      console.error('Firestore subscribeToCategories error:', err);
-      if (onError) onError(err);
-    }
-  );
+  try {
+    const colRef = collection(db, CATEGORIES_COLLECTION);
+    return onSnapshot(
+      colRef,
+      (snapshot) => {
+        const items: Category[] = [];
+        snapshot.forEach((docSnap) => {
+          items.push(normalizeCategory(docSnap.id, docSnap.data()));
+        });
+        // Sort by order
+        items.sort((a, b) => a.order - b.order);
+        if (items.length > 0) {
+          try {
+            localStorage.setItem('muslim_shop_categories_cache', JSON.stringify(items));
+          } catch {}
+        }
+        onSuccess(items);
+      },
+      (err) => {
+        if (isQuotaOrNetworkError(err)) {
+          console.warn('Firestore notice: daily read quota reached for categories. Loading cached categories.');
+          try {
+            const cached =
+              localStorage.getItem('muslim_shop_categories_cache') ||
+              localStorage.getItem('muslim_shop_categories');
+            if (cached) {
+              const parsed = JSON.parse(cached);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                onSuccess(parsed);
+                return;
+              }
+            }
+          } catch {}
+        } else {
+          console.warn('Firestore subscribeToCategories notice:', err);
+        }
+        if (onError) onError(err);
+      }
+    );
+  } catch (err: any) {
+    console.warn('Firestore subscribeToCategories initialization notice:', err);
+    if (onError) onError(err);
+    return () => {};
+  }
 }
 
 /**
- * Real-time subscription to store settings
+ * Real-time subscription to store settings with local fallback
  */
 export function subscribeToSettings(
   initialConfig: StoreConfig,
   onSuccess: (config: StoreConfig) => void,
   onError?: (error: Error) => void
 ) {
-  const docRef = doc(db, SETTINGS_COLLECTION, 'general');
-  return onSnapshot(
-    docRef,
-    (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        onSuccess({
-          ...initialConfig,
-          ...data,
-        });
+  try {
+    const docRef = doc(db, SETTINGS_COLLECTION, 'general');
+    return onSnapshot(
+      docRef,
+      (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          const merged = {
+            ...initialConfig,
+            ...data,
+          };
+          try {
+            localStorage.setItem('muslim_shop_config', JSON.stringify(merged));
+          } catch {}
+          onSuccess(merged);
+        }
+      },
+      (err) => {
+        if (isQuotaOrNetworkError(err)) {
+          console.warn('Firestore notice: daily read quota reached for settings. Using cached settings.');
+          try {
+            const cached = localStorage.getItem('muslim_shop_config');
+            if (cached) {
+              const parsed = JSON.parse(cached);
+              onSuccess({ ...initialConfig, ...parsed });
+              return;
+            }
+          } catch {}
+        } else {
+          console.warn('Firestore subscribeToSettings notice:', err);
+        }
+        if (onError) onError(err);
       }
-    },
-    (err) => {
-      console.error('Firestore subscribeToSettings error:', err);
-      if (onError) onError(err);
-    }
-  );
+    );
+  } catch (err: any) {
+    console.warn('Firestore subscribeToSettings initialization notice:', err);
+    if (onError) onError(err);
+    return () => {};
+  }
 }
 
 /**
  * Create or update product in Firestore
  */
 export async function saveProductToFirestore(product: Product): Promise<void> {
-  const docRef = doc(db, PRODUCTS_COLLECTION, product.id);
-  const cleanData: Record<string, any> = {};
-  for (const [key, val] of Object.entries(product)) {
-    if (val !== undefined) {
-      cleanData[key] = val;
+  try {
+    const docRef = doc(db, PRODUCTS_COLLECTION, product.id);
+    const cleanData: Record<string, any> = {};
+    for (const [key, val] of Object.entries(product)) {
+      if (val !== undefined) {
+        cleanData[key] = val;
+      }
+    }
+    await setDoc(docRef, cleanData, { merge: true });
+  } catch (err) {
+    if (isQuotaOrNetworkError(err)) {
+      console.warn('Firestore write notice: quota limit exceeded. Saved in local cache.', err);
+    } else {
+      console.warn('Firestore saveProduct notice:', err);
     }
   }
-  await setDoc(docRef, cleanData, { merge: true });
 }
 
 /**
  * Create or update category in Firestore
  */
 export async function saveCategoryToFirestore(category: Category): Promise<void> {
-  const docRef = doc(db, CATEGORIES_COLLECTION, category.id);
-  const cleanData: Record<string, any> = {};
-  for (const [key, val] of Object.entries(category)) {
-    if (val !== undefined) {
-      cleanData[key] = val;
+  try {
+    const docRef = doc(db, CATEGORIES_COLLECTION, category.id);
+    const cleanData: Record<string, any> = {};
+    for (const [key, val] of Object.entries(category)) {
+      if (val !== undefined) {
+        cleanData[key] = val;
+      }
+    }
+    await setDoc(docRef, cleanData, { merge: true });
+  } catch (err) {
+    if (isQuotaOrNetworkError(err)) {
+      console.warn('Firestore write notice: quota limit exceeded for category. Saved locally.', err);
+    } else {
+      console.warn('Firestore saveCategory notice:', err);
     }
   }
-  await setDoc(docRef, cleanData, { merge: true });
 }
 
 /**
  * Delete category from Firestore
  */
 export async function deleteCategoryFromFirestore(categoryId: string): Promise<void> {
-  const docRef = doc(db, CATEGORIES_COLLECTION, categoryId);
-  await deleteDoc(docRef);
+  try {
+    const docRef = doc(db, CATEGORIES_COLLECTION, categoryId);
+    await deleteDoc(docRef);
+  } catch (err) {
+    console.warn('Firestore deleteCategory notice:', err);
+  }
 }
 
 /**
  * Delete product from Firestore
  */
 export async function deleteProductFromFirestore(productId: string): Promise<void> {
-  const docRef = doc(db, PRODUCTS_COLLECTION, productId);
-  await deleteDoc(docRef);
+  try {
+    const docRef = doc(db, PRODUCTS_COLLECTION, productId);
+    await deleteDoc(docRef);
+  } catch (err) {
+    console.warn('Firestore deleteProduct notice:', err);
+  }
 }
 
 /**
  * Save store settings to Firestore
  */
 export async function saveSettingsToFirestore(config: StoreConfig): Promise<void> {
-  const docRef = doc(db, SETTINGS_COLLECTION, 'general');
-  await setDoc(docRef, config, { merge: true });
+  try {
+    const docRef = doc(db, SETTINGS_COLLECTION, 'general');
+    await setDoc(docRef, config, { merge: true });
+  } catch (err) {
+    if (isQuotaOrNetworkError(err)) {
+      console.warn('Firestore write notice: quota limit exceeded for settings. Saved locally.', err);
+    } else {
+      console.warn('Firestore saveSettings notice:', err);
+    }
+  }
 }
 
 /**
