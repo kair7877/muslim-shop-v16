@@ -52,6 +52,21 @@ import { compressImageFile } from '../utils/imageCompressor';
 
 const ADMIN_SESSION_KEY = 'muslim_shop_admin_session_ts';
 const ADMIN_SESSION_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes of inactivity
+const ADMIN_LOCKOUT_KEY = 'muslim_shop_admin_lockout_until';
+const ADMIN_ATTEMPTS_KEY = 'muslim_shop_admin_failed_attempts';
+
+const getLockoutRemainingMs = (): number => {
+  try {
+    const raw = localStorage.getItem(ADMIN_LOCKOUT_KEY);
+    if (!raw) return 0;
+    const until = parseInt(raw, 10);
+    if (isNaN(until)) return 0;
+    const remaining = until - Date.now();
+    return remaining > 0 ? remaining : 0;
+  } catch {
+    return 0;
+  }
+};
 
 const checkSessionValid = (): boolean => {
   try {
@@ -109,7 +124,18 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showPinInSettings, setShowPinInSettings] = useState(false);
+  const [lockoutRemainingMs, setLockoutRemainingMs] = useState<number>(() => getLockoutRemainingMs());
   const isSubmittingAddProductRef = useRef(false);
+
+  useEffect(() => {
+    if (lockoutRemainingMs <= 0) return;
+    const timer = setInterval(() => {
+      const remaining = getLockoutRemainingMs();
+      setLockoutRemainingMs(remaining);
+      if (remaining <= 0) clearInterval(timer);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [lockoutRemainingMs]);
 
   const refreshAdminSession = useCallback(() => {
     try {
@@ -221,16 +247,43 @@ export const AdminModal: React.FC<AdminModalProps> = ({
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    const remainingLockout = getLockoutRemainingMs();
+    if (remainingLockout > 0) {
+      const mins = Math.ceil(remainingLockout / 60000);
+      setErrorMsg(`Слишком много неверных попыток. Подождите ${mins} мин.`);
+      return;
+    }
+
     const targetPin = config.adminPin?.trim() || '505534';
     if (pin.trim() === targetPin) {
       setIsAuthenticated(true);
       setErrorMsg('');
       try {
         localStorage.setItem(ADMIN_SESSION_KEY, Date.now().toString());
+        localStorage.removeItem(ADMIN_ATTEMPTS_KEY);
+        localStorage.removeItem(ADMIN_LOCKOUT_KEY);
       } catch {}
       setSessionRemainingMinutes(10);
+      setLockoutRemainingMs(0);
     } else {
-      setErrorMsg('Неверный PIN-код');
+      let attempts = 1;
+      try {
+        const prev = parseInt(localStorage.getItem(ADMIN_ATTEMPTS_KEY) || '0', 10);
+        attempts = isNaN(prev) ? 1 : prev + 1;
+        localStorage.setItem(ADMIN_ATTEMPTS_KEY, attempts.toString());
+      } catch {}
+
+      if (attempts >= 5) {
+        const lockoutUntil = Date.now() + 5 * 60 * 1000;
+        try {
+          localStorage.setItem(ADMIN_LOCKOUT_KEY, lockoutUntil.toString());
+          localStorage.removeItem(ADMIN_ATTEMPTS_KEY);
+        } catch {}
+        setLockoutRemainingMs(5 * 60 * 1000);
+        setErrorMsg('Слишком много неверных попыток. Доступ заблокирован на 5 минут.');
+      } else {
+        setErrorMsg('Неверный PIN-код');
+      }
     }
   };
 
@@ -634,7 +687,8 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                 value={pin}
                 onChange={(e) => setPin(e.target.value)}
                 placeholder="PIN"
-                className="w-full text-center tracking-widest text-xl px-4 py-2.5 rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-emerald-700 font-mono"
+                disabled={lockoutRemainingMs > 0}
+                className="w-full text-center tracking-widest text-xl px-4 py-2.5 rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-emerald-700 font-mono disabled:bg-stone-100 disabled:text-stone-400"
                 maxLength={32}
                 autoFocus
               />
@@ -645,9 +699,12 @@ export const AdminModal: React.FC<AdminModalProps> = ({
               )}
               <button
                 type="submit"
-                className="w-full py-2.5 rounded-xl bg-emerald-900 text-white font-bold text-sm hover:bg-emerald-950 transition-colors cursor-pointer shadow-xs"
+                disabled={lockoutRemainingMs > 0}
+                className="w-full py-2.5 rounded-xl bg-emerald-900 text-white font-bold text-sm hover:bg-emerald-950 transition-colors cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Войти в панель
+                {lockoutRemainingMs > 0
+                  ? `Блокировка (${Math.ceil(lockoutRemainingMs / 1000)}с)`
+                  : 'Войти в панель'}
               </button>
             </form>
 
