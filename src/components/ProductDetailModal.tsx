@@ -21,7 +21,7 @@ import {
   Check,
 } from 'lucide-react';
 import { AccessibilitySettings, Language, Product, StoreConfig } from '../types';
-import { formatPrice, getProductDirectUrl, copyTextToClipboard } from '../utils/formatters';
+import { formatPrice, getProductDirectUrl, copyTextToClipboard, shareOrCopyProduct } from '../utils/formatters';
 
 interface ProductDetailModalProps {
   product: Product;
@@ -201,9 +201,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             <button
               id="copy-product-link-btn"
               onClick={async () => {
-                const url = getProductDirectUrl(product.id);
-                const ok = await copyTextToClipboard(url);
-                if (ok) {
+                const res = await shareOrCopyProduct(product, lang);
+                if (res.success) {
                   setIsLinkCopied(true);
                   setTimeout(() => setIsLinkCopied(false), 2500);
                 }
@@ -213,7 +212,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   ? 'bg-emerald-600 text-white'
                   : 'bg-emerald-900 hover:bg-emerald-800 text-amber-300'
               }`}
-              title="Скопировать прямую ссылку на товар для отправки клиенту в WhatsApp"
+              title="Скопировать прямую ссылку на товар для отправки клиенту в WhatsApp или сторис"
             >
               {isLinkCopied ? (
                 <>
@@ -593,6 +592,45 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     </p>
                   </div>
                 )}
+
+                {/* Direct Share Link block for Stories & WhatsApp */}
+                <div className="pt-2">
+                  <button
+                    id="modal-share-product-btn"
+                    onClick={async () => {
+                      const res = await shareOrCopyProduct(product, lang);
+                      if (res.success) {
+                        setIsLinkCopied(true);
+                        setTimeout(() => setIsLinkCopied(false), 3000);
+                      }
+                    }}
+                    className={`w-full py-2.5 px-4 rounded-xl border text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                      isLinkCopied
+                        ? 'bg-emerald-50 border-emerald-500 text-emerald-800 shadow-xs'
+                        : 'bg-stone-50 hover:bg-stone-100 border-stone-200/90 text-stone-700 hover:text-stone-900'
+                    }`}
+                    title="Скопировать ссылку для вставки в Instagram Сторис или отправки клиенту"
+                  >
+                    {isLinkCopied ? (
+                      <>
+                        <Check className="w-4 h-4 text-emerald-600" />
+                        <span className="font-bold text-emerald-700">
+                          {lang === 'kz' ? '✓ Сілтеме көшірілді! Сторис немесе WhatsApp-қа салыңыз' : '✓ Ссылка скопирована! Готова для сторис и WhatsApp'}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <Share2 className="w-4 h-4 text-amber-600" />
+                        <span>
+                          {lang === 'kz' ? 'Өнім сілтемесін көшіру (Сторис / WhatsApp)' : 'Скопировать ссылку на товар (для сторис и WhatsApp)'}
+                        </span>
+                      </>
+                    )}
+                  </button>
+                  <p className="text-[11px] text-center text-stone-400 mt-1">
+                    {lang === 'kz' ? 'Клиент сілтемені ашқанда тура осы тауарға бірден өтеді' : 'Клиент перейдет ровно на эту карточку товара без лишнего поиска'}
+                  </p>
+                </div>
               </div>
             </div>
           </div>

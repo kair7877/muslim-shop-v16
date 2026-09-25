@@ -222,11 +222,147 @@ export function generateQuickOrderUrl(
   return `https://wa.me/${config.whatsappNumber}?text=${encodeURIComponent(message)}`;
 }
 
+/**
+ * Generates a clean, publicly accessible direct URL for a specific product.
+ * If running inside Google AI Studio preview (ais-dev-*), converts to the public
+ * preview URL (ais-pre-*) so that recipients on Instagram or WhatsApp can open it
+ * without encountering private development authentication walls.
+ */
 export function getProductDirectUrl(productId: string): string {
-  if (typeof window === 'undefined') return `?p=${encodeURIComponent(productId)}`;
-  const origin = window.location.origin;
-  const pathname = window.location.pathname;
-  return `${origin}${pathname}?p=${encodeURIComponent(productId)}`;
+  if (!productId) return '';
+  const cleanId = encodeURIComponent(productId.toString().trim());
+
+  if (typeof window === 'undefined') return `?p=${cleanId}`;
+
+  let origin = window.location.origin || '';
+
+  // CRITICAL FIX: If running inside AI Studio preview/dev environment (ais-dev-*.run.app),
+  // replace 'ais-dev-' with 'ais-pre-' so that external users (clients on WhatsApp/Instagram)
+  // can actually access the site without hitting private development auth blocks!
+  if (origin.includes('ais-dev-')) {
+    origin = origin.replace('ais-dev-', 'ais-pre-');
+  }
+
+  let pathname = window.location.pathname || '/';
+  if (pathname.endsWith('/index.html')) {
+    pathname = pathname.substring(0, pathname.length - 10);
+  }
+  if (!pathname.endsWith('/')) {
+    pathname = `${pathname}/`;
+  }
+
+  return `${origin}${pathname}?p=${cleanId}`;
+}
+
+/**
+ * Robust extractor of product ID or SKU from current URL or a custom URL string.
+ * Handles:
+ * - Query params: ?p=ID, ?product=ID, ?prod=ID, ?id=ID, ?sku=SKU, ?item=ID
+ * - Hash routes: #ID, #p=ID, #product=ID, #/product/ID, #/p/ID
+ * - Path routes: /product/ID, /p/ID
+ * - Trailing slashes added by Instagram/social media crawlers (e.g. ?p=prod-123/)
+ * - URL encoded characters
+ */
+export function extractProductIdFromUrl(urlStr?: string): string | null {
+  try {
+    let search = '';
+    let hash = '';
+    let pathname = '';
+
+    if (urlStr) {
+      const parsed = new URL(urlStr, typeof window !== 'undefined' ? window.location.origin : 'https://example.com');
+      search = parsed.search;
+      hash = parsed.hash;
+      pathname = parsed.pathname;
+    } else if (typeof window !== 'undefined') {
+      search = window.location.search;
+      hash = window.location.hash;
+      pathname = window.location.pathname;
+    } else {
+      return null;
+    }
+
+    const searchParams = new URLSearchParams(search);
+
+    // 1. Query parameters
+    let rawId =
+      searchParams.get('p') ||
+      searchParams.get('product') ||
+      searchParams.get('prod') ||
+      searchParams.get('id') ||
+      searchParams.get('sku') ||
+      searchParams.get('item');
+
+    // 2. Hash variants (e.g. #prod-123, #p=prod-123, #/product/prod-123)
+    if (!rawId && hash) {
+      const cleanHash = hash.replace(/^#\/?/, '').trim();
+      if (cleanHash.startsWith('p=')) {
+        rawId = cleanHash.replace(/^p=/, '');
+      } else if (cleanHash.startsWith('product=')) {
+        rawId = cleanHash.replace(/^product=/, '');
+      } else if (cleanHash.startsWith('product/')) {
+        rawId = cleanHash.replace(/^product\//, '');
+      } else if (cleanHash.startsWith('p/')) {
+        rawId = cleanHash.replace(/^p\//, '');
+      } else if (cleanHash.includes('?')) {
+        const hashParams = new URLSearchParams(cleanHash.substring(cleanHash.indexOf('?')));
+        rawId = hashParams.get('p') || hashParams.get('product') || hashParams.get('id');
+      } else if (!cleanHash.includes('/') && cleanHash.length > 2) {
+        rawId = cleanHash;
+      }
+    }
+
+    // 3. Path routes (e.g. /product/prod-123 or /p/prod-123)
+    if (!rawId && pathname) {
+      const match = pathname.match(/\/(?:product|p)\/([^/?#]+)/i);
+      if (match && match[1]) {
+        rawId = match[1];
+      }
+    }
+
+    if (!rawId) return null;
+
+    // Decode and remove any trailing slash appended by Instagram or other apps
+    let cleaned = decodeURIComponent(rawId).trim();
+    cleaned = cleaned.replace(/\/+$/, '');
+
+    return cleaned.length > 0 ? cleaned : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Mobile-first sharing helper: uses navigator.share on iOS/Android (Instagram Stories, WhatsApp, Telegram, etc.)
+ * with seamless fallback to clipboard copying.
+ */
+export async function shareOrCopyProduct(
+  product: { id: string; titleRu: string; titleKz?: string; price: number; sku?: string },
+  lang: 'ru' | 'kz' = 'ru'
+): Promise<{ success: boolean; method: 'shared' | 'copied' | 'failed' }> {
+  const url = getProductDirectUrl(product.id);
+  const title = (lang === 'kz' && product.titleKz?.trim()) ? product.titleKz : product.titleRu;
+  const shareText = `${title}\n${formatPrice(product.price)}${product.sku ? ` (Арт: ${product.sku})` : ''}\nБутик №24, Атырау`;
+
+  if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+    try {
+      await navigator.share({
+        title,
+        text: shareText,
+        url,
+      });
+      return { success: true, method: 'shared' };
+    } catch (err: any) {
+      // If user cancelled the share menu (AbortError), don't treat as error or force copy
+      if (err?.name === 'AbortError') {
+        return { success: false, method: 'failed' };
+      }
+    }
+  }
+
+  // Fallback to clipboard copying
+  const ok = await copyTextToClipboard(url);
+  return { success: ok, method: ok ? 'copied' : 'failed' };
 }
 
 export async function copyTextToClipboard(text: string): Promise<boolean> {

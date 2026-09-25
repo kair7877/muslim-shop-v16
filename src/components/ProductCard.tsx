@@ -1,7 +1,7 @@
-import React from 'react';
-import { ShoppingBag, Heart, ZoomIn, Check, Zap, Clock } from 'lucide-react';
+import React, { useState } from 'react';
+import { ShoppingBag, Heart, ZoomIn, Check, Zap, Clock, Share2 } from 'lucide-react';
 import { AccessibilitySettings, Language, Product } from '../types';
-import { formatPrice } from '../utils/formatters';
+import { formatPrice, shareOrCopyProduct } from '../utils/formatters';
 
 interface ProductCardProps {
   product: Product;
@@ -13,6 +13,7 @@ interface ProductCardProps {
   onAddToCart: (product: Product) => void;
   onOpenDetail: (product: Product) => void;
   onQuickOrder: (product: Product) => void;
+  onShareFeedback?: (msg: string) => void;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({
@@ -25,7 +26,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onAddToCart,
   onOpenDetail,
   onQuickOrder,
+  onShareFeedback,
 }) => {
+  const [isCopied, setIsCopied] = useState(false);
   const title = (lang === 'kz' && product.titleKz?.trim()) ? product.titleKz : product.titleRu;
   const description = (lang === 'kz' && product.descriptionKz?.trim()) ? product.descriptionKz : product.descriptionRu;
 
@@ -101,22 +104,55 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           )}
         </div>
 
-        {/* Favorite Heart Button */}
-        <button
-          id={`favorite-btn-${product.id}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleFavorite(product);
-          }}
-          className={`absolute top-2.5 right-2.5 p-2 rounded-xl backdrop-blur-xs transition-colors shadow-xs ${
-            isFavorite
-              ? 'bg-rose-50 text-rose-600 border border-rose-200'
-              : 'bg-white/85 text-stone-600 hover:text-rose-600 hover:bg-white'
-          }`}
-          title={lang === 'kz' ? 'Таңдаулыға қосу' : 'Добавить в избранное'}
-        >
-          <Heart className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isFavorite ? 'fill-rose-600' : ''}`} />
-        </button>
+        {/* Top-Right Action Controls: Favorite + Direct Share Link */}
+        <div className="absolute top-2.5 right-2.5 flex flex-col gap-1.5 z-10">
+          {/* Favorite Heart Button */}
+          <button
+            id={`favorite-btn-${product.id}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleFavorite(product);
+            }}
+            className={`p-2 rounded-xl backdrop-blur-xs transition-colors shadow-xs cursor-pointer ${
+              isFavorite
+                ? 'bg-rose-50 text-rose-600 border border-rose-200'
+                : 'bg-white/85 text-stone-600 hover:text-rose-600 hover:bg-white'
+            }`}
+            title={lang === 'kz' ? 'Таңдаулыға қосу' : 'Добавить в избранное'}
+          >
+            <Heart className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isFavorite ? 'fill-rose-600' : ''}`} />
+          </button>
+
+          {/* Quick Share / Direct Link Button */}
+          <button
+            id={`share-btn-${product.id}`}
+            onClick={async (e) => {
+              e.stopPropagation();
+              const res = await shareOrCopyProduct(product, lang);
+              if (res.success) {
+                setIsCopied(true);
+                setTimeout(() => setIsCopied(false), 2200);
+                onShareFeedback?.(
+                  lang === 'kz'
+                    ? 'Сілтеме көшірілді! Сториске немесе WhatsApp-қа жібере аласыз'
+                    : 'Ссылка на товар скопирована! Можно вставить в сторис или отправить клиенту'
+                );
+              }
+            }}
+            className={`p-2 rounded-xl backdrop-blur-xs transition-colors shadow-xs cursor-pointer ${
+              isCopied
+                ? 'bg-emerald-600 text-white shadow-md'
+                : 'bg-white/85 text-stone-600 hover:text-emerald-800 hover:bg-white'
+            }`}
+            title={lang === 'kz' ? 'Өнім сілтемесін көшіру / бөлісу' : 'Скопировать ссылку для сторис и WhatsApp'}
+          >
+            {isCopied ? (
+              <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            ) : (
+              <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            )}
+          </button>
+        </div>
 
         {/* Overlay Magnifier Cue */}
         <div className="absolute inset-0 bg-stone-950/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">

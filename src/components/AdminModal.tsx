@@ -405,7 +405,8 @@ export const AdminModal: React.FC<AdminModalProps> = ({
         setCopyFeedbackMsg((curr) => (curr?.includes(product.titleRu) ? null : curr));
       }, 5000);
     } else {
-      alert(`Прямая ссылка на товар:\n${url}`);
+      setCopyFeedbackMsg(`Ссылка: ${url}`);
+      setTimeout(() => setCopyFeedbackMsg(null), 7000);
     }
   };
 

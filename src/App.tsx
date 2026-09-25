@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   AccessibilitySettings,
   CartItem,
@@ -30,10 +30,15 @@ import {
   subscribeToProducts,
   subscribeToCategories,
   subscribeToSettings,
+  getProductById,
   isQuotaOrNetworkError,
 } from './services/firestoreService';
 import { trackVisit, trackProductView } from './services/analyticsService';
-import { deduplicateProducts } from './utils/formatters';
+import {
+  deduplicateProducts,
+  extractProductIdFromUrl,
+  getProductDirectUrl,
+} from './utils/formatters';
 
 export default function App() {
   // Config state
@@ -189,6 +194,7 @@ export default function App() {
   const [isFavoritesOpen, setIsFavoritesOpen] = useState<boolean>(false);
   const [isAdminOpen, setIsAdminOpen] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isDirectProductLoading, setIsDirectProductLoading] = useState<boolean>(false);
 
   // 1. Subscribe to Firestore Products
   useEffect(() => {
@@ -307,37 +313,121 @@ export default function App() {
     localStorage.setItem('muslim_shop_accessibility', JSON.stringify(accessibility));
   }, [accessibility]);
 
+  // Helper to match targetId against products array with high tolerance
+  const findProductMatch = useCallback((list: Product[], targetId: string): Product | undefined => {
+    if (!targetId || !Array.isArray(list) || list.length === 0) return undefined;
+    const clean = targetId.trim().toLowerCase();
+
+    // 1. Strict ID match or case-insensitive match
+    let found = list.find((p) => p.id === targetId || p.id.toLowerCase() === clean);
+    if (found) return found;
+
+    // 2. SKU match
+    found = list.find((p) => p.sku && (p.sku === targetId || p.sku.toLowerCase() === clean));
+    if (found) return found;
+
+    // 3. Match without prefix 'prod-'
+    const cleanNoPrefix = clean.replace(/^prod-/, '');
+    found = list.find((p) => p.id.toLowerCase().replace(/^prod-/, '') === cleanNoPrefix);
+    if (found) return found;
+
+    // 4. Match SKU numeric part
+    const numPart = clean.replace(/^[a-z]+-?/i, '');
+    if (numPart && numPart.length >= 3) {
+      found = list.find((p) => p.sku && p.sku.toLowerCase().endsWith(numPart));
+      if (found) return found;
+    }
+
+    return undefined;
+  }, []);
+
   // Deep linking: Automatically open product detail modal if URL has ?p=prod-id or #prod-id
   useEffect(() => {
-    if (products.length === 0) return;
+    let isCancelled = false;
 
-    const checkDirectLink = () => {
+    const resolveDirectLink = async () => {
+      const targetId = extractProductIdFromUrl();
+      if (!targetId) {
+        // If there is no targetId in URL (e.g. user navigated Back via browser button), close detail modal
+        setSelectedProductForDetail((curr) => (curr ? null : curr));
+        return;
+      }
+
+      // 1. Check if already loaded in current state
+      const existing = findProductMatch(products, targetId);
+      if (existing) {
+        setSelectedProductForDetail(existing);
+        const title = (lang === 'kz' && existing.titleKz?.trim()) ? existing.titleKz : existing.titleRu;
+        document.title = `${title} — ${config.storeName}`;
+        return;
+      }
+
+      // 2. Check cached products in localStorage
       try {
-        const urlParams = new URLSearchParams(window.location.search);
-        const pidFromQuery = urlParams.get('p') || urlParams.get('product');
-        const pidFromHash = window.location.hash ? window.location.hash.replace('#', '') : null;
-        const targetId = pidFromQuery || pidFromHash;
+        const cachedRaw = localStorage.getItem('muslim_shop_products_cache') || localStorage.getItem('muslim_shop_products');
+        if (cachedRaw) {
+          const cachedList = JSON.parse(cachedRaw);
+          const cachedMatch = findProductMatch(cachedList, targetId);
+          if (cachedMatch) {
+            setSelectedProductForDetail(cachedMatch);
+            const title = (lang === 'kz' && cachedMatch.titleKz?.trim()) ? cachedMatch.titleKz : cachedMatch.titleRu;
+            document.title = `${title} — ${config.storeName}`;
+            return;
+          }
+        }
+      } catch {}
 
-        if (targetId) {
-          const found = products.find((p) => p.id === targetId || p.sku === targetId);
-          if (found) {
-            setSelectedProductForDetail(found);
+      // 3. Directly fetch single document from Firestore by ID or SKU
+      setIsDirectProductLoading(true);
+      try {
+        const directProd = await getProductById(targetId);
+        if (isCancelled) return;
+
+        if (directProd) {
+          setSelectedProductForDetail(directProd);
+          const title = (lang === 'kz' && directProd.titleKz?.trim()) ? directProd.titleKz : directProd.titleRu;
+          document.title = `${title} — ${config.storeName}`;
+
+          // Also inject into products list if not yet included so catalog renders it
+          setProducts((prev) => {
+            if (prev.some((p) => p.id === directProd.id)) return prev;
+            return [directProd, ...prev];
+          });
+        } else {
+          // If products collection is still loading, wait; otherwise notify user
+          if (!isLoadingProducts) {
+            setToastMessage(
+              lang === 'kz'
+                ? 'Өнім сілтемесі бойынша табылмады немесе сатылымнан алынды'
+                : 'Товар по ссылке не найден или был снят с продажи'
+            );
+            setTimeout(() => setToastMessage(null), 4000);
           }
         }
       } catch (err) {
-        console.error('Direct link check error:', err);
+        console.error('Direct link resolution error:', err);
+      } finally {
+        if (!isCancelled) {
+          setIsDirectProductLoading(false);
+        }
       }
     };
 
-    checkDirectLink();
-    window.addEventListener('popstate', checkDirectLink);
-    window.addEventListener('hashchange', checkDirectLink);
+    resolveDirectLink();
+
+    const handleUrlChange = () => {
+      resolveDirectLink();
+    };
+
+    window.addEventListener('popstate', handleUrlChange);
+    window.addEventListener('hashchange', handleUrlChange);
 
     return () => {
-      window.removeEventListener('popstate', checkDirectLink);
-      window.removeEventListener('hashchange', checkDirectLink);
+      isCancelled = true;
+      window.removeEventListener('popstate', handleUrlChange);
+      window.removeEventListener('hashchange', handleUrlChange);
     };
-  }, [products]);
+  }, [products, isLoadingProducts, lang, config.storeName, findProductMatch]);
 
   // Track visitor traffic safely
   useEffect(() => {
@@ -348,9 +438,10 @@ export default function App() {
     setSelectedProductForDetail(product);
     trackProductView(product.id, product.titleRu);
     try {
-      const url = new URL(window.location.href);
-      url.searchParams.set('p', product.id);
-      window.history.replaceState({}, '', url.toString());
+      const targetUrl = getProductDirectUrl(product.id);
+      window.history.pushState({ productId: product.id }, '', targetUrl);
+      const title = (lang === 'kz' && product.titleKz?.trim()) ? product.titleKz : product.titleRu;
+      document.title = `${title} — ${config.storeName}`;
     } catch {}
   };
 
@@ -358,11 +449,10 @@ export default function App() {
     setSelectedProductForDetail(null);
     try {
       const url = new URL(window.location.href);
-      if (url.searchParams.has('p') || url.searchParams.has('product')) {
-        url.searchParams.delete('p');
-        url.searchParams.delete('product');
-        window.history.replaceState({}, '', url.toString());
-      }
+      ['p', 'product', 'prod', 'id', 'sku', 'item'].forEach((k) => url.searchParams.delete(k));
+      const cleanPath = url.pathname + (url.search ? url.search : '');
+      window.history.replaceState({}, '', cleanPath);
+      document.title = `${config.storeName} — ${lang === 'kz' ? config.taglineKz : config.taglineRu} | Бутик №24`;
     } catch {}
   };
 
@@ -523,6 +613,17 @@ export default function App() {
         </div>
       )}
 
+      {/* Loading banner when opening a direct link from Instagram Story or WhatsApp */}
+      {isDirectProductLoading && !selectedProductForDetail && (
+        <div
+          id="direct-product-loader"
+          className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] bg-emerald-950/95 backdrop-blur-md text-white px-5 py-3 rounded-2xl shadow-2xl border border-amber-400/80 text-xs sm:text-sm font-bold flex items-center gap-3 animate-pulse"
+        >
+          <Loader2 className="w-5 h-5 text-amber-300 animate-spin shrink-0" />
+          <span>{lang === 'kz' ? 'Өнім жүктелуде...' : 'Загружаем товар по ссылке...'}</span>
+        </div>
+      )}
+
       {/* Header */}
       <Header
         config={config}
@@ -649,6 +750,7 @@ export default function App() {
                 onAddToCart={handleAddToCart}
                 onOpenDetail={handleOpenDetail}
                 onQuickOrder={setSelectedProductForQuickOrder}
+                onShareFeedback={showToast}
               />
             ))}
           </div>

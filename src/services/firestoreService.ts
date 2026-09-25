@@ -9,6 +9,7 @@ import {
   getDoc,
   query,
   orderBy,
+  where,
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Category, Product, StoreConfig } from '../types';
@@ -132,6 +133,54 @@ export function subscribeToProducts(
     if (onError) onError(err);
     return () => {};
   }
+}
+
+/**
+ * Directly fetch a single product from Firestore by Document ID or SKU.
+ * Highly optimized for direct link navigation from WhatsApp / Instagram stories.
+ */
+export async function getProductById(targetId: string): Promise<Product | null> {
+  if (!targetId || typeof targetId !== 'string') return null;
+  const cleanId = targetId.trim();
+
+  // 1. Direct document lookup by Document ID
+  try {
+    const docRef = doc(db, PRODUCTS_COLLECTION, cleanId);
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+      return normalizeProduct(snap.id, snap.data());
+    }
+  } catch (err) {
+    console.warn('Direct doc fetch failed:', err);
+  }
+
+  // 2. Query by 'sku' field (e.g. MS-101)
+  try {
+    const colRef = collection(db, PRODUCTS_COLLECTION);
+    const qSku = query(colRef, where('sku', '==', cleanId));
+    const snapSku = await getDocs(qSku);
+    if (!snapSku.empty) {
+      const docSnap = snapSku.docs[0];
+      return normalizeProduct(docSnap.id, docSnap.data());
+    }
+  } catch (err) {
+    console.warn('Query by SKU failed:', err);
+  }
+
+  // 3. Query by 'id' field in case Firestore document ID differed from data.id
+  try {
+    const colRef = collection(db, PRODUCTS_COLLECTION);
+    const qId = query(colRef, where('id', '==', cleanId));
+    const snapId = await getDocs(qId);
+    if (!snapId.empty) {
+      const docSnap = snapId.docs[0];
+      return normalizeProduct(docSnap.id, docSnap.data());
+    }
+  } catch (err) {
+    console.warn('Query by id failed:', err);
+  }
+
+  return null;
 }
 
 /**
