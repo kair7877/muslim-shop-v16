@@ -86,8 +86,7 @@ export function isQuotaOrNetworkError(err: any): boolean {
 
 /**
  * Directly fetch all products from backend server API (/api/products)
- * Ensures 100% reliable catalog loading in every browser (Chrome, Yandex, Safari, mobile)
- * even if Firestore has reached its free tier daily read quota.
+ * Ensures catalog loading in other browsers even if Firestore quota is exceeded.
  */
 export async function fetchProductsFromBackend(): Promise<Product[]> {
   try {
@@ -95,10 +94,6 @@ export async function fetchProductsFromBackend(): Promise<Product[]> {
     if (res.ok) {
       const data = await res.json();
       if (data && Array.isArray(data.products) && data.products.length > 0) {
-        try {
-          localStorage.setItem('muslim_shop_products_cache', JSON.stringify(data.products));
-          localStorage.setItem('muslim_shop_products', JSON.stringify(data.products));
-        } catch {}
         return data.products;
       }
     }
@@ -109,19 +104,13 @@ export async function fetchProductsFromBackend(): Promise<Product[]> {
 }
 
 /**
- * Real-time subscription to products collection with backend fallback
+ * Real-time subscription to products collection.
+ * Always prioritizes the user's authentic products from Firestore or offline storage.
  */
 export function subscribeToProducts(
   onSuccess: (products: Product[]) => void,
   onError?: (error: Error) => void
 ) {
-  // 1. Immediately fetch from backend server so products display instantly in all browsers
-  fetchProductsFromBackend().then((backendProducts) => {
-    if (backendProducts && backendProducts.length > 0) {
-      onSuccess(backendProducts);
-    }
-  });
-
   try {
     const colRef = collection(db, PRODUCTS_COLLECTION);
     return onSnapshot(
@@ -137,31 +126,80 @@ export function subscribeToProducts(
             localStorage.setItem('muslim_shop_products', JSON.stringify(items));
           } catch {}
           onSuccess(items);
+
+          // Synchronize authentic products to server so other browsers can view them
+          fetch('/api/products/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ products: items }),
+          }).catch(() => {});
         }
       },
       (err) => {
         if (isQuotaOrNetworkError(err)) {
           console.warn('Firestore notice: daily read quota reached or offline. Loading cached products.');
-          try {
-            const cached =
-              localStorage.getItem('muslim_shop_products_cache') ||
-              localStorage.getItem('muslim_shop_products');
-            if (cached) {
-              const parsed = JSON.parse(cached);
-              if (Array.isArray(parsed) && parsed.length > 0) {
-                onSuccess(parsed);
-                return;
-              }
-            }
-          } catch {}
         } else {
           console.warn('Firestore subscribeToProducts notice:', err);
         }
+
+        // 1. First attempt to restore from local storage cache
+        try {
+          const cached =
+            localStorage.getItem('muslim_shop_products_cache') ||
+            localStorage.getItem('muslim_shop_products');
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              const clean = parsed.filter(
+                (p: any) =>
+                  p.sku !== 'MS-101-OIL' &&
+                  !p.titleRu?.includes('Масло черного тмина «Королевское»') &&
+                  !p.titleRu?.includes('Кыст аль-Хинди в капсулах (Премиум)') &&
+                  !p.titleRu?.includes('Витамин D3 5000 IU') &&
+                  !p.titleRu?.includes('Омега-3 Премиум') &&
+                  !p.titleRu?.includes('Themra') &&
+                  !p.titleRu?.includes('Kangzhu') &&
+                  !p.titleRu?.includes('Al-Rehab Sultan')
+              );
+              if (clean.length > 0) {
+                onSuccess(clean);
+                return;
+              }
+            }
+          }
+        } catch {}
+
+        // 2. Fallback to server products if local cache is empty (e.g. in new browsers)
+        fetchProductsFromBackend().then((backendProducts) => {
+          if (backendProducts && backendProducts.length > 0) {
+            onSuccess(backendProducts);
+          }
+        });
+
         if (onError) onError(err);
       }
     );
   } catch (err: any) {
     console.warn('Firestore subscribeToProducts initialization notice:', err);
+    try {
+      const cached =
+        localStorage.getItem('muslim_shop_products_cache') ||
+        localStorage.getItem('muslim_shop_products');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          onSuccess(parsed);
+          return () => {};
+        }
+      }
+    } catch {}
+
+    fetchProductsFromBackend().then((backendProducts) => {
+      if (backendProducts && backendProducts.length > 0) {
+        onSuccess(backendProducts);
+      }
+    });
+
     if (onError) onError(err);
     return () => {};
   }

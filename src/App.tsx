@@ -111,7 +111,20 @@ export default function App() {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return deduplicateProducts(parsed);
+          const clean = parsed.filter(
+            (p: any) =>
+              p.sku !== 'MS-101-OIL' &&
+              !p.titleRu?.includes('Масло черного тмина «Королевское»') &&
+              !p.titleRu?.includes('Кыст аль-Хинди в капсулах (Премиум)') &&
+              !p.titleRu?.includes('Витамин D3 5000 IU') &&
+              !p.titleRu?.includes('Омега-3 Премиум') &&
+              !p.titleRu?.includes('Themra') &&
+              !p.titleRu?.includes('Kangzhu') &&
+              !p.titleRu?.includes('Al-Rehab Sultan')
+          );
+          if (clean.length > 0) {
+            return deduplicateProducts(clean);
+          }
         }
       }
       return INITIAL_PRODUCTS;
@@ -120,17 +133,25 @@ export default function App() {
     }
   });
 
-  // Immediate cleanup of any existing duplicate entries in state/storage on boot
+  // Immediate cleanup of any existing demo entries in state/storage on boot
   useEffect(() => {
     setProducts((prev) => {
-      const deduped = deduplicateProducts(prev);
-      if (deduped.length !== prev.length) {
-        try {
-          localStorage.setItem('muslim_shop_products', JSON.stringify(deduped));
-        } catch {}
-        return deduped;
-      }
-      return prev;
+      const clean = prev.filter(
+        (p: any) =>
+          p.sku !== 'MS-101-OIL' &&
+          !p.titleRu?.includes('Масло черного тмина «Королевское»') &&
+          !p.titleRu?.includes('Кыст аль-Хинди в капсулах (Премиум)') &&
+          !p.titleRu?.includes('Витамин D3 5000 IU') &&
+          !p.titleRu?.includes('Омега-3 Премиум') &&
+          !p.titleRu?.includes('Themra') &&
+          !p.titleRu?.includes('Kangzhu') &&
+          !p.titleRu?.includes('Al-Rehab Sultan')
+      );
+      const deduped = deduplicateProducts(clean);
+      try {
+        localStorage.setItem('muslim_shop_products', JSON.stringify(deduped));
+      } catch {}
+      return deduped;
     });
   }, []);
 

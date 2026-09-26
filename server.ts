@@ -387,6 +387,32 @@ app.delete('/api/products/:id', (req, res) => {
   }
 });
 
+app.post('/api/products/sync', (req, res) => {
+  try {
+    const { products } = req.body;
+    if (Array.isArray(products) && products.length > 0) {
+      const realOnly = products.filter(
+        (p: any) =>
+          p.sku !== 'MS-101-OIL' &&
+          !p.titleRu?.includes('Масло черного тмина «Королевское»') &&
+          !p.titleRu?.includes('Кыст аль-Хинди в капсулах (Премиум)') &&
+          !p.titleRu?.includes('Витамин D3 5000 IU') &&
+          !p.titleRu?.includes('Омега-3 Премиум') &&
+          !p.titleRu?.includes('Themra') &&
+          !p.titleRu?.includes('Kangzhu') &&
+          !p.titleRu?.includes('Al-Rehab Sultan')
+      );
+      if (realOnly.length > 0) {
+        saveProductsToFile(realOnly);
+        return res.json({ success: true, count: realOnly.length, products: realOnly });
+      }
+    }
+    res.json({ success: true, count: 0 });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message || 'Sync failed' });
+  }
+});
+
 // ================= VITE / STATIC SERVING =================
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {
