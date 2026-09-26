@@ -7,7 +7,7 @@ import {
   Product,
   StoreConfig,
 } from './types';
-import { CATEGORIES, INITIAL_CONFIG } from './data/storeData';
+import { CATEGORIES, INITIAL_CONFIG, INITIAL_PRODUCTS } from './data/storeData';
 import { Header } from './components/Header';
 import { HeroBanner } from './components/HeroBanner';
 import { CategoryFilter } from './components/CategoryFilter';
@@ -104,25 +104,19 @@ export default function App() {
     }
   });
 
-  // Products state (loads directly from Firestore / cached storage)
+  // Products state (loads directly from Firestore / cached storage / INITIAL_PRODUCTS)
   const [products, setProducts] = useState<Product[]>(() => {
     try {
       const saved = localStorage.getItem('muslim_shop_products');
       if (saved) {
         const parsed = JSON.parse(saved);
-        // If it's old demo data, ignore it
-        if (
-          Array.isArray(parsed) &&
-          parsed.some((p: any) => p.sku === 'MS-101-OIL' || p.titleRu?.includes('Королевское'))
-        ) {
-          localStorage.removeItem('muslim_shop_products');
-          return [];
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return deduplicateProducts(parsed);
         }
-        return deduplicateProducts(parsed);
       }
-      return [];
+      return INITIAL_PRODUCTS;
     } catch {
-      return [];
+      return INITIAL_PRODUCTS;
     }
   });
 
@@ -341,6 +335,19 @@ export default function App() {
     return undefined;
   }, []);
 
+  // Dedicated effect to sync document title whenever language or open product changes
+  useEffect(() => {
+    if (selectedProductForDetail) {
+      const title =
+        lang === 'kz' && selectedProductForDetail.titleKz?.trim()
+          ? selectedProductForDetail.titleKz
+          : selectedProductForDetail.titleRu;
+      document.title = `${title} — ${config.storeName}`;
+    } else {
+      document.title = `${config.storeName} — ${lang === 'kz' ? config.taglineKz : config.taglineRu} | Бутик №24`;
+    }
+  }, [lang, selectedProductForDetail, config.storeName, config.taglineKz, config.taglineRu]);
+
   // Deep linking: Automatically open product detail modal if URL has ?p=prod-id or #prod-id
   useEffect(() => {
     let isCancelled = false;
@@ -348,8 +355,6 @@ export default function App() {
     const resolveDirectLink = async () => {
       const targetId = extractProductIdFromUrl();
       if (!targetId) {
-        // If there is no targetId in URL (e.g. user navigated Back via browser button), close detail modal
-        setSelectedProductForDetail((curr) => (curr ? null : curr));
         return;
       }
 
@@ -357,8 +362,6 @@ export default function App() {
       const existing = findProductMatch(products, targetId);
       if (existing) {
         setSelectedProductForDetail(existing);
-        const title = (lang === 'kz' && existing.titleKz?.trim()) ? existing.titleKz : existing.titleRu;
-        document.title = `${title} — ${config.storeName}`;
         return;
       }
 
@@ -370,14 +373,12 @@ export default function App() {
           const cachedMatch = findProductMatch(cachedList, targetId);
           if (cachedMatch) {
             setSelectedProductForDetail(cachedMatch);
-            const title = (lang === 'kz' && cachedMatch.titleKz?.trim()) ? cachedMatch.titleKz : cachedMatch.titleRu;
-            document.title = `${title} — ${config.storeName}`;
             return;
           }
         }
       } catch {}
 
-      // 3. Directly fetch single document from Firestore by ID or SKU
+      // 3. Directly fetch single document from Firestore or backend by ID or SKU
       setIsDirectProductLoading(true);
       try {
         const directProd = await getProductById(targetId);
@@ -385,24 +386,10 @@ export default function App() {
 
         if (directProd) {
           setSelectedProductForDetail(directProd);
-          const title = (lang === 'kz' && directProd.titleKz?.trim()) ? directProd.titleKz : directProd.titleRu;
-          document.title = `${title} — ${config.storeName}`;
-
-          // Also inject into products list if not yet included so catalog renders it
           setProducts((prev) => {
             if (prev.some((p) => p.id === directProd.id)) return prev;
             return [directProd, ...prev];
           });
-        } else {
-          // If products collection is still loading, wait; otherwise notify user
-          if (!isLoadingProducts) {
-            setToastMessage(
-              lang === 'kz'
-                ? 'Өнім сілтемесі бойынша табылмады немесе сатылымнан алынды'
-                : 'Товар по ссылке не найден или был снят с продажи'
-            );
-            setTimeout(() => setToastMessage(null), 4000);
-          }
         }
       } catch (err) {
         console.error('Direct link resolution error:', err);
@@ -416,7 +403,13 @@ export default function App() {
     resolveDirectLink();
 
     const handleUrlChange = () => {
-      resolveDirectLink();
+      const targetId = extractProductIdFromUrl();
+      if (!targetId) {
+        // Only close if user pressed browser Back and URL no longer has the product parameter
+        setSelectedProductForDetail(null);
+      } else {
+        resolveDirectLink();
+      }
     };
 
     window.addEventListener('popstate', handleUrlChange);
@@ -427,7 +420,7 @@ export default function App() {
       window.removeEventListener('popstate', handleUrlChange);
       window.removeEventListener('hashchange', handleUrlChange);
     };
-  }, [products, isLoadingProducts, lang, config.storeName, findProductMatch]);
+  }, [products, findProductMatch]);
 
   // Track visitor traffic safely
   useEffect(() => {

@@ -85,12 +85,43 @@ export function isQuotaOrNetworkError(err: any): boolean {
 }
 
 /**
- * Real-time subscription to products collection with local fallback
+ * Directly fetch all products from backend server API (/api/products)
+ * Ensures 100% reliable catalog loading in every browser (Chrome, Yandex, Safari, mobile)
+ * even if Firestore has reached its free tier daily read quota.
+ */
+export async function fetchProductsFromBackend(): Promise<Product[]> {
+  try {
+    const res = await fetch('/api/products');
+    if (res.ok) {
+      const data = await res.json();
+      if (data && Array.isArray(data.products) && data.products.length > 0) {
+        try {
+          localStorage.setItem('muslim_shop_products_cache', JSON.stringify(data.products));
+          localStorage.setItem('muslim_shop_products', JSON.stringify(data.products));
+        } catch {}
+        return data.products;
+      }
+    }
+  } catch (e) {
+    console.warn('Backend /api/products fetch notice:', e);
+  }
+  return [];
+}
+
+/**
+ * Real-time subscription to products collection with backend fallback
  */
 export function subscribeToProducts(
   onSuccess: (products: Product[]) => void,
   onError?: (error: Error) => void
 ) {
+  // 1. Immediately fetch from backend server so products display instantly in all browsers
+  fetchProductsFromBackend().then((backendProducts) => {
+    if (backendProducts && backendProducts.length > 0) {
+      onSuccess(backendProducts);
+    }
+  });
+
   try {
     const colRef = collection(db, PRODUCTS_COLLECTION);
     return onSnapshot(
@@ -103,9 +134,10 @@ export function subscribeToProducts(
         if (items.length > 0) {
           try {
             localStorage.setItem('muslim_shop_products_cache', JSON.stringify(items));
+            localStorage.setItem('muslim_shop_products', JSON.stringify(items));
           } catch {}
+          onSuccess(items);
         }
-        onSuccess(items);
       },
       (err) => {
         if (isQuotaOrNetworkError(err)) {
@@ -179,6 +211,19 @@ export async function getProductById(targetId: string): Promise<Product | null> 
   } catch (err) {
     console.warn('Query by id failed:', err);
   }
+
+  // 4. Fallback: check backend products API (ensures direct link works even if Firestore quota exceeded)
+  try {
+    const backendProducts = await fetchProductsFromBackend();
+    const cleanLower = cleanId.toLowerCase();
+    const match = backendProducts.find(
+      (p) =>
+        p.id.toLowerCase() === cleanLower ||
+        (p.sku && p.sku.toLowerCase() === cleanLower) ||
+        p.id.toLowerCase().replace(/^prod-/, '') === cleanLower.replace(/^prod-/, '')
+    );
+    if (match) return match;
+  } catch {}
 
   return null;
 }
@@ -286,9 +331,21 @@ export function subscribeToSettings(
 }
 
 /**
- * Create or update product in Firestore
+ * Create or update product in Firestore and persistent backend server
  */
 export async function saveProductToFirestore(product: Product): Promise<void> {
+  // 1. Sync to backend server file storage
+  try {
+    await fetch('/api/products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(product),
+    });
+  } catch (err) {
+    console.warn('Backend sync product notice:', err);
+  }
+
+  // 2. Sync to Firestore
   try {
     const docRef = doc(db, PRODUCTS_COLLECTION, product.id);
     const cleanData: Record<string, any> = {};
@@ -342,9 +399,19 @@ export async function deleteCategoryFromFirestore(categoryId: string): Promise<v
 }
 
 /**
- * Delete product from Firestore
+ * Delete product from Firestore and persistent backend server
  */
 export async function deleteProductFromFirestore(productId: string): Promise<void> {
+  // 1. Sync to backend server file storage
+  try {
+    await fetch(`/api/products/${encodeURIComponent(productId)}`, {
+      method: 'DELETE',
+    });
+  } catch (err) {
+    console.warn('Backend delete product notice:', err);
+  }
+
+  // 2. Sync to Firestore
   try {
     const docRef = doc(db, PRODUCTS_COLLECTION, productId);
     await deleteDoc(docRef);

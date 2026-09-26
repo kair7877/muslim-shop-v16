@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
 import dotenv from 'dotenv';
 import { GoogleGenAI } from '@google/genai';
@@ -316,6 +317,73 @@ app.post('/api/translate', async (req, res) => {
   } catch (err: any) {
     console.error('Translation endpoint error:', err);
     res.status(500).json({ error: err.message || 'Translation failed' });
+  }
+});
+
+// ================= UNIVERSAL SHARED CATALOG API =================
+const PRODUCTS_FILE = path.join(process.cwd(), 'data', 'products.json');
+
+function loadProductsFromFile(): any[] {
+  try {
+    if (fs.existsSync(PRODUCTS_FILE)) {
+      const raw = fs.readFileSync(PRODUCTS_FILE, 'utf-8');
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (e) {
+    console.warn('Failed to load products from file:', e);
+  }
+  return [];
+}
+
+function saveProductsToFile(products: any[]) {
+  try {
+    const dir = path.dirname(PRODUCTS_FILE);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(PRODUCTS_FILE, JSON.stringify(products, null, 2), 'utf-8');
+  } catch (e) {
+    console.warn('Failed to save products to file:', e);
+  }
+}
+
+// Universal Products API - accessible by all browsers, clients and guests
+app.get('/api/products', (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache');
+  const products = loadProductsFromFile();
+  res.json({ success: true, count: products.length, products });
+});
+
+app.post('/api/products', (req, res) => {
+  try {
+    const newProduct = req.body;
+    if (!newProduct || !newProduct.titleRu) {
+      return res.status(400).json({ error: 'Invalid product data' });
+    }
+    const current = loadProductsFromFile();
+    const existingIndex = current.findIndex((p) => p.id === newProduct.id);
+    if (existingIndex >= 0) {
+      current[existingIndex] = { ...current[existingIndex], ...newProduct };
+    } else {
+      current.unshift(newProduct);
+    }
+    saveProductsToFile(current);
+    res.json({ success: true, product: newProduct });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message || 'Failed to save product' });
+  }
+});
+
+app.delete('/api/products/:id', (req, res) => {
+  try {
+    const id = req.params.id;
+    const current = loadProductsFromFile();
+    const filtered = current.filter((p) => p.id !== id);
+    saveProductsToFile(filtered);
+    res.json({ success: true, id });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message || 'Failed to delete product' });
   }
 });
 
