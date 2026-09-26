@@ -10,7 +10,8 @@ dotenv.config();
 const app = express();
 const PORT = 3000;
 
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ limit: '100mb', extended: true }));
 
 // Lazy Gemini AI initialization
 let aiClient: GoogleGenAI | null = null;
@@ -393,6 +394,8 @@ app.post('/api/products/sync', (req, res) => {
     if (Array.isArray(products) && products.length > 0) {
       const realOnly = products.filter(
         (p: any) =>
+          p.id !== 'prod-ginseng-1' &&
+          p.sku !== 'MS-2401' &&
           p.sku !== 'MS-101-OIL' &&
           !p.titleRu?.includes('Масло черного тмина «Королевское»') &&
           !p.titleRu?.includes('Кыст аль-Хинди в капсулах (Премиум)') &&
@@ -404,6 +407,7 @@ app.post('/api/products/sync', (req, res) => {
       );
       if (realOnly.length > 0) {
         saveProductsToFile(realOnly);
+        console.log(`[Server] Synced ${realOnly.length} authentic products to data/products.json`);
         return res.json({ success: true, count: realOnly.length, products: realOnly });
       }
     }
@@ -411,6 +415,15 @@ app.post('/api/products/sync', (req, res) => {
   } catch (e: any) {
     res.status(500).json({ error: e.message || 'Sync failed' });
   }
+});
+
+// Graceful PayloadTooLarge error handler
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (err && (err.type === 'entity.too.large' || err.status === 413)) {
+    console.warn('Handled PayloadTooLargeError gracefully:', err.message);
+    return res.status(413).json({ error: 'Payload too large', message: err.message });
+  }
+  next(err);
 });
 
 // ================= VITE / STATIC SERVING =================

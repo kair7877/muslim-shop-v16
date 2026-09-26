@@ -31,6 +31,5 @@ export const db = initializeFirestore(
       tabManager: persistentMultipleTabManager(),
     }),
     experimentalAutoDetectLongPolling: true,
-  },
-  'ai-studio-muslimshop-6c5697f5-1412-4eb6-8d95-aa2cc7a70c7b'
+  }
 );

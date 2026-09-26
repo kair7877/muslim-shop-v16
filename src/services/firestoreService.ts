@@ -118,7 +118,13 @@ export function subscribeToProducts(
       (snapshot) => {
         const items: Product[] = [];
         snapshot.forEach((docSnap) => {
-          items.push(normalizeProduct(docSnap.id, docSnap.data()));
+          if (
+            docSnap.id !== 'test-probe' &&
+            docSnap.id !== 'prod-ginseng-1' &&
+            docSnap.data()?.sku !== 'MS-2401'
+          ) {
+            items.push(normalizeProduct(docSnap.id, docSnap.data()));
+          }
         });
         if (items.length > 0) {
           try {

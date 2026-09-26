@@ -33,6 +33,8 @@ import {
   FolderPlus,
   AlertTriangle,
   BarChart3,
+  Download,
+  UploadCloud,
 } from 'lucide-react';
 import { Category, Language, Product, StoreConfig } from '../types';
 import { AnalyticsTab } from './AnalyticsTab';
@@ -238,6 +240,94 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   const [newIsHit, setNewIsHit] = useState(false);
   const [newIsNew, setNewIsNew] = useState(true);
   const [isCompressingImage, setIsCompressingImage] = useState(false);
+  const [isSyncingToServer, setIsSyncingToServer] = useState(false);
+  const [syncStatusMsg, setSyncStatusMsg] = useState<string | null>(null);
+
+  const handleSyncToServer = async () => {
+    setIsSyncingToServer(true);
+    try {
+      const realOnly = products.filter(
+        (p) =>
+          p.id !== 'prod-ginseng-1' &&
+          p.sku !== 'MS-2401' &&
+          p.sku !== 'MS-101-OIL' &&
+          !p.titleRu?.includes('Масло черного тмина «Королевское»')
+      );
+      const res = await fetch('/api/products/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ products: realOnly }),
+      });
+      const data = await res.json();
+      if (data && data.success) {
+        setSyncStatusMsg(`Успешно! ${data.count} товаров синхронизированы на сервере. Теперь они отображаются во всех браузерах (Яндекс, Safari, Chrome).`);
+        setTimeout(() => setSyncStatusMsg(null), 6000);
+      } else {
+        alert('Ошибка синхронизации: ' + (data.error || 'Неизвестная ошибка'));
+      }
+    } catch (e: any) {
+      alert('Ошибка соединения с сервером: ' + e.message);
+    } finally {
+      setIsSyncingToServer(false);
+    }
+  };
+
+  const handleExportProductsJson = () => {
+    try {
+      const realOnly = products.filter(
+        (p) =>
+          p.id !== 'prod-ginseng-1' &&
+          p.sku !== 'MS-2401' &&
+          p.sku !== 'MS-101-OIL' &&
+          !p.titleRu?.includes('Масло черного тмина «Королевское»')
+      );
+      const jsonStr = JSON.stringify(realOnly, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `muslim_shop_catalog_${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      alert('Ошибка экспорта: ' + e.message);
+    }
+  };
+
+  const handleImportProductsJson = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const text = evt.target?.result as string;
+        const parsed = JSON.parse(text);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const valid = parsed.filter((p: any) => p && p.titleRu && p.price);
+          if (valid.length > 0) {
+            for (const prod of valid) {
+              onAddProduct(prod);
+              try {
+                await saveProductToFirestore(prod);
+              } catch {}
+            }
+            fetch('/api/products/sync', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ products: valid }),
+            }).catch(() => {});
+            alert(`Успешно импортировано ${valid.length} товаров!`);
+          } else {
+            alert('В файле нет корректных товаров.');
+          }
+        }
+      } catch (err: any) {
+        alert('Ошибка чтения JSON: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
 
   const handleImageFileUpload = async (
     file: File,
@@ -1157,6 +1247,69 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                       </button>
                     </div>
                   </div>
+
+                  {/* Universal Browser Sync & Backup Toolbar */}
+                  <div className="bg-emerald-50 border border-emerald-200/90 rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                        <UploadCloud className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs sm:text-sm font-bold text-emerald-950 flex items-center gap-1.5 flex-wrap">
+                          <span>Синхронизация каталога со всеми браузерами</span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-800 font-extrabold">Яндекс, Safari, мобильные</span>
+                        </h4>
+                        <p className="text-[11px] text-emerald-850/80">
+                          Нажмите кнопку, чтобы все {products.length} товаров мгновенно отображались у всех пользователей и во всех браузерах.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={handleSyncToServer}
+                        disabled={isSyncingToServer}
+                        className="flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-extrabold bg-emerald-700 hover:bg-emerald-800 text-white flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer disabled:opacity-50"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${isSyncingToServer ? 'animate-spin' : ''}`} />
+                        <span>{isSyncingToServer ? 'Синхронизация...' : 'Синхронизировать сейчас'}</span>
+                      </button>
+
+                      {/* Export JSON */}
+                      <button
+                        type="button"
+                        onClick={handleExportProductsJson}
+                        className="px-2.5 py-2 rounded-xl text-xs font-bold bg-white hover:bg-stone-100 text-stone-700 border border-stone-200 flex items-center gap-1 shadow-2xs cursor-pointer"
+                        title="Скачать файл с резервной копией всех товаров"
+                      >
+                        <Download className="w-3.5 h-3.5 text-stone-500" />
+                        <span>Экспорт</span>
+                      </button>
+
+                      {/* Import JSON */}
+                      <label
+                        className="px-2.5 py-2 rounded-xl text-xs font-bold bg-white hover:bg-stone-100 text-stone-700 border border-stone-200 flex items-center gap-1 shadow-2xs cursor-pointer"
+                        title="Загрузить товары из файла JSON"
+                      >
+                        <Upload className="w-3.5 h-3.5 text-stone-500" />
+                        <span>Импорт</span>
+                        <input
+                          type="file"
+                          accept=".json"
+                          onChange={handleImportProductsJson}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  {syncStatusMsg && (
+                    <div className="p-3 bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-xl text-xs font-bold flex items-center gap-2">
+                      <Check className="w-4 h-4 text-emerald-700 shrink-0" />
+                      <span>{syncStatusMsg}</span>
+                    </div>
+                  )}
 
                   <div className="flex items-center justify-between text-[11px] text-stone-500">
                     <span>

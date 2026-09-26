@@ -107,12 +107,16 @@ export default function App() {
   // Products state (loads directly from Firestore / cached storage / INITIAL_PRODUCTS)
   const [products, setProducts] = useState<Product[]>(() => {
     try {
-      const saved = localStorage.getItem('muslim_shop_products');
+      const saved =
+        localStorage.getItem('muslim_shop_products') ||
+        localStorage.getItem('muslim_shop_products_cache');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
           const clean = parsed.filter(
             (p: any) =>
+              p.id !== 'prod-ginseng-1' &&
+              p.sku !== 'MS-2401' &&
               p.sku !== 'MS-101-OIL' &&
               !p.titleRu?.includes('Масло черного тмина «Королевское»') &&
               !p.titleRu?.includes('Кыст аль-Хинди в капсулах (Премиум)') &&
@@ -135,9 +139,19 @@ export default function App() {
 
   // Immediate cleanup of any existing demo entries in state/storage on boot
   useEffect(() => {
+    try {
+      const saved = localStorage.getItem('muslim_shop_products');
+      if (saved && (saved.includes('prod-ginseng-1') || saved.includes('MS-2401'))) {
+        localStorage.removeItem('muslim_shop_products');
+        localStorage.removeItem('muslim_shop_products_cache');
+      }
+    } catch {}
+
     setProducts((prev) => {
       const clean = prev.filter(
         (p: any) =>
+          p.id !== 'prod-ginseng-1' &&
+          p.sku !== 'MS-2401' &&
           p.sku !== 'MS-101-OIL' &&
           !p.titleRu?.includes('Масло черного тмина «Королевское»') &&
           !p.titleRu?.includes('Кыст аль-Хинди в капсулах (Премиум)') &&
@@ -153,6 +167,52 @@ export default function App() {
       } catch {}
       return deduped;
     });
+  }, []);
+
+  // Automatic sync of authentic products from this browser to the server
+  // Ensures any client opening from Yandex Browser, Safari or other devices gets all real products
+  useEffect(() => {
+    if (products.length > 0) {
+      const authentic = products.filter(
+        (p) =>
+          p.id !== 'prod-ginseng-1' &&
+          p.sku !== 'MS-2401' &&
+          p.sku !== 'MS-101-OIL' &&
+          !p.titleRu?.includes('Масло черного тмина «Королевское»')
+      );
+      if (authentic.length > 0) {
+        fetch('/api/products/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ products: authentic }),
+        }).catch(() => {});
+      }
+    }
+  }, [products]);
+
+  // Load from server in all browsers (ensures instant load of all 97 real products)
+  useEffect(() => {
+    fetch('/api/products')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && Array.isArray(data.products) && data.products.length > 0) {
+          const clean = data.products.filter(
+            (p: any) =>
+              p.id !== 'prod-ginseng-1' &&
+              p.sku !== 'MS-2401' &&
+              p.sku !== 'MS-101-OIL' &&
+              !p.titleRu?.includes('Масло черного тмина «Королевское»')
+          );
+          if (clean.length > 0) {
+            setProducts((prev) => {
+              if (prev.length === 0) return deduplicateProducts(clean);
+              return deduplicateProducts([...clean, ...prev]);
+            });
+            setIsLoadingProducts(false);
+          }
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const [isLoadingProducts, setIsLoadingProducts] = useState<boolean>(products.length === 0);
