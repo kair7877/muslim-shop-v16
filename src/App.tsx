@@ -795,6 +795,7 @@ export default function App() {
           product={selectedProductForDetail}
           config={config}
           lang={lang}
+          onLanguageChange={setLang}
           accessibility={accessibility}
           isFavorite={favorites.some((f) => f.id === selectedProductForDetail.id)}
           onToggleFavorite={handleToggleFavorite}

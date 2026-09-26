@@ -187,13 +187,23 @@ async function translateProductWithAI(product: {
   titleRu?: string;
   descriptionRu?: string;
   specsRu?: string;
-}): Promise<{ titleKz: string; descriptionKz: string; specsKz: string }> {
+  benefitsRu?: string[];
+  howToUseRu?: string;
+}): Promise<{
+  titleKz: string;
+  descriptionKz: string;
+  specsKz: string;
+  benefitsKz?: string[];
+  howToUseKz?: string;
+}> {
   const titleRu = product.titleRu?.trim() || '';
   const descriptionRu = product.descriptionRu?.trim() || '';
   const specsRu = product.specsRu?.trim() || '';
+  const benefitsRu = Array.isArray(product.benefitsRu) ? product.benefitsRu.filter(Boolean) : [];
+  const howToUseRu = product.howToUseRu?.trim() || '';
 
-  if (!titleRu && !descriptionRu && !specsRu) {
-    return { titleKz: '', descriptionKz: '', specsKz: '' };
+  if (!titleRu && !descriptionRu && !specsRu && benefitsRu.length === 0 && !howToUseRu) {
+    return { titleKz: '', descriptionKz: '', specsKz: '', benefitsKz: [], howToUseKz: '' };
   }
 
   const ai = getGenAI();
@@ -203,20 +213,38 @@ async function translateProductWithAI(product: {
 Translate the following Russian product data into natural, persuasive Kazakh (қазақ тілі).
 
 CRITICAL REQUIREMENTS:
+- Translate Russian text to authentic Kazakh using appropriate Kazakh alphabet (ә, і, ң, ғ, ү, ұ, қ, ө, һ).
 - Preserve all emojis (🔥, 🚀, 🎯, ⚡️, 🏋️, etc.), line breaks, bullet points (•), and markdown formatting (**bold**).
 - Keep English and Latin brand names, trademarks, numbers, and SKUs exactly as-is (e.g., "DR'S Secret Men's Bio Honey", "Hemani", "Solgar").
-- Return a strict JSON object with three keys: "titleKz", "descriptionKz", "specsKz".
+- Return a strict JSON object with keys:
+  "titleKz" (string),
+  "descriptionKz" (string),
+  "specsKz" (string),
+  "benefitsKz" (array of strings),
+  "howToUseKz" (string)
 
 Product data to translate:
-${JSON.stringify({ titleRu, descriptionRu, specsRu }, null, 2)}`;
+${JSON.stringify({ titleRu, descriptionRu, specsRu, benefitsRu, howToUseRu }, null, 2)}`;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
-        contents: prompt,
-        config: {
-          responseMimeType: 'application/json',
-        },
-      });
+      let response;
+      try {
+        response = await ai.models.generateContent({
+          model: 'gemini-3.1-flash-lite',
+          contents: prompt,
+          config: {
+            responseMimeType: 'application/json',
+          },
+        });
+      } catch (errModel1: any) {
+        console.warn('Primary model gemini-3.1-flash-lite notice:', errModel1?.message || errModel1);
+        response = await ai.models.generateContent({
+          model: 'gemini-3.8-flash',
+          contents: prompt,
+          config: {
+            responseMimeType: 'application/json',
+          },
+        });
+      }
 
       const rawText = response.text?.trim() || '';
       const cleanJson = rawText.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
@@ -225,12 +253,16 @@ ${JSON.stringify({ titleRu, descriptionRu, specsRu }, null, 2)}`;
       const titleKz = refineKazakhTranslation(parsed.titleKz || (titleRu ? await fallbackTranslateText(titleRu) : ''));
       const descriptionKz = refineKazakhTranslation(parsed.descriptionKz || (descriptionRu ? await fallbackTranslateText(descriptionRu) : ''));
       const specsKz = refineKazakhTranslation(parsed.specsKz || (specsRu ? await fallbackTranslateText(specsRu) : ''));
+      const howToUseKz = refineKazakhTranslation(parsed.howToUseKz || (howToUseRu ? await fallbackTranslateText(howToUseRu) : ''));
+      const benefitsKz = Array.isArray(parsed.benefitsKz)
+        ? parsed.benefitsKz.map((b: string) => refineKazakhTranslation(b))
+        : benefitsRu;
 
-      return { titleKz, descriptionKz, specsKz };
+      return { titleKz, descriptionKz, specsKz, benefitsKz, howToUseKz };
     } catch (e: any) {
       if (isGeminiTemporaryError(e)) {
-        console.warn('Gemini temporary error (429/503) in product translation. Activating 45s cooldown and using fallback.');
-        geminiCoolDownUntil = Date.now() + 45000;
+        console.warn('Gemini temporary rate notice (429/503). Retrying in 5s with fallback.');
+        geminiCoolDownUntil = Date.now() + 5000;
       } else {
         console.warn('Batch product translation with Gemini failed, falling back:', e?.message || e);
       }
@@ -238,16 +270,23 @@ ${JSON.stringify({ titleRu, descriptionRu, specsRu }, null, 2)}`;
   }
 
   // Fallback field by field using reliable fallback service
-  const [titleKz, descriptionKz, specsKz] = await Promise.all([
+  const [titleKz, descriptionKz, specsKz, howToUseKz] = await Promise.all([
     titleRu ? fallbackTranslateText(titleRu) : Promise.resolve(''),
     descriptionRu ? fallbackTranslateText(descriptionRu) : Promise.resolve(''),
     specsRu ? fallbackTranslateText(specsRu) : Promise.resolve(''),
+    howToUseRu ? fallbackTranslateText(howToUseRu) : Promise.resolve(''),
   ]);
+
+  const benefitsKz = await Promise.all(
+    benefitsRu.map((b) => fallbackTranslateText(b))
+  );
 
   return {
     titleKz: refineKazakhTranslation(titleKz),
     descriptionKz: refineKazakhTranslation(descriptionKz),
     specsKz: refineKazakhTranslation(specsKz),
+    benefitsKz: benefitsKz.map(refineKazakhTranslation),
+    howToUseKz: refineKazakhTranslation(howToUseKz),
   };
 }
 

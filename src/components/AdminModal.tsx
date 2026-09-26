@@ -539,7 +539,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
       oldPrice: newOldPrice ? Number(newOldPrice) : undefined,
       categoryId: newCategory,
       descriptionRu: newDescRu.trim() || 'Описание товара',
-      descriptionKz: newDescRu.trim(),
+      descriptionKz: '',
       specsRu: newSpecsRu.trim(),
       specsKz: '',
       inStock: newInStock,

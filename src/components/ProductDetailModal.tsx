@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import {
   X,
@@ -7,6 +7,7 @@ import {
   ZoomIn,
   ZoomOut,
   RotateCcw,
+  RotateCw,
   Sparkles,
   ShieldCheck,
   CheckCircle2,
@@ -19,14 +20,23 @@ import {
   Eye,
   Share2,
   Check,
+  Globe,
+  Loader2,
 } from 'lucide-react';
 import { AccessibilitySettings, Language, Product, StoreConfig } from '../types';
 import { formatPrice, getProductDirectUrl, copyTextToClipboard, shareOrCopyProduct } from '../utils/formatters';
+import {
+  getProductKazakhTranslation,
+  hasExplicitKazakhTranslation,
+  isGenuinelyKazakh,
+  TranslatedProductData,
+} from '../services/translationService';
 
 interface ProductDetailModalProps {
   product: Product;
   config: StoreConfig;
   lang: Language;
+  onLanguageChange?: (lang: Language) => void;
   accessibility: AccessibilitySettings;
   isFavorite: boolean;
   onToggleFavorite: (product: Product) => void;
@@ -39,6 +49,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   product,
   config,
   lang,
+  onLanguageChange,
   accessibility,
   isFavorite,
   onToggleFavorite,
@@ -55,6 +66,63 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const [isHighContrastReader, setIsHighContrastReader] = useState(false);
   const [isLinkCopied, setIsLinkCopied] = useState(false);
   const [isAddedToCartFeedback, setIsAddedToCartFeedback] = useState(false);
+
+  // Active language inside modal (synchronized with store language)
+  const [currentLang, setCurrentLang] = useState<Language>(lang);
+  const [translatedKzData, setTranslatedKzData] = useState<TranslatedProductData | null>(null);
+  const [isTranslating, setIsTranslating] = useState<boolean>(false);
+
+  useEffect(() => {
+    setCurrentLang(lang);
+  }, [lang]);
+
+  // Translation runner with support for force refresh
+  const runKazakhTranslation = useCallback(
+    async (forceRefresh: boolean = false) => {
+      // If the product in DB already has genuine Kazakh description, use it directly
+      if (!forceRefresh && hasExplicitKazakhTranslation(product)) {
+        setTranslatedKzData({
+          titleKz: product.titleKz || product.titleRu,
+          descriptionKz: product.descriptionKz!,
+          specsKz: product.specsKz || product.specsRu || '',
+          benefitsKz:
+            product.benefitsKz && product.benefitsKz.length > 0 ? product.benefitsKz : product.benefitsRu,
+          howToUseKz: product.howToUseKz || product.howToUseRu || '',
+        });
+        return;
+      }
+
+      setIsTranslating(true);
+      try {
+        const data = await getProductKazakhTranslation(product, forceRefresh);
+        if (data && data.descriptionKz) {
+          setTranslatedKzData(data);
+        }
+      } catch (err) {
+        console.warn('Translation execution failed:', err);
+      } finally {
+        setIsTranslating(false);
+      }
+    },
+    [product]
+  );
+
+  // Automatic high-quality translation to Kazakh when viewing in Kazakh
+  useEffect(() => {
+    if (currentLang === 'kz') {
+      runKazakhTranslation(false);
+    }
+  }, [product.id, currentLang, runKazakhTranslation]);
+
+  const handleLangSwitch = (newLang: Language) => {
+    setCurrentLang(newLang);
+    if (onLanguageChange) {
+      onLanguageChange(newLang);
+    }
+    if (newLang === 'kz') {
+      runKazakhTranslation(false);
+    }
+  };
 
   const backdropRef = useRef<HTMLDivElement>(null);
   const scrollBodyRef = useRef<HTMLDivElement>(null);
@@ -89,11 +157,29 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     }, 4000);
   };
 
-  const title = (lang === 'kz' && product.titleKz?.trim()) ? product.titleKz : product.titleRu;
-  const description = (lang === 'kz' && product.descriptionKz?.trim()) ? product.descriptionKz : product.descriptionRu;
-  const specs = (lang === 'kz' && product.specsKz?.trim()) ? product.specsKz : product.specsRu;
-  const benefits = (lang === 'kz' && product.benefitsKz && product.benefitsKz.length > 0) ? product.benefitsKz : product.benefitsRu;
-  const howToUse = (lang === 'kz' && product.howToUseKz?.trim()) ? product.howToUseKz : product.howToUseRu;
+  const isKz = currentLang === 'kz';
+
+  // Title: prioritize genuine Kazakh translation
+  const title = isKz
+    ? (translatedKzData?.titleKz || (hasExplicitKazakhTranslation(product) ? product.titleKz : null) || product.titleRu)
+    : product.titleRu;
+
+  // Description: prioritize genuine Kazakh translation
+  const description = isKz
+    ? (translatedKzData?.descriptionKz || (hasExplicitKazakhTranslation(product) ? product.descriptionKz : null) || product.descriptionRu)
+    : product.descriptionRu;
+
+  const specs = isKz
+    ? (translatedKzData?.specsKz || product.specsKz || product.specsRu || '')
+    : (product.specsRu || '');
+
+  const benefits = isKz
+    ? (translatedKzData?.benefitsKz || (product.benefitsKz && product.benefitsKz.length > 0 ? product.benefitsKz : product.benefitsRu))
+    : product.benefitsRu;
+
+  const howToUse = isKz
+    ? (translatedKzData?.howToUseKz || product.howToUseKz || product.howToUseRu)
+    : product.howToUseRu;
 
   const handleZoomIn = () => setZoomLevel((prev) => Math.min(prev + 25, 225));
   const handleZoomOut = () => setZoomLevel((prev) => Math.max(prev - 25, 100));
@@ -108,10 +194,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
   const waDirectMessage = encodeURIComponent(
     !product.inStock
-      ? (lang === 'kz'
+      ? (isKz
           ? `Сәлеметсіз бе, ${config.storeName}! Мына өнім қашан сатылымға шығады? Келуін күтіп жатырмын:\n${title} (арт: ${product.sku}, бағасы: ${formatPrice(product.price)}). Келгенде хабарласыңызшы!`
           : `Здравствуйте, ${config.storeName}! Подскажите, когда появится в наличии товар:\n${title} (арт: ${product.sku}, цена: ${formatPrice(product.price)}). Хочу забронировать / оформить предзаказ!`)
-      : (lang === 'kz'
+      : (isKz
           ? `Сәлеметсіз бе, ${config.storeName}! Маған мына өнім бойынша толық ақпарат беріңізші:\n${title} (арт: ${product.sku}, бағасы: ${formatPrice(product.price)})`
           : `Здравствуйте, ${config.storeName}! Меня интересует товар:\n${title} (арт: ${product.sku}, цена: ${formatPrice(product.price)}). Хочу заказать!`)
   );
@@ -196,12 +282,42 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             </button>
           </div>
 
-          {/* Right controls: Share/Copy Link, Fullscreen toggle & Close */}
-          <div className="flex items-center gap-2">
+          {/* Right controls: Language Switcher, Share/Copy Link, Fullscreen toggle & Close */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            {/* Quick Language Toggle [ ҚАЗ | РУС ] */}
+            <div className="flex items-center rounded-lg bg-emerald-900/90 p-0.5 border border-emerald-700/60 shadow-xs">
+              <button
+                type="button"
+                id="modal-lang-kz"
+                onClick={() => handleLangSwitch('kz')}
+                className={`px-2 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                  isKz
+                    ? 'bg-amber-400 text-stone-950 shadow-xs'
+                    : 'text-emerald-200 hover:text-white'
+                }`}
+                title="Қазақ тіліне аудару және оқу"
+              >
+                ҚАЗ
+              </button>
+              <button
+                type="button"
+                id="modal-lang-ru"
+                onClick={() => handleLangSwitch('ru')}
+                className={`px-2 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                  !isKz
+                    ? 'bg-amber-400 text-stone-950 shadow-xs'
+                    : 'text-emerald-200 hover:text-white'
+                }`}
+                title="Читать описание на русском языке"
+              >
+                РУС
+              </button>
+            </div>
+
             <button
               id="copy-product-link-btn"
               onClick={async () => {
-                const res = await shareOrCopyProduct(product, lang);
+                const res = await shareOrCopyProduct(product, currentLang);
                 if (res.success) {
                   setIsLinkCopied(true);
                   setTimeout(() => setIsLinkCopied(false), 2500);
@@ -217,12 +333,12 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               {isLinkCopied ? (
                 <>
                   <Check className="w-3.5 h-3.5" />
-                  <span>{lang === 'kz' ? 'Көшірілді!' : 'Ссылка скопирована!'}</span>
+                  <span>{isKz ? 'Көшірілді!' : 'Ссылка скопирована!'}</span>
                 </>
               ) : (
                 <>
                   <Share2 className="w-3.5 h-3.5" />
-                  <span>{lang === 'kz' ? 'Сілтеме' : 'Ссылка'}</span>
+                  <span>{isKz ? 'Сілтеме' : 'Ссылка'}</span>
                 </>
               )}
             </button>
@@ -236,12 +352,12 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               {isFullscreen ? (
                 <>
                   <Minimize2 className="w-4 h-4" />
-                  <span className="hidden sm:inline">{lang === 'kz' ? 'Шығу' : 'Обычный вид'}</span>
+                  <span className="hidden sm:inline">{isKz ? 'Шығу' : 'Обычный вид'}</span>
                 </>
               ) : (
                 <>
                   <Maximize2 className="w-4 h-4" />
-                  <span className="hidden sm:inline">{lang === 'kz' ? 'Толық экран' : 'На весь экран'}</span>
+                  <span className="hidden sm:inline">{isKz ? 'Толық экран' : 'На весь экран'}</span>
                 </>
               )}
             </button>
@@ -380,18 +496,85 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   {product.inStock ? (
                     <span className="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
-                      {lang === 'kz' ? 'Бутик №24 • Қолда бар' : 'Бутик №24 • В наличии'}
+                      {isKz ? 'Бутик №24 • Қолда бар' : 'Бутик №24 • В наличии'}
                     </span>
                   ) : (
                     <span className="text-xs font-bold px-2.5 py-0.5 rounded-md bg-rose-100 text-rose-800 border border-rose-200 flex items-center gap-1.5">
                       <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse" />
-                      {lang === 'kz' ? 'Қолда жоқ • Жақында болады' : 'Нет в наличии • Скоро будет'}
+                      {isKz ? 'Қолда жоқ • Жақында болады' : 'Нет в наличии • Скоро будет'}
                     </span>
                   )}
                 </div>
 
+                {/* In-Card Language Switcher Bar directly for reading description */}
+                <div className="mt-5 p-3 rounded-2xl bg-amber-50/80 border border-amber-200/90 flex items-center justify-between gap-3 flex-wrap shadow-2xs">
+                  <div className="flex items-center gap-2 text-xs sm:text-sm text-amber-950 font-bold">
+                    <Globe className="w-4 h-4 text-amber-700 shrink-0" />
+                    <span>{isKz ? 'Сипаттама тілі:' : 'Язык описания товара:'}</span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      id="card-lang-kz"
+                      onClick={() => handleLangSwitch('kz')}
+                      className={`px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                        isKz
+                          ? 'bg-emerald-800 text-white shadow-sm ring-2 ring-emerald-600/30'
+                          : 'bg-white text-stone-700 hover:bg-stone-100 border border-stone-200/90'
+                      }`}
+                      title="Қазақ тілінде оқу"
+                    >
+                      <span>🇰🇿 Қазақша</span>
+                    </button>
+                    <button
+                      type="button"
+                      id="card-lang-ru"
+                      onClick={() => handleLangSwitch('ru')}
+                      className={`px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                        !isKz
+                          ? 'bg-emerald-800 text-white shadow-sm ring-2 ring-emerald-600/30'
+                          : 'bg-white text-stone-700 hover:bg-stone-100 border border-stone-200/90'
+                      }`}
+                      title="Читать на русском"
+                    >
+                      <span>🇷🇺 Русский</span>
+                    </button>
+
+                    {isKz && (
+                      <button
+                        type="button"
+                        id="card-retranslate-btn"
+                        onClick={() => runKazakhTranslation(true)}
+                        disabled={isTranslating}
+                        className="px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-amber-100 hover:bg-amber-200 text-amber-950 flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                        title="Қазақ тіліне қайта аудару"
+                      >
+                        <RotateCw className={`w-3.5 h-3.5 text-amber-800 ${isTranslating ? 'animate-spin' : ''}`} />
+                        <span className="hidden sm:inline">{isTranslating ? 'Аударылуда...' : 'Қайта аудару'}</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Translation in-progress status pill */}
+                {isKz && isTranslating && (
+                  <div className="mt-2.5 px-3.5 py-2.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 text-xs sm:text-sm font-medium flex items-center gap-2.5 shadow-2xs animate-pulse">
+                    <Loader2 className="w-4 h-4 animate-spin text-amber-700 shrink-0" />
+                    <span>Қазақ тіліне аударылуда... (Сипаттамасы аударылып жатыр)</span>
+                  </div>
+                )}
+
+                {/* Translation ready badge */}
+                {isKz && !isTranslating && (
+                  <div className="mt-2 px-3 py-1 text-xs text-emerald-800 bg-emerald-50/90 rounded-lg border border-emerald-200 font-medium flex items-center gap-1.5 w-fit">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                    <span>Қазақша нұсқасы белсенді</span>
+                  </div>
+                )}
+
                 {/* Tabs Navigation */}
-                <div id="modal-tabs-nav" className="mt-6 flex border-b border-stone-200 overflow-x-auto gap-2">
+                <div id="modal-tabs-nav" className="mt-5 flex border-b border-stone-200 overflow-x-auto gap-2">
                   <button
                     id="tab-btn-desc"
                     onClick={() => setActiveTab('desc')}
@@ -401,7 +584,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         : 'border-transparent text-stone-500 hover:text-stone-800'
                     }`}
                   >
-                    {lang === 'kz' ? 'Сипаттама' : 'Описание'}
+                    {isKz ? 'Сипаттама' : 'Описание'}
                   </button>
 
                   {benefits && benefits.length > 0 && (
@@ -414,7 +597,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                           : 'border-transparent text-stone-500 hover:text-stone-800'
                       }`}
                     >
-                      {lang === 'kz' ? 'Пайдасы' : 'Польза и свойства'}
+                      {isKz ? 'Пайдасы' : 'Польза и свойства'}
                     </button>
                   )}
 
@@ -428,7 +611,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                           : 'border-transparent text-stone-500 hover:text-stone-800'
                       }`}
                     >
-                      {lang === 'kz' ? 'Қолдану тәсілі' : 'Как применять'}
+                      {isKz ? 'Қолдану тәсілі' : 'Как применять'}
                     </button>
                   )}
 
@@ -442,7 +625,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                           : 'border-transparent text-stone-500 hover:text-stone-800'
                       }`}
                     >
-                      {lang === 'kz' ? 'Сипаттамалары' : 'Характеристики'}
+                      {isKz ? 'Сипаттамалары' : 'Характеристики'}
                     </button>
                   )}
                 </div>
@@ -458,6 +641,12 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 >
                   {activeTab === 'desc' && (
                     <div className="space-y-3">
+                      {isKz && isTranslating && (
+                        <div className="p-3 rounded-xl bg-amber-100/90 border border-amber-300 text-amber-950 text-xs sm:text-sm font-semibold flex items-center gap-2.5 animate-pulse">
+                          <Loader2 className="w-4 h-4 animate-spin text-amber-800 shrink-0" />
+                          <span>Қазақ тіліне аударылуда... Бірнеше секунд күте тұрыңыз</span>
+                        </div>
+                      )}
                       <p className="text-stone-800 font-normal leading-relaxed whitespace-pre-line">
                         {description}
                       </p>
@@ -479,7 +668,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 font-bold text-emerald-950 text-sm mb-1">
                         <Clock className="w-4 h-4 text-emerald-700" />
-                        <span>{lang === 'kz' ? 'Нұсқаулық:' : 'Рекомендации по приему:'}</span>
+                        <span>{isKz ? 'Нұсқаулық:' : 'Рекомендации по приему:'}</span>
                       </div>
                       <p className="text-stone-800 leading-relaxed whitespace-pre-line">
                         {howToUse}
@@ -511,10 +700,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       </div>
                       <div>
                         <p className="font-bold text-emerald-900 text-xs sm:text-sm">
-                          {lang === 'kz' ? 'Өнім себетке жіберілді!' : 'Товар отправлен в корзину!'}
+                          {isKz ? 'Өнім себетке жіберілді!' : 'Товар отправлен в корзину!'}
                         </p>
                         <p className="text-[11px] text-emerald-700 font-normal">
-                          {lang === 'kz' ? 'Тапсырысты себеттен рәсімдеуге болады' : 'Вы можете перейти в корзину или продолжить выбор'}
+                          {isKz ? 'Тапсырысты себеттен рәсімдеуге болады' : 'Вы можете перейти в корзину или продолжить выбор'}
                         </p>
                       </div>
                     </div>
@@ -538,8 +727,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     <MessageCircle className="w-5 h-5" />
                     <span>
                       {product.inStock
-                        ? (lang === 'kz' ? 'WhatsApp арқылы тапсырыс' : 'Заказать в WhatsApp')
-                        : (lang === 'kz' ? 'Келуін WhatsApp-тан сұрау' : 'Узнать о поступлении')}
+                        ? (isKz ? 'WhatsApp арқылы тапсырыс' : 'Заказать в WhatsApp')
+                        : (isKz ? 'Келуін WhatsApp-тан сұрау' : 'Узнать о поступлении')}
                     </span>
                   </a>
 
@@ -552,8 +741,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     <Zap className="w-5 h-5 text-stone-950" />
                     <span>
                       {product.inStock
-                        ? (lang === 'kz' ? '1 басу арқылы сатып алу' : 'Купить в 1 клик')
-                        : (lang === 'kz' ? 'Алдын ала тапсырыс беру' : 'Оформить предзаказ')}
+                        ? (isKz ? '1 басу арқылы сатып алу' : 'Купить в 1 клик')
+                        : (isKz ? 'Алдын ала тапсырыс беру' : 'Оформить предзаказ')}
                     </span>
                   </button>
                 </div>
@@ -572,12 +761,12 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     {isAddedToCartFeedback ? (
                       <>
                         <CheckCircle2 className="w-5 h-5 text-amber-300 animate-bounce" />
-                        <span>{lang === 'kz' ? '✓ Өнім себетке жіберілді!' : '✓ Товар отправлен в корзину!'}</span>
+                        <span>{isKz ? '✓ Өнім себетке жіберілді!' : '✓ Товар отправлен в корзину!'}</span>
                       </>
                     ) : (
                       <>
                         <ShoppingBag className="w-5 h-5 text-amber-400" />
-                        <span>{lang === 'kz' ? 'Себетке қосу' : 'Добавить в корзину'}</span>
+                        <span>{isKz ? 'Себетке қосу' : 'Добавить в корзину'}</span>
                       </>
                     )}
                   </button>
@@ -585,10 +774,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   <div className="w-full p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-center">
                     <p className="text-xs sm:text-sm font-bold text-rose-800 flex items-center justify-center gap-2">
                       <Clock className="w-4 h-4 text-rose-600" />
-                      <span>{lang === 'kz' ? 'Өнім уақытша бітті • Жақында түседі' : 'Товар временно закончился • Скоро будет'}</span>
+                      <span>{isKz ? 'Өнім уақытша бітті • Жақында түседі' : 'Товар временно закончился • Скоро будет'}</span>
                     </p>
                     <p className="text-[11px] text-stone-500 mt-1">
-                      {lang === 'kz' ? 'Бутик №24-тен алдын ала брондау үшін түймелерді басыңыз' : 'Нажмите кнопку «Оформить предзаказ», чтобы забронировать к новому завозу'}
+                      {isKz ? 'Бутик №24-тен алдын ала брондау үшін түймелерді басыңыз' : 'Нажмите кнопку «Оформить предзаказ», чтобы забронировать к новому завозу'}
                     </p>
                   </div>
                 )}
@@ -598,7 +787,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   <button
                     id="modal-share-product-btn"
                     onClick={async () => {
-                      const res = await shareOrCopyProduct(product, lang);
+                      const res = await shareOrCopyProduct(product, currentLang);
                       if (res.success) {
                         setIsLinkCopied(true);
                         setTimeout(() => setIsLinkCopied(false), 3000);
@@ -615,20 +804,20 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       <>
                         <Check className="w-4 h-4 text-emerald-600" />
                         <span className="font-bold text-emerald-700">
-                          {lang === 'kz' ? '✓ Сілтеме көшірілді! Сторис немесе WhatsApp-қа салыңыз' : '✓ Ссылка скопирована! Готова для сторис и WhatsApp'}
+                          {isKz ? '✓ Сілтеме көшірілді! Сторис немесе WhatsApp-қа салыңыз' : '✓ Ссылка скопирована! Готова для сторис и WhatsApp'}
                         </span>
                       </>
                     ) : (
                       <>
                         <Share2 className="w-4 h-4 text-amber-600" />
                         <span>
-                          {lang === 'kz' ? 'Өнім сілтемесін көшіру (Сторис / WhatsApp)' : 'Скопировать ссылку на товар (для сторис и WhatsApp)'}
+                          {isKz ? 'Өнім сілтемесін көшіру (Сторис / WhatsApp)' : 'Скопировать ссылку на товар (для сторис и WhatsApp)'}
                         </span>
                       </>
                     )}
                   </button>
                   <p className="text-[11px] text-center text-stone-400 mt-1">
-                    {lang === 'kz' ? 'Клиент сілтемені ашқанда тура осы тауарға бірден өтеді' : 'Клиент перейдет ровно на эту карточку товара без лишнего поиска'}
+                    {isKz ? 'Клиент сілтемені ашқанда тура осы тауарға бірден өтеді' : 'Клиент перейдет ровно на эту карточку товара без лишнего поиска'}
                   </p>
                 </div>
               </div>
