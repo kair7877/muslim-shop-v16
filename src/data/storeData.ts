@@ -38,5 +38,5 @@ export const CATEGORIES: Category[] = [
   { id: 'cat-misc', nameRu: 'Разное', nameKz: 'Басқа', icon: '📦', order: 12 },
 ];
 
-// All authentic products are loaded directly from the database and user catalog
+// Demo products removed; all real products are loaded directly from Firestore
 export const INITIAL_PRODUCTS: Product[] = [];

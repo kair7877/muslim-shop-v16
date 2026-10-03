@@ -6,8 +6,8 @@ import {
   ShieldCheck,
   Truck,
   Award,
-  CheckCircle2,
   ArrowRight,
+  Clock,
 } from 'lucide-react';
 import { Category, Language, StoreConfig } from '../types';
 
@@ -30,242 +30,189 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
 }) => {
   const isKz = lang === 'kz';
 
-  // Resolved title & subtitle with fallbacks to the new required copy
-  const titleRu =
-    config.taglineRu && config.taglineRu !== 'Красота. Здоровье. Вера.'
-      ? config.taglineRu
-      : 'Красота, здоровье и халяль-товары в Атырау';
-  const titleKz =
-    config.taglineKz && config.taglineKz !== 'Сұлулық. Денсаулық. Сенім.'
-      ? config.taglineKz
-      : 'Атыраудағы сұлулық, денсаулық және халал өнімдер';
-
   const subtitleRu =
     config.subtitleRu && !config.subtitleRu.includes('Премиальные товары для здоровья, красоты и повседневной')
       ? config.subtitleRu
-      : 'Витамины iHerb, БАДы, товары для мужского и женского здоровья, мед, хиджама и мусульманские ароматы.';
+      : 'Витамины iHerb, БАДы, товары для мужского и женского здоровья, натуральный мед и мусульманские ароматы.';
   const subtitleKz =
     config.subtitleKz && !config.subtitleKz.includes('Атыраудағы денсаулық, сұлулық және күнделікті')
       ? config.subtitleKz
-      : 'iHerb дәрумендері, ББҚ, ерлер мен әйелдер денсаулығына арналған өнімдер, бал, хиджама және мұсылман хош иістері.';
-
-  // Categories to show in quick chips (excluding "Все товары")
-  const activeChips =
-    categories && categories.length > 0
-      ? categories.filter((c) => c.id !== 'cat-all')
-      : [
-          { id: 'cat-iherb', nameRu: 'Витамины iHerb', nameKz: 'iHerb Витаминдер', icon: '💊' },
-          { id: 'cat-health', nameRu: 'БАДы & Омега-3', nameKz: 'ББҚ & Омега-3', icon: '🌿' },
-          { id: 'cat-men', nameRu: 'Мужское здоровье', nameKz: 'Ерлер денсаулығы', icon: '💪' },
-          { id: 'cat-women', nameRu: 'Женское здоровье', nameKz: 'Әйелдер денсаулығы', icon: '🌸' },
-          { id: 'cat-honey', nameRu: 'Натуральный мед', nameKz: 'Табиғи бал', icon: '🍯' },
-          { id: 'cat-hijama', nameRu: 'Хиджама', nameKz: 'Хиджама', icon: '🩸' },
-          { id: 'cat-muslim', nameRu: 'Мусульманские ароматы', nameKz: 'Мұсылман хош иістері', icon: '🕌' },
-        ];
+      : 'iHerb дәрумендері, ББҚ, ерлер мен әйелдер денсаулығы, табиғи бал және мұсылман хош иістері.';
 
   return (
     <div
       id="hero-section"
-      className="relative w-full max-w-full overflow-hidden bg-radial-[at_50%_-20%] from-emerald-900 via-[#051F17] to-[#03140F] text-white border-b border-amber-500/25"
+      className="w-full bg-gradient-to-b from-blue-50/50 to-white border-b border-slate-200/80 py-6 sm:py-10"
     >
-      {/* Decorative ambient gold lighting aura */}
-      <div className="absolute top-0 right-1/4 w-96 h-96 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 left-10 w-80 h-80 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        {/* Main Banner Box */}
+        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 sm:p-10 flex flex-col lg:flex-row items-center justify-between gap-8">
+          <div className="max-w-2xl">
+            {/* Tag */}
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold mb-3.5">
+              <Sparkles className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+              <span>{isKz ? 'Атырау · Бутик №24 · ТД Дина Байзар' : 'Атырау · Бутик №24 · ТД «Дина Байзар»'}</span>
+            </div>
 
-      {/* Subtle Islamic pattern background effect */}
-      <div
-        className="absolute inset-0 opacity-[0.06] pointer-events-none"
-        style={{
-          backgroundImage: `radial-gradient(#d4af37 1px, transparent 1px)`,
-          backgroundSize: '28px 28px',
-        }}
-      />
+            {/* Heading */}
+            <h1
+              id="hero-main-title"
+              className="text-2xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight leading-tight mb-3"
+            >
+              {isKz ? (
+                <>
+                  <span>Атыраудағы сұлулық, денсаулық </span>
+                  <span className="text-blue-600">және халал өнімдер</span>
+                </>
+              ) : (
+                <>
+                  <span>Красота, здоровье </span>
+                  <span className="text-blue-600">и халяль-товары в Атырау</span>
+                </>
+              )}
+            </h1>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-16 relative z-10 w-full overflow-hidden">
-        <div className="max-w-3xl">
-          {/* Boutique Tag */}
-          <div
-            id="hero-boutique-badge"
-            className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-300 text-xs sm:text-sm font-semibold tracking-wide mb-4 sm:mb-5 backdrop-blur-md shadow-xs flex-wrap max-w-full"
-          >
-            <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400 shrink-0" />
-            <span className="font-serif tracking-wider font-bold">MUSLIM SHOP</span>
-            <span className="text-amber-400/40">•</span>
-            <span>{config.city}</span>
-            <span className="text-amber-400/40">•</span>
-            <span className="text-amber-200 font-medium">{config.boutiqueNumber}</span>
+            {/* Subtitle */}
+            <p className="text-slate-600 text-sm sm:text-base leading-relaxed mb-6">
+              {isKz ? subtitleKz : subtitleRu}
+            </p>
+
+            {/* CTA Buttons */}
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                id="hero-view-catalog-btn"
+                onClick={onScrollToCatalog}
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-sm sm:text-base shadow-sm transition-all cursor-pointer"
+              >
+                <span>{isKz ? 'Каталогқа өту' : 'Перейти в каталог'}</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+
+              <a
+                id="hero-whatsapp-btn"
+                href={`https://wa.me/${config.whatsappNumber}?text=${encodeURIComponent(
+                  isKz
+                    ? 'Сәлеметсіз бе! Дәрумендер мен халал өнімдер бойынша кеңес алғым келеді.'
+                    : 'Здравствуйте! Хочу проконсультироваться по витаминам и продукции бутика.'
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-sm sm:text-base border border-emerald-200 transition-colors cursor-pointer"
+              >
+                <MessageCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{isKz ? 'WhatsApp кеңес' : 'Консультация в WhatsApp'}</span>
+              </a>
+
+              <a
+                id="hero-gis-btn"
+                href={config.gis2Url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold text-sm border border-slate-200 transition-colors"
+              >
+                <MapPin className="w-4 h-4 text-blue-600 shrink-0" />
+                <span>2GIS</span>
+              </a>
+            </div>
           </div>
 
-          {/* Heading */}
-          <h1
-            id="hero-main-title"
-            className="font-serif text-2xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.2] sm:leading-[1.18] mb-4 sm:mb-5 drop-shadow-sm text-balance"
-          >
-            {isKz ? (
-              <>
-                <span className="block">Атыраудағы сұлулық, денсаулық</span>
-                <span className="block mt-1 text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-300 to-amber-100 font-serif">
-                  және халал өнімдер
-                </span>
-              </>
-            ) : (
-              <>
-                <span className="block">Красота, здоровье</span>
-                <span className="block mt-1 text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-300 to-amber-100 font-serif">
-                  и халяль-товары в Атырау
-                </span>
-              </>
-            )}
-          </h1>
-
-          {/* Subtitle */}
-          <p
-            id="hero-subtitle"
-            className="text-emerald-100/90 text-sm sm:text-xl font-normal leading-relaxed mb-6 max-w-2xl text-balance"
-          >
-            {isKz ? subtitleKz : subtitleRu}
-          </p>
-
-          {/* Quick Category Visual Chips (Наглядные акценты каталогов) */}
-          <div
-            id="hero-quick-chips"
-            className="flex flex-wrap items-center gap-1.5 sm:gap-2.5 mb-6 sm:mb-8"
-          >
-            {activeChips.map((chip) => {
-              const isSelected = selectedCategoryId === chip.id;
-              const chipName = isKz && chip.nameKz ? chip.nameKz : chip.nameRu;
-
-              return (
-                <button
-                  key={chip.id}
-                  id={`hero-chip-${chip.id}`}
-                  type="button"
-                  onClick={() => {
-                    if (onSelectCategory) {
-                      onSelectCategory(chip.id);
-                    }
-                    onScrollToCatalog();
-                  }}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer select-none active:scale-97 ${
-                    isSelected
-                      ? 'bg-amber-400 text-stone-950 font-bold shadow-md shadow-amber-500/25 ring-2 ring-amber-300'
-                      : 'bg-emerald-900/60 hover:bg-emerald-800/80 border border-emerald-600/40 hover:border-amber-400/50 text-emerald-200 hover:text-white backdrop-blur-xs'
-                  }`}
-                >
-                  <span className="text-sm">{chip.icon || '✨'}</span>
-                  <span>{chipName}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Action Buttons */}
-          <div id="hero-actions" className="flex flex-wrap items-center gap-2.5 sm:gap-4">
-            <button
-              id="hero-view-catalog-btn"
-              onClick={onScrollToCatalog}
-              className="inline-flex items-center justify-center gap-2 px-5 sm:px-7 py-3 sm:py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-300 to-amber-400 hover:from-amber-300 hover:to-amber-200 text-stone-950 font-bold text-xs sm:text-base shadow-xl shadow-amber-500/20 active:scale-98 transition-all cursor-pointer"
-            >
-              <span>{isKz ? 'Каталогты қарау' : 'Перейти в каталог'}</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-
-            <a
-              id="hero-whatsapp-btn"
-              href={`https://wa.me/${config.whatsappNumber}?text=${encodeURIComponent(
-                isKz
-                  ? 'Сәлеметсіз бе! Дәрумендер мен халал өнімдер бойынша кеңес алғым келеді.'
-                  : 'Здравствуйте! Хочу проконсультироваться по витаминам и продукции бутика.'
-              )}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-3 sm:py-3.5 rounded-2xl bg-emerald-800/70 hover:bg-emerald-700/80 text-white font-medium text-xs sm:text-base border border-emerald-500/40 transition-colors shadow-xs"
-            >
-              <MessageCircle className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>{isKz ? 'WhatsApp кеңес' : 'WhatsApp заказ / Консультация'}</span>
-            </a>
-
-            <a
-              id="hero-gis-btn"
-              href={config.gis2Url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 px-3.5 sm:px-4 py-3 sm:py-3.5 rounded-2xl bg-emerald-950/60 hover:bg-emerald-900/60 text-emerald-200 hover:text-white font-medium text-xs sm:text-base border border-emerald-700/40 transition-colors"
-            >
-              <MapPin className="w-4 h-4 text-amber-400 shrink-0" />
-              <span>{isKz ? '2GIS Бутик №24' : 'Бутик №24 в 2GIS'}</span>
-            </a>
+          {/* Right Highlight Box in Flip.kz Style */}
+          <div className="w-full lg:w-80 shrink-0 bg-slate-50 rounded-xl p-5 border border-slate-200 flex flex-col gap-3">
+            <div className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              {isKz ? 'Дүкен туралы' : 'Информация о доставке'}
+            </div>
+            <div className="flex items-start gap-3">
+              <Truck className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+              <div>
+                <div className="text-sm font-bold text-slate-800">
+                  {isKz ? 'Атырау бойынша жеткізу' : 'Доставка курьером'}
+                </div>
+                <div className="text-xs text-slate-500">
+                  {isKz ? 'Тапсырыс күні үйіңізге дейін' : 'В день заказа по г. Атырау'}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <Clock className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+              <div>
+                <div className="text-sm font-bold text-slate-800">
+                  {isKz ? 'Тегін алып кету' : 'Самовывоз бесплатно'}
+                </div>
+                <div className="text-xs text-slate-500">
+                  {isKz ? 'ТД Дина Байзар, Бутик №24' : 'ТД «Дина Байзар», Бутик №24'}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <ShieldCheck className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <div className="text-sm font-bold text-slate-800">
+                  {isKz ? '100% Түпнұсқа' : '100% Оригинал iHerb & Halal'}
+                </div>
+                <div className="text-xs text-slate-500">
+                  {isKz ? 'Сапа кепілдігі' : 'Сертификаты и гарантия качества'}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* 4 Trust Feature Blocks */}
-        <div
-          id="hero-features-grid"
-          className="mt-10 sm:mt-12 pt-6 sm:pt-8 border-t border-emerald-800/60 grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4"
-        >
-          <div
-            id="feature-halal"
-            className="flex items-start gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-2xl bg-white/[0.03] border border-amber-400/15 backdrop-blur-xs min-w-0"
-          >
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center shrink-0 border border-amber-400/30">
-              <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5" />
+        {/* 4 Trust Highlights Strip in Flip.kz Style */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-4 sm:mt-6">
+          <div className="bg-white rounded-xl p-3.5 border border-slate-200/90 shadow-2xs flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+              <Truck className="w-5 h-5" />
             </div>
-            <div className="min-w-0">
-              <h3 className="text-xs sm:text-sm font-bold text-white truncate">100% Халяль</h3>
-              <p className="text-[10px] sm:text-xs text-emerald-200/80 mt-0.5 line-clamp-2">
-                {isKz ? 'Тексерілген табиғи құрамдар' : 'Проверенные чистые составы'}
-              </p>
-            </div>
-          </div>
-
-          <div
-            id="feature-direct"
-            className="flex items-start gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-2xl bg-white/[0.03] border border-amber-400/15 backdrop-blur-xs min-w-0"
-          >
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center shrink-0 border border-amber-400/30">
-              <Award className="w-4 h-4 sm:w-5 sm:h-5" />
-            </div>
-            <div className="min-w-0">
-              <h3 className="text-xs sm:text-sm font-bold text-white truncate">
-                {isKz ? 'iHerb импорт' : 'iHerb & Импорт'}
-              </h3>
-              <p className="text-[10px] sm:text-xs text-emerald-200/80 mt-0.5 line-clamp-2">
-                {isKz ? 'АҚШ, Дубай, Мекке, Египет' : 'Оригинал из США, ОАЭ, Мекки'}
-              </p>
-            </div>
-          </div>
-
-          <div
-            id="feature-delivery"
-            className="flex items-start gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-2xl bg-white/[0.03] border border-amber-400/15 backdrop-blur-xs min-w-0"
-          >
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center shrink-0 border border-emerald-400/30">
-              <Truck className="w-4 h-4 sm:w-5 sm:h-5" />
-            </div>
-            <div className="min-w-0">
-              <h3 className="text-xs sm:text-sm font-bold text-white truncate">
+            <div>
+              <div className="text-xs sm:text-sm font-bold text-slate-900">
                 {isKz ? 'Жылдам жеткізу' : 'Быстрая доставка'}
-              </h3>
-              <p className="text-[10px] sm:text-xs text-emerald-200/80 mt-0.5 line-clamp-2">
-                {isKz ? 'Күні бойы курьермен' : 'В день заказа по городу и РК'}
-              </p>
+              </div>
+              <div className="text-[11px] text-slate-500">
+                {isKz ? 'Атырауда сол күні' : 'По Атырау в день заказа'}
+              </div>
             </div>
           </div>
 
-          <div
-            id="feature-boutique"
-            className="flex items-start gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-2xl bg-white/[0.03] border border-emerald-500/20 backdrop-blur-xs min-w-0"
-          >
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center shrink-0 border border-emerald-400/30">
-              <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />
+          <div className="bg-white rounded-xl p-3.5 border border-slate-200/90 shadow-2xs flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+              <MapPin className="w-5 h-5" />
             </div>
-            <div className="min-w-0">
-              <h3 className="text-xs sm:text-sm font-bold text-white truncate">
-                {config.boutiqueNumber} • {config.city}
-              </h3>
-              <p className="text-[10px] sm:text-xs text-emerald-200/80 mt-0.5 line-clamp-2">
-                {isKz ? config.workingHoursKz : config.workingHoursRu}
-              </p>
+            <div>
+              <div className="text-xs sm:text-sm font-bold text-slate-900">
+                {isKz ? 'Бутик №24' : 'Самовывоз 0 ₸'}
+              </div>
+              <div className="text-[11px] text-slate-500">
+                {isKz ? 'ТД Дина Байзар' : 'ТД «Дина Байзар»'}
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-3.5 border border-slate-200/90 shadow-2xs flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="text-xs sm:text-sm font-bold text-slate-900">
+                {isKz ? '100% Түпнұсқа' : '100% Оригинал'}
+              </div>
+              <div className="text-[11px] text-slate-500">
+                {isKz ? 'iHerb & Халал сапа' : 'Только проверенные бренды'}
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-3.5 border border-slate-200/90 shadow-2xs flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
+              <Award className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="text-xs sm:text-sm font-bold text-slate-900">
+                {isKz ? 'Кәсіби кеңес' : 'Подбор курса'}
+              </div>
+              <div className="text-[11px] text-slate-500">
+                {isKz ? 'WhatsApp арқылы' : 'Консультация эксперта'}
+              </div>
             </div>
           </div>
         </div>
@@ -273,4 +220,3 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
     </div>
   );
 };
-

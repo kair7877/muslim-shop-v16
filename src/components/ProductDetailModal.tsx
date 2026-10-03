@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { motion } from 'motion/react';
 import {
   X,
   Maximize2,
@@ -22,9 +23,15 @@ import {
   Check,
   Globe,
   Loader2,
+  Plus,
+  ArrowRight,
+  ArrowLeft,
+  Trash2,
 } from 'lucide-react';
 import { AccessibilitySettings, Language, Product, StoreConfig } from '../types';
 import { formatPrice, getProductDirectUrl, copyTextToClipboard, shareOrCopyProduct } from '../utils/formatters';
+import { applyProductSeoMeta } from '../utils/seoMeta';
+import { getFrequentlyBoughtTogether } from '../utils/recommendations';
 import {
   getProductKazakhTranslation,
   hasExplicitKazakhTranslation,
@@ -34,27 +41,37 @@ import {
 
 interface ProductDetailModalProps {
   product: Product;
+  allProducts?: Product[];
   config: StoreConfig;
   lang: Language;
   onLanguageChange?: (lang: Language) => void;
   accessibility: AccessibilitySettings;
   isFavorite: boolean;
+  cartQuantity?: number;
   onToggleFavorite: (product: Product) => void;
   onAddToCart: (product: Product) => void;
+  onRemoveFromCart?: (productId: string) => void;
   onQuickOrder: (product: Product) => void;
+  onSelectProduct?: (product: Product) => void;
+  onOpenCart?: () => void;
   onClose: () => void;
 }
 
 export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   product,
+  allProducts = [],
   config,
   lang,
   onLanguageChange,
   accessibility,
   isFavorite,
+  cartQuantity = 0,
   onToggleFavorite,
   onAddToCart,
+  onRemoveFromCart,
   onQuickOrder,
+  onSelectProduct,
+  onOpenCart,
   onClose,
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -66,6 +83,30 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const [isHighContrastReader, setIsHighContrastReader] = useState(false);
   const [isLinkCopied, setIsLinkCopied] = useState(false);
   const [isAddedToCartFeedback, setIsAddedToCartFeedback] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+  const [previousProducts, setPreviousProducts] = useState<Product[]>([]);
+
+  const handleAnimatedClose = useCallback(() => {
+    setIsClosing(true);
+    setTimeout(() => {
+      onClose();
+    }, 170);
+  }, [onClose]);
+
+  const handleBackAction = useCallback(() => {
+    if (previousProducts.length > 0 && onSelectProduct) {
+      const prevProd = previousProducts[previousProducts.length - 1];
+      setPreviousProducts((stack) => stack.slice(0, -1));
+      setSelectedImageIndex(0);
+      setActiveTab('desc');
+      onSelectProduct(prevProd);
+      if (scrollBodyRef.current) {
+        scrollBodyRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    } else {
+      handleAnimatedClose();
+    }
+  }, [previousProducts, onSelectProduct, handleAnimatedClose]);
 
   // Active language inside modal (synchronized with store language)
   const [currentLang, setCurrentLang] = useState<Language>(lang);
@@ -138,7 +179,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onClose();
+        handleAnimatedClose();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -147,7 +188,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       document.body.style.overflow = prevOverflow;
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [onClose]);
+  }, [handleAnimatedClose]);
 
   const handleAddToCartClick = () => {
     onAddToCart(product);
@@ -181,16 +222,29 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     ? (translatedKzData?.howToUseKz || product.howToUseKz || product.howToUseRu)
     : product.howToUseRu;
 
+  // Dynamically generate SEO meta tags, OpenGraph, Twitter Card & Schema.org Product JSON-LD for this product
+  useEffect(() => {
+    applyProductSeoMeta(product, config, currentLang, title, description);
+  }, [product, config, currentLang, title, description]);
+
   const handleZoomIn = () => setZoomLevel((prev) => Math.min(prev + 25, 225));
   const handleZoomOut = () => setZoomLevel((prev) => Math.max(prev - 25, 100));
   const handleResetZoom = () =>
     setZoomLevel(accessibility.scale === 'extra' ? 150 : accessibility.scale === 'large' ? 125 : 100);
 
-  // Dynamic font size and line height based on zoomLevel
-  const dynamicFontSize = `${(zoomLevel / 100) * 1.05}rem`;
-  const dynamicLineHeight = `${(zoomLevel / 100) * 1.75}rem`;
+  // Dynamic font size and line height based on zoomLevel (larger base for mobile readability)
+  const dynamicFontSize = `${(zoomLevel / 100) * 1.12}rem`;
+  const dynamicLineHeight = `${(zoomLevel / 100) * 1.88}rem`;
 
-  const isHighContrast = isHighContrastReader || accessibility.highContrast;
+  const recommendedProducts = React.useMemo(
+    () => getFrequentlyBoughtTogether(product, allProducts, [], 4),
+    [product, allProducts]
+  );
+
+  const discountPercent =
+    product.oldPrice && product.oldPrice > product.price
+      ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)
+      : null;
 
   const waDirectMessage = encodeURIComponent(
     !product.inStock
@@ -203,38 +257,67 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   );
 
   const modalElement = (
-    <div
+    <motion.div
       ref={backdropRef}
       id="product-modal-backdrop"
-      className="fixed inset-0 z-[100] bg-stone-950/85 backdrop-blur-xs flex items-start sm:items-center justify-center p-0 sm:p-4 overflow-y-auto overscroll-contain"
-      onClick={onClose}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: isClosing ? 0 : 1 }}
+      transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+      className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-sm flex items-start sm:items-center justify-center p-0 sm:p-4 overflow-y-auto overscroll-contain"
+      onClick={handleAnimatedClose}
     >
-      <div
+      <motion.div
         id="product-modal-container"
+        initial={{ opacity: 0, scale: 0.94, y: 14 }}
+        animate={{
+          opacity: isClosing ? 0 : 1,
+          scale: isClosing ? 0.96 : 1,
+          y: isClosing ? 10 : 0,
+        }}
+        transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
         onClick={(e) => e.stopPropagation()}
-        className={`bg-white transition-all overflow-hidden flex flex-col ${
+        className={`bg-white text-slate-900 border border-slate-200 overflow-hidden flex flex-col will-change-transform ${
           isFullscreen
             ? 'fixed inset-0 w-full h-full rounded-none z-[110]'
-            : 'w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-4xl sm:rounded-3xl shadow-2xl my-0 sm:my-auto'
-        } ${isHighContrast ? 'bg-white text-black border-2 border-stone-950 font-medium' : 'bg-white text-stone-900 border border-amber-900/20'}`}
+            : 'w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-4xl sm:rounded-2xl shadow-2xl my-0 sm:my-auto'
+        }`}
       >
-        {/* Top Control Bar: Magnifier / Zoom tools & Fullscreen toggler */}
+        {/* Top Control Bar in Flip.kz Style */}
         <div
           id="modal-control-bar"
-          className="bg-emerald-950 text-white px-4 py-3 flex items-center justify-between gap-2 border-b border-emerald-900 shrink-0"
+          className="bg-slate-50 text-slate-800 px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2 border-b border-slate-200 shrink-0"
         >
-          {/* Zoom Tools */}
-          <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
-            <span className="hidden sm:inline text-xs text-emerald-300 font-medium mr-1 flex items-center gap-1">
+          {/* Left: Back Button & Zoom Tools */}
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+            <button
+              type="button"
+              id="modal-back-btn"
+              onClick={handleBackAction}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold text-xs sm:text-sm transition-colors cursor-pointer shadow-2xs"
+              title={
+                previousProducts.length > 0
+                  ? isKz
+                    ? 'Алдыңғы тауарға оралу'
+                    : 'Назад к предыдущему товару'
+                  : isKz
+                  ? 'Каталогқа оралу'
+                  : 'Назад в каталог'
+              }
+            >
+              <ArrowLeft className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+              <span>{isKz ? 'Артқа' : 'Назад'}</span>
+            </button>
+
+            <span className="hidden md:inline text-xs text-emerald-300 font-semibold ml-1 flex items-center gap-1">
               <Eye className="w-3.5 h-3.5 text-amber-400" />
-              {lang === 'kz' ? 'Масштаб:' : 'Лупа / Масштаб:'}
+              {lang === 'kz' ? 'Масштаб:' : 'Масштаб:'}
             </span>
 
             <button
               id="zoom-out-btn"
               onClick={handleZoomOut}
               disabled={zoomLevel <= 100}
-              className="p-1.5 rounded-lg bg-emerald-900/80 hover:bg-emerald-800 disabled:opacity-40 text-white transition-colors"
+              className="p-1.5 rounded-lg bg-[#0B241B] hover:bg-[#113628] disabled:opacity-40 text-white border border-amber-500/20 transition-colors cursor-pointer"
               title="Уменьшить шрифт"
             >
               <ZoomOut className="w-4 h-4" />
@@ -242,7 +325,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
             <span
               id="zoom-percentage-badge"
-              className="px-2.5 py-0.5 rounded-md bg-emerald-900 text-amber-300 font-bold text-xs"
+              className="hidden sm:inline-block px-2 py-0.5 rounded-md bg-[#0B241B] border border-amber-500/30 text-amber-300 font-bold text-xs"
             >
               {zoomLevel}%
             </span>
@@ -251,7 +334,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               id="zoom-in-btn"
               onClick={handleZoomIn}
               disabled={zoomLevel >= 225}
-              className="p-1.5 rounded-lg bg-emerald-900/80 hover:bg-emerald-800 disabled:opacity-40 text-white transition-colors"
+              className="p-1.5 rounded-lg bg-[#0B241B] hover:bg-[#113628] disabled:opacity-40 text-white border border-amber-500/20 transition-colors cursor-pointer"
               title="Увеличить шрифт"
             >
               <ZoomIn className="w-4 h-4" />
@@ -261,39 +344,26 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               <button
                 id="zoom-reset-btn"
                 onClick={handleResetZoom}
-                className="p-1.5 rounded-lg bg-emerald-900/80 hover:bg-emerald-800 text-stone-300 transition-colors"
+                className="p-1.5 rounded-lg bg-[#0B241B] hover:bg-[#113628] text-stone-300 border border-amber-500/20 transition-colors cursor-pointer"
                 title="Сбросить масштаб"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
               </button>
             )}
-
-            {/* High contrast reading mode toggle */}
-            <button
-              id="reader-contrast-btn"
-              onClick={() => setIsHighContrastReader(!isHighContrastReader)}
-              className={`hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${
-                isHighContrastReader
-                  ? 'bg-amber-400 text-stone-950 font-bold'
-                  : 'bg-emerald-900/80 text-emerald-200 hover:text-white'
-              }`}
-            >
-              {isHighContrastReader ? 'Режим чтения: Вкл' : 'Крупный режим чтения'}
-            </button>
           </div>
 
           {/* Right controls: Language Switcher, Share/Copy Link, Fullscreen toggle & Close */}
           <div className="flex items-center gap-1.5 sm:gap-2">
             {/* Quick Language Toggle [ ҚАЗ | РУС ] */}
-            <div className="flex items-center rounded-lg bg-emerald-900/90 p-0.5 border border-emerald-700/60 shadow-xs">
+            <div className="flex items-center rounded-lg bg-slate-200/80 p-0.5 text-xs font-bold">
               <button
                 type="button"
                 id="modal-lang-kz"
                 onClick={() => handleLangSwitch('kz')}
-                className={`px-2 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
                   isKz
-                    ? 'bg-amber-400 text-stone-950 shadow-xs'
-                    : 'text-emerald-200 hover:text-white'
+                    ? 'bg-white text-blue-700 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
                 title="Қазақ тіліне аудару және оқу"
               >
@@ -303,10 +373,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 type="button"
                 id="modal-lang-ru"
                 onClick={() => handleLangSwitch('ru')}
-                className={`px-2 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
                   !isKz
-                    ? 'bg-amber-400 text-stone-950 shadow-xs'
-                    : 'text-emerald-200 hover:text-white'
+                    ? 'bg-white text-blue-700 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
                 title="Читать описание на русском языке"
               >
@@ -323,17 +393,17 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   setTimeout(() => setIsLinkCopied(false), 2500);
                 }
               }}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-bold text-xs transition-colors cursor-pointer ${
+              className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-xs transition-colors cursor-pointer border ${
                 isLinkCopied
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-emerald-900 hover:bg-emerald-800 text-amber-300'
+                  ? 'bg-emerald-600 text-white border-emerald-600'
+                  : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-300'
               }`}
-              title="Скопировать прямую ссылку на товар для отправки клиенту в WhatsApp или сторис"
+              title="Скопировать прямую ссылку на товар"
             >
               {isLinkCopied ? (
                 <>
                   <Check className="w-3.5 h-3.5" />
-                  <span>{isKz ? 'Көшірілді!' : 'Ссылка скопирована!'}</span>
+                  <span>{isKz ? 'Көшірілді!' : 'Скопировано!'}</span>
                 </>
               ) : (
                 <>
@@ -346,29 +416,25 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             <button
               id="toggle-fullscreen-btn"
               onClick={() => setIsFullscreen(!isFullscreen)}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-900 hover:bg-emerald-800 text-amber-300 font-medium text-xs transition-colors cursor-pointer"
+              className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-medium text-xs transition-colors cursor-pointer"
               title={isFullscreen ? 'Свернуть окно' : 'На весь экран смартфона'}
             >
               {isFullscreen ? (
-                <>
-                  <Minimize2 className="w-4 h-4" />
-                  <span className="hidden sm:inline">{isKz ? 'Шығу' : 'Обычный вид'}</span>
-                </>
+                <Minimize2 className="w-4 h-4" />
               ) : (
-                <>
-                  <Maximize2 className="w-4 h-4" />
-                  <span className="hidden sm:inline">{isKz ? 'Толық экран' : 'На весь экран'}</span>
-                </>
+                <Maximize2 className="w-4 h-4" />
               )}
             </button>
 
             <button
+              type="button"
               id="close-modal-btn"
-              onClick={onClose}
-              className="p-1.5 rounded-lg bg-emerald-900/90 hover:bg-rose-700 text-white transition-colors cursor-pointer"
-              title="Закрыть"
+              onClick={handleAnimatedClose}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm transition-colors cursor-pointer"
+              title={isKz ? 'Жабу' : 'Закрыть карточку'}
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
+              <span>{isKz ? 'Жабу' : 'Закрыть'}</span>
             </button>
           </div>
         </div>
@@ -380,32 +446,38 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 lg:p-8 space-y-6"
         >
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-8">
-            {/* Left Column: Images & Badges (9:16 vertical ratio) */}
+            {/* Left Column: Images & Badges (aspect ratio) */}
             <div className="md:col-span-5 space-y-4">
-              <div className="relative aspect-[9/16] max-h-[520px] mx-auto rounded-2xl bg-stone-100 overflow-hidden border border-stone-200 shadow-xs flex items-center justify-center">
+              <div className="relative aspect-square sm:aspect-[4/5] max-h-[460px] mx-auto rounded-2xl bg-white overflow-hidden border border-slate-200 p-4 shadow-xs flex items-center justify-center">
                 <img
                   id="modal-main-image"
                   src={product.images[selectedImageIndex] || product.images[0]}
-                  alt={title}
-                  className="w-full h-full object-cover object-center"
+                  alt={`${title} — купить в Атырау, Бутик №24`}
+                  className="w-full h-full object-contain"
                   style={{ transform: `scale(${zoomLevel > 150 ? 1.15 : 1})`, transition: 'transform 0.2s ease' }}
                 />
 
-                {/* Stock badge */}
-                <div className="absolute top-3 left-3 flex flex-col gap-1.5">
-                  {!product.inStock ? (
-                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-rose-600 text-white shadow-xs flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                      {lang === 'kz' ? 'Қолда жоқ • Жақында' : 'Нет в наличии • Скоро будет'}
-                    </span>
-                  ) : (
-                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-700 text-white shadow-xs">
-                      100% Халяль
+                {/* Badges in Flip.kz Style */}
+                <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
+                  {discountPercent && (
+                    <span className="px-2 py-0.5 rounded text-xs font-black bg-rose-500 text-white shadow-xs">
+                      -{discountPercent}%
                     </span>
                   )}
                   {product.isHit && (
-                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500 text-stone-950 shadow-xs">
-                      Хит продаж
+                    <span className="px-2 py-0.5 rounded text-xs font-black bg-amber-500 text-white shadow-xs flex items-center gap-1">
+                      <span>🔥</span>
+                      <span>ХИТ</span>
+                    </span>
+                  )}
+                  {product.isNew && (
+                    <span className="px-2 py-0.5 rounded text-xs font-black bg-blue-600 text-white shadow-xs">
+                      НОВИНКА
+                    </span>
+                  )}
+                  {!product.inStock && (
+                    <span className="px-2 py-0.5 rounded text-xs font-bold bg-slate-700 text-white">
+                      {lang === 'kz' ? 'Жақында' : 'Под заказ'}
                     </span>
                   )}
                 </div>
@@ -414,15 +486,17 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 <button
                   id="modal-favorite-btn"
                   onClick={() => onToggleFavorite(product)}
-                  className={`absolute top-3 right-3 p-2.5 rounded-full shadow-md backdrop-blur-xs transition-colors ${
-                    isFavorite ? 'bg-rose-50 text-rose-600' : 'bg-white/90 text-stone-700 hover:text-rose-600'
+                  className={`absolute top-3 right-3 p-2.5 rounded-full shadow-xs transition-colors cursor-pointer border ${
+                    isFavorite
+                      ? 'bg-rose-50 text-rose-600 border-rose-200'
+                      : 'bg-white/90 hover:bg-white text-slate-400 hover:text-rose-500 border-slate-200'
                   }`}
                 >
-                  <Heart className={`w-5 h-5 ${isFavorite ? 'fill-rose-600' : ''}`} />
+                  <Heart className={`w-5 h-5 ${isFavorite ? 'fill-rose-500 text-rose-500' : ''}`} />
                 </button>
 
                 {product.country && (
-                  <div className="absolute bottom-3 left-3 px-2.5 py-1 rounded-md bg-stone-950/75 text-white text-xs font-medium">
+                  <div className="absolute bottom-3 left-3 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 border border-slate-200 text-xs font-semibold">
                     {product.country}
                   </div>
                 )}
@@ -430,30 +504,41 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
               {/* Multi-image gallery if available */}
               {product.images.length > 1 && (
-                <div className="flex gap-2">
+                <div className="flex gap-2 justify-center">
                   {product.images.map((img, idx) => (
                     <button
                       key={idx}
                       onClick={() => setSelectedImageIndex(idx)}
-                      className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-all ${
-                        selectedImageIndex === idx ? 'border-emerald-700 scale-95' : 'border-stone-200 opacity-70'
+                      className={`w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 transition-all cursor-pointer bg-white p-1 ${
+                        selectedImageIndex === idx
+                          ? 'border-blue-600 shadow-sm'
+                          : 'border-slate-200 opacity-70 hover:opacity-100'
                       }`}
                     >
-                      <img src={img} alt="" className="w-full h-full object-cover" />
+                      <img
+                        src={img}
+                        alt={`${title} (фото ${idx + 1})`}
+                        className="w-full h-full object-contain"
+                      />
                     </button>
                   ))}
                 </div>
               )}
 
-              {/* Boutique assurance box */}
-              <div className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200 text-xs text-emerald-900 space-y-1.5">
-                <div className="flex items-center gap-1.5 font-bold text-emerald-950">
-                  <MapPin className="w-4 h-4 text-emerald-700" />
-                  <span>{config.city}, {config.boutiqueNumber}</span>
+              {/* Flip.kz Style Delivery & Boutique Assurance Box */}
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-700 space-y-2">
+                <div className="flex items-center gap-2 font-bold text-slate-900">
+                  <MapPin className="w-4 h-4 text-blue-600 shrink-0" />
+                  <span>{config.city} · {config.boutiqueNumber} (ТД «Дина Байзар»)</span>
                 </div>
-                <p className="text-[11px] text-emerald-800">
-                  {config.address} • {lang === 'kz' ? config.workingHoursKz : config.workingHoursRu}
-                </p>
+                <div className="text-xs text-slate-500 space-y-1">
+                  <p>📍 {config.address}</p>
+                  <p>🕙 Режим работы: {lang === 'kz' ? config.workingHoursKz : config.workingHoursRu}</p>
+                  <p className="text-emerald-700 font-semibold flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    Самовывоз сегодня — 0 ₸
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -461,10 +546,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             <div className="md:col-span-7 flex flex-col justify-between space-y-5">
               <div>
                 {/* SKU & Category */}
-                <div className="flex items-center justify-between text-xs text-stone-500 mb-2">
-                  <span>Артикул: <strong className="text-stone-800">{product.sku}</strong></span>
+                <div className="flex items-center justify-between text-xs sm:text-sm text-slate-500 mb-2">
+                  <span>Артикул: <strong className="text-slate-800 font-mono">#{product.sku}</strong></span>
                   {product.volumeOrWeight && (
-                    <span className="px-2 py-0.5 rounded bg-stone-100 text-stone-700 font-semibold">
+                    <span className="px-2.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-slate-700 font-semibold text-xs">
                       {product.volumeOrWeight}
                     </span>
                   )}
@@ -473,44 +558,44 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 {/* Title (Scaled) */}
                 <h1
                   id="modal-product-title"
-                  className="font-bold text-stone-900 leading-tight"
+                  className="font-bold text-slate-900 leading-snug"
                   style={{ fontSize: `calc(${dynamicFontSize} * 1.35)` }}
                 >
                   {title}
                 </h1>
 
                 {/* Price Display */}
-                <div className="mt-3 flex items-baseline gap-3">
+                <div className="mt-3 flex items-baseline gap-3 flex-wrap">
                   <span
                     id="modal-product-price"
-                    className="font-extrabold text-emerald-950 tracking-tight"
+                    className="font-black text-slate-900 tracking-tight"
                     style={{ fontSize: `calc(${dynamicFontSize} * 1.5)` }}
                   >
                     {formatPrice(product.price)}
                   </span>
                   {product.oldPrice && (
-                    <span className="text-base text-stone-400 line-through">
+                    <span className="text-sm text-slate-400 line-through">
                       {formatPrice(product.oldPrice)}
                     </span>
                   )}
                   {product.inStock ? (
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                    <span className="text-xs sm:text-sm font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                       {isKz ? 'Бутик №24 • Қолда бар' : 'Бутик №24 • В наличии'}
                     </span>
                   ) : (
-                    <span className="text-xs font-bold px-2.5 py-0.5 rounded-md bg-rose-100 text-rose-800 border border-rose-200 flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse" />
+                    <span className="text-xs sm:text-sm font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
                       {isKz ? 'Қолда жоқ • Жақында болады' : 'Нет в наличии • Скоро будет'}
                     </span>
                   )}
                 </div>
 
                 {/* In-Card Language Switcher Bar directly for reading description */}
-                <div className="mt-5 p-3 rounded-2xl bg-amber-50/80 border border-amber-200/90 flex items-center justify-between gap-3 flex-wrap shadow-2xs">
-                  <div className="flex items-center gap-2 text-xs sm:text-sm text-amber-950 font-bold">
-                    <Globe className="w-4 h-4 text-amber-700 shrink-0" />
-                    <span>{isKz ? 'Сипаттама тілі:' : 'Язык описания товара:'}</span>
+                <div className="mt-4 p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3 flex-wrap shadow-2xs">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+                    <Globe className="w-4 h-4 text-blue-600 shrink-0" />
+                    <span>{isKz ? 'Тілі:' : 'Язык описания:'}</span>
                   </div>
 
                   <div className="flex items-center gap-1.5">
@@ -518,10 +603,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       type="button"
                       id="card-lang-kz"
                       onClick={() => handleLangSwitch('kz')}
-                      className={`px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                         isKz
-                          ? 'bg-emerald-800 text-white shadow-sm ring-2 ring-emerald-600/30'
-                          : 'bg-white text-stone-700 hover:bg-stone-100 border border-stone-200/90'
+                          ? 'bg-blue-600 text-white shadow-2xs'
+                          : 'bg-white text-slate-700 hover:text-slate-900 border border-slate-200'
                       }`}
                       title="Қазақ тілінде оқу"
                     >
@@ -531,10 +616,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       type="button"
                       id="card-lang-ru"
                       onClick={() => handleLangSwitch('ru')}
-                      className={`px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                         !isKz
-                          ? 'bg-emerald-800 text-white shadow-sm ring-2 ring-emerald-600/30'
-                          : 'bg-white text-stone-700 hover:bg-stone-100 border border-stone-200/90'
+                          ? 'bg-blue-600 text-white shadow-2xs'
+                          : 'bg-white text-slate-700 hover:text-slate-900 border border-slate-200'
                       }`}
                       title="Читать на русском"
                     >
@@ -547,10 +632,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         id="card-retranslate-btn"
                         onClick={() => runKazakhTranslation(true)}
                         disabled={isTranslating}
-                        className="px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-amber-100 hover:bg-amber-200 text-amber-950 flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                        className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
                         title="Қазақ тіліне қайта аудару"
                       >
-                        <RotateCw className={`w-3.5 h-3.5 text-amber-800 ${isTranslating ? 'animate-spin' : ''}`} />
+                        <RotateCw className={`w-3.5 h-3.5 text-blue-600 ${isTranslating ? 'animate-spin' : ''}`} />
                         <span className="hidden sm:inline">{isTranslating ? 'Аударылуда...' : 'Қайта аудару'}</span>
                       </button>
                     )}
@@ -559,29 +644,21 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
                 {/* Translation in-progress status pill */}
                 {isKz && isTranslating && (
-                  <div className="mt-2.5 px-3.5 py-2.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 text-xs sm:text-sm font-medium flex items-center gap-2.5 shadow-2xs animate-pulse">
-                    <Loader2 className="w-4 h-4 animate-spin text-amber-700 shrink-0" />
+                  <div className="mt-2.5 px-3 py-2 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 text-xs font-medium flex items-center gap-2 animate-pulse">
+                    <Loader2 className="w-4 h-4 animate-spin text-blue-600 shrink-0" />
                     <span>Қазақ тіліне аударылуда... (Сипаттамасы аударылып жатыр)</span>
                   </div>
                 )}
 
-                {/* Translation ready badge */}
-                {isKz && !isTranslating && (
-                  <div className="mt-2 px-3 py-1 text-xs text-emerald-800 bg-emerald-50/90 rounded-lg border border-emerald-200 font-medium flex items-center gap-1.5 w-fit">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                    <span>Қазақша нұсқасы белсенді</span>
-                  </div>
-                )}
-
                 {/* Tabs Navigation */}
-                <div id="modal-tabs-nav" className="mt-5 flex border-b border-stone-200 overflow-x-auto gap-2">
+                <div id="modal-tabs-nav" className="mt-5 flex border-b border-slate-200 overflow-x-auto gap-2">
                   <button
                     id="tab-btn-desc"
                     onClick={() => setActiveTab('desc')}
-                    className={`pb-2.5 px-3 text-xs sm:text-sm font-bold border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
+                    className={`pb-3 px-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
                       activeTab === 'desc'
-                        ? 'border-emerald-800 text-emerald-950'
-                        : 'border-transparent text-stone-500 hover:text-stone-800'
+                        ? 'border-blue-600 text-blue-600'
+                        : 'border-transparent text-slate-500 hover:text-slate-800'
                     }`}
                   >
                     {isKz ? 'Сипаттама' : 'Описание'}
@@ -591,10 +668,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     <button
                       id="tab-btn-benefits"
                       onClick={() => setActiveTab('benefits')}
-                      className={`pb-2.5 px-3 text-xs sm:text-sm font-bold border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
+                      className={`pb-3 px-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
                         activeTab === 'benefits'
-                          ? 'border-emerald-800 text-emerald-950'
-                          : 'border-transparent text-stone-500 hover:text-stone-800'
+                          ? 'border-blue-600 text-blue-600'
+                          : 'border-transparent text-slate-500 hover:text-slate-800'
                       }`}
                     >
                       {isKz ? 'Пайдасы' : 'Польза и свойства'}
@@ -605,10 +682,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     <button
                       id="tab-btn-howto"
                       onClick={() => setActiveTab('howTo')}
-                      className={`pb-2.5 px-3 text-xs sm:text-sm font-bold border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
+                      className={`pb-3 px-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
                         activeTab === 'howTo'
-                          ? 'border-emerald-800 text-emerald-950'
-                          : 'border-transparent text-stone-500 hover:text-stone-800'
+                          ? 'border-blue-600 text-blue-600'
+                          : 'border-transparent text-slate-500 hover:text-slate-800'
                       }`}
                     >
                       {isKz ? 'Қолдану тәсілі' : 'Как применять'}
@@ -619,10 +696,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     <button
                       id="tab-btn-specs"
                       onClick={() => setActiveTab('specs')}
-                      className={`pb-2.5 px-3 text-xs sm:text-sm font-bold border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
+                      className={`pb-3 px-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
                         activeTab === 'specs'
-                          ? 'border-emerald-800 text-emerald-950'
-                          : 'border-transparent text-stone-500 hover:text-stone-800'
+                          ? 'border-blue-600 text-blue-600'
+                          : 'border-transparent text-slate-500 hover:text-slate-800'
                       }`}
                     >
                       {isKz ? 'Сипаттамалары' : 'Характеристики'}
@@ -633,7 +710,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 {/* Tab Content Box with DYNAMIC ZOOM SCALING for easy reading */}
                 <div
                   id="modal-tab-content-area"
-                  className="mt-4 p-4 rounded-2xl bg-stone-50/80 border border-stone-200/80"
+                  className="mt-4 p-4 sm:p-5 rounded-xl bg-slate-50 border border-slate-200"
                   style={{
                     fontSize: dynamicFontSize,
                     lineHeight: dynamicLineHeight,
@@ -642,12 +719,12 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   {activeTab === 'desc' && (
                     <div className="space-y-3">
                       {isKz && isTranslating && (
-                        <div className="p-3 rounded-xl bg-amber-100/90 border border-amber-300 text-amber-950 text-xs sm:text-sm font-semibold flex items-center gap-2.5 animate-pulse">
-                          <Loader2 className="w-4 h-4 animate-spin text-amber-800 shrink-0" />
+                        <div className="p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold flex items-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin text-blue-600 shrink-0" />
                           <span>Қазақ тіліне аударылуда... Бірнеше секунд күте тұрыңыз</span>
                         </div>
                       )}
-                      <p className="text-stone-800 font-normal leading-relaxed whitespace-pre-line">
+                      <p className="text-slate-700 font-normal leading-relaxed whitespace-pre-line">
                         {description}
                       </p>
                     </div>
@@ -657,8 +734,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     <ul className="space-y-2.5">
                       {benefits.map((b, idx) => (
                         <li key={idx} className="flex items-start gap-2.5">
-                          <CheckCircle2 className="w-5 h-5 text-emerald-700 shrink-0 mt-0.5" />
-                          <span className="text-stone-800">{b}</span>
+                          <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                          <span className="text-slate-700">{b}</span>
                         </li>
                       ))}
                     </ul>
@@ -666,11 +743,11 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
                   {activeTab === 'howTo' && howToUse && (
                     <div className="space-y-2">
-                      <div className="flex items-center gap-2 font-bold text-emerald-950 text-sm mb-1">
-                        <Clock className="w-4 h-4 text-emerald-700" />
+                      <div className="flex items-center gap-2 font-bold text-slate-900 text-sm mb-1">
+                        <Clock className="w-4 h-4 text-blue-600" />
                         <span>{isKz ? 'Нұсқаулық:' : 'Рекомендации по приему:'}</span>
                       </div>
-                      <p className="text-stone-800 leading-relaxed whitespace-pre-line">
+                      <p className="text-slate-700 leading-relaxed whitespace-pre-line">
                         {howToUse}
                       </p>
                     </div>
@@ -678,7 +755,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
                   {activeTab === 'specs' && specs && (
                     <div className="space-y-2">
-                      <pre className="font-sans text-stone-800 whitespace-pre-line leading-relaxed">
+                      <pre className="font-sans text-slate-700 whitespace-pre-line leading-relaxed text-xs sm:text-sm">
                         {specs}
                       </pre>
                     </div>
@@ -687,44 +764,52 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </div>
 
               {/* Action Buttons: WhatsApp direct order, 1-Click order, Add to cart */}
-              <div id="modal-actions-box" className="pt-4 border-t border-stone-200 space-y-3">
+              <div id="modal-actions-box" className="pt-4 border-t border-slate-200 space-y-3">
                 {/* Visual Feedback Banner: Товар отправлен в корзину */}
                 {isAddedToCartFeedback && (
                   <div
                     id="modal-cart-success-banner"
-                    className="p-3 bg-emerald-50 border-2 border-emerald-500 rounded-2xl text-emerald-950 text-xs sm:text-sm font-bold flex items-center justify-between gap-3 shadow-md animate-in fade-in zoom-in-95 duration-200"
+                    className="p-3.5 bg-blue-50 border border-blue-200 rounded-xl text-slate-900 text-xs sm:text-sm font-bold flex items-center justify-between gap-3 shadow-xs animate-in fade-in zoom-in-95 duration-200"
                   >
                     <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0">
-                        <CheckCircle2 className="w-4 h-4 text-white" />
+                      <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0">
+                        <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
                       </div>
                       <div>
-                        <p className="font-bold text-emerald-900 text-xs sm:text-sm">
-                          {isKz ? 'Өнім себетке жіберілді!' : 'Товар отправлен в корзину!'}
+                        <p className="font-bold text-blue-900 text-xs sm:text-sm">
+                          {isKz ? 'Өнім себетке қосылды!' : 'Товар добавлен в корзину!'}
                         </p>
-                        <p className="text-[11px] text-emerald-700 font-normal">
-                          {isKz ? 'Тапсырысты себеттен рәсімдеуге болады' : 'Вы можете перейти в корзину или продолжить выбор'}
+                        <p className="text-xs text-slate-600 font-normal">
+                          {isKz ? 'Тапсырысты себеттен рәсімдеуге болады' : 'Перейдите к оформлению или продолжите покупки'}
                         </p>
                       </div>
                     </div>
-                    <span className="text-emerald-700 text-xs font-mono">✓</span>
+                    {onOpenCart && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onClose();
+                          onOpenCart();
+                        }}
+                        className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-bold flex items-center gap-1 shrink-0 transition-colors cursor-pointer"
+                      >
+                        <span>{isKz ? 'Себетке' : 'В корзину'}</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {/* WhatsApp Order Button */}
                   <a
                     id="modal-whatsapp-order-btn"
                     href={`https://wa.me/${config.whatsappNumber}?text=${waDirectMessage}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`px-5 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-sm transition-all text-white ${
-                      product.inStock
-                        ? 'bg-emerald-600 hover:bg-emerald-700'
-                        : 'bg-emerald-700 hover:bg-emerald-800'
-                    }`}
+                    className="px-4 py-3 rounded-lg font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-colors text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200"
                   >
-                    <MessageCircle className="w-5 h-5" />
+                    <MessageCircle className="w-4 h-4 text-emerald-600" />
                     <span>
                       {product.inStock
                         ? (isKz ? 'WhatsApp арқылы тапсырыс' : 'Заказать в WhatsApp')
@@ -735,10 +820,11 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   {/* 1-Click Fast Order / Pre-order */}
                   <button
                     id="modal-quick-order-btn"
+                    type="button"
                     onClick={() => onQuickOrder(product)}
-                    className="px-5 py-3 rounded-xl bg-amber-400 hover:bg-amber-500 text-stone-950 font-bold text-sm flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+                    className="px-4 py-3 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
                   >
-                    <Zap className="w-5 h-5 text-stone-950" />
+                    <Zap className="w-4 h-4 text-amber-500 fill-amber-500" />
                     <span>
                       {product.inStock
                         ? (isKz ? '1 басу арқылы сатып алу' : 'Купить в 1 клик')
@@ -747,43 +833,70 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   </button>
                 </div>
 
-                {/* Add to Cart button OR Out of Stock reservation info */}
+                {/* Add to Cart button */}
                 {product.inStock ? (
-                  <button
-                    id="modal-add-cart-btn"
-                    onClick={handleAddToCartClick}
-                    className={`w-full px-5 py-3.5 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all cursor-pointer shadow-md ${
-                      isAddedToCartFeedback
-                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white ring-4 ring-emerald-500/20 scale-[1.01]'
-                        : 'bg-emerald-950 hover:bg-black text-white'
-                    }`}
-                  >
-                    {isAddedToCartFeedback ? (
-                      <>
-                        <CheckCircle2 className="w-5 h-5 text-amber-300 animate-bounce" />
-                        <span>{isKz ? '✓ Өнім себетке жіберілді!' : '✓ Товар отправлен в корзину!'}</span>
-                      </>
-                    ) : (
-                      <>
-                        <ShoppingBag className="w-5 h-5 text-amber-400" />
-                        <span>{isKz ? 'Себетке қосу' : 'Добавить в корзину'}</span>
-                      </>
+                  <div className="space-y-2">
+                    <button
+                      id="modal-add-cart-btn"
+                      type="button"
+                      onClick={handleAddToCartClick}
+                      className={`w-full px-5 py-3.5 rounded-lg font-bold text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all cursor-pointer shadow-sm ${
+                        isAddedToCartFeedback
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white'
+                      }`}
+                    >
+                      {isAddedToCartFeedback ? (
+                        <>
+                          <CheckCircle2 className="w-5 h-5 text-white" />
+                          <span>{isKz ? '✓ Өнім себетке жіберілді!' : '✓ Товар добавлен в корзину!'}</span>
+                        </>
+                      ) : (
+                        <>
+                          <ShoppingBag className="w-5 h-5" />
+                          <span>
+                            {cartQuantity > 0
+                              ? isKz
+                                ? `Себетте: ${cartQuantity} дана (+1 қосу)`
+                                : `В корзине: ${cartQuantity} шт. (+1 добавить)`
+                              : isKz
+                              ? 'Себетке қосу'
+                              : 'Добавить в корзину'}
+                          </span>
+                        </>
+                      )}
+                    </button>
+
+                    {cartQuantity > 0 && onRemoveFromCart && (
+                      <button
+                        type="button"
+                        id="modal-remove-cart-btn"
+                        onClick={() => onRemoveFromCart(product.id)}
+                        className="w-full py-2.5 px-4 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-semibold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="w-4 h-4 text-rose-500 shrink-0" />
+                        <span>
+                          {isKz
+                            ? 'Тауарды себеттен өшіру'
+                            : 'Удалить товар из корзины'}
+                        </span>
+                      </button>
                     )}
-                  </button>
+                  </div>
                 ) : (
-                  <div className="w-full p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-center">
-                    <p className="text-xs sm:text-sm font-bold text-rose-800 flex items-center justify-center gap-2">
-                      <Clock className="w-4 h-4 text-rose-600" />
+                  <div className="w-full p-4 rounded-lg bg-slate-100 border border-slate-200 text-center">
+                    <p className="text-sm font-bold text-slate-800 flex items-center justify-center gap-2">
+                      <Clock className="w-4 h-4 text-slate-500" />
                       <span>{isKz ? 'Өнім уақытша бітті • Жақында түседі' : 'Товар временно закончился • Скоро будет'}</span>
                     </p>
-                    <p className="text-[11px] text-stone-500 mt-1">
+                    <p className="text-xs text-slate-500 mt-1">
                       {isKz ? 'Бутик №24-тен алдын ала брондау үшін түймелерді басыңыз' : 'Нажмите кнопку «Оформить предзаказ», чтобы забронировать к новому завозу'}
                     </p>
                   </div>
                 )}
 
                 {/* Direct Share Link block for Stories & WhatsApp */}
-                <div className="pt-2">
+                <div className="pt-1">
                   <button
                     id="modal-share-product-btn"
                     onClick={async () => {
@@ -793,39 +906,143 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         setTimeout(() => setIsLinkCopied(false), 3000);
                       }
                     }}
-                    className={`w-full py-2.5 px-4 rounded-xl border text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    className={`w-full py-2.5 px-4 rounded-lg border text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
                       isLinkCopied
-                        ? 'bg-emerald-50 border-emerald-500 text-emerald-800 shadow-xs'
-                        : 'bg-stone-50 hover:bg-stone-100 border-stone-200/90 text-stone-700 hover:text-stone-900'
+                        ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
+                        : 'bg-white hover:bg-slate-50 border-slate-300 text-slate-700'
                     }`}
-                    title="Скопировать ссылку для вставки в Instagram Сторис или отправки клиенту"
+                    title="Скопировать ссылку"
                   >
                     {isLinkCopied ? (
                       <>
                         <Check className="w-4 h-4 text-emerald-600" />
                         <span className="font-bold text-emerald-700">
-                          {isKz ? '✓ Сілтеме көшірілді! Сторис немесе WhatsApp-қа салыңыз' : '✓ Ссылка скопирована! Готова для сторис и WhatsApp'}
+                          {isKz ? '✓ Сілтеме көшірілді!' : '✓ Ссылка скопирована!'}
                         </span>
                       </>
                     ) : (
                       <>
-                        <Share2 className="w-4 h-4 text-amber-600" />
+                        <Share2 className="w-4 h-4 text-blue-600" />
                         <span>
-                          {isKz ? 'Өнім сілтемесін көшіру (Сторис / WhatsApp)' : 'Скопировать ссылку на товар (для сторис и WhatsApp)'}
+                          {isKz ? 'Өнім сілтемесін көшіру (Сторис / WhatsApp)' : 'Скопировать ссылку на товар'}
                         </span>
                       </>
                     )}
                   </button>
-                  <p className="text-[11px] text-center text-stone-400 mt-1">
-                    {isKz ? 'Клиент сілтемені ашқанда тура осы тауарға бірден өтеді' : 'Клиент перейдет ровно на эту карточку товара без лишнего поиска'}
-                  </p>
                 </div>
               </div>
             </div>
           </div>
+
+          {/* Frequently Bought Together Section inside Product Detail Modal */}
+          {recommendedProducts.length > 0 && (
+            <div
+              id="modal-frequently-bought-section"
+              className="pt-6 border-t border-slate-200"
+            >
+              <div className="flex items-center justify-between gap-2 mb-4">
+                <div>
+                  <h3 className="font-bold text-base sm:text-lg text-slate-900 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
+                    <span>
+                      {isKz ? 'Осы тауармен бірге жиі алады' : 'С этим товаром часто берут'}
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {isKz
+                      ? 'Кешенді нәтиже үшін сатып алушылар қосымша таңдайтын өнімдер'
+                      : 'Рекомендуемые товары для комплексного приёма'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {recommendedProducts.map((rec) => {
+                  const recTitle = isKz && rec.titleKz?.trim() ? rec.titleKz : rec.titleRu;
+                  return (
+                    <div
+                      key={rec.id}
+                      className="group rounded-xl border border-slate-200 bg-white hover:border-blue-400 p-3 flex flex-col justify-between transition-all shadow-2xs"
+                    >
+                      <div
+                        onClick={() => {
+                          if (onSelectProduct) {
+                            setPreviousProducts((stack) => [...stack, product]);
+                            setSelectedImageIndex(0);
+                            setActiveTab('desc');
+                            onSelectProduct(rec);
+                            if (scrollBodyRef.current) {
+                              scrollBodyRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+                            }
+                          }
+                        }}
+                        className="cursor-pointer"
+                      >
+                        <div className="aspect-square rounded-lg overflow-hidden bg-white border border-slate-100 p-2 mb-2 flex items-center justify-center">
+                          <img
+                            src={rec.images[0]}
+                            alt={recTitle}
+                            referrerPolicy="no-referrer"
+                            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
+                          />
+                        </div>
+                        <h4 className="text-xs font-semibold text-slate-900 line-clamp-2 leading-snug group-hover:text-blue-600">
+                          {recTitle}
+                        </h4>
+                      </div>
+
+                      <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5">
+                        <span className="text-xs sm:text-sm font-bold text-slate-900 tabular-nums">
+                          {formatPrice(rec.price)}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => onAddToCart(rec)}
+                          className="px-2.5 py-1 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer shrink-0"
+                          title={isKz ? 'Себетке қосу' : 'Добавить в корзину'}
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>{isKz ? 'Қосу' : 'В корзину'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Bottom Back & Close Navigation Row inside Product Detail Modal */}
+          <div className="pt-4 border-t border-slate-200 flex items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={handleBackAction}
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs sm:text-sm transition-colors cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4 shrink-0" />
+              <span>
+                {previousProducts.length > 0
+                  ? isKz
+                    ? 'Алдыңғы тауарға оралу'
+                    : 'Назад к предыдущему товару'
+                  : isKz
+                  ? 'Каталогқа оралу'
+                  : 'Назад в каталог'}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleAnimatedClose}
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs sm:text-sm transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4 shrink-0" />
+              <span>{isKz ? 'Жабу' : 'Закрыть карточку'}</span>
+            </button>
+          </div>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 
   return createPortal(modalElement, document.body);

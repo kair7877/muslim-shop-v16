@@ -1,6 +1,11 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Connection test document
+    match /test/{docId} {
+      allow read: if true;
+    }
+
     // Products catalog: publicly readable, writable for store management
     match /products/{productId} {
       allow read: if true;

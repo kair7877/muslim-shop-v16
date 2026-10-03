@@ -33,17 +33,19 @@ import {
   FolderPlus,
   AlertTriangle,
   BarChart3,
-  Download,
-  UploadCloud,
+  ArrowLeft,
 } from 'lucide-react';
 import { Category, Language, Product, StoreConfig } from '../types';
 import { AnalyticsTab } from './AnalyticsTab';
+import { StoriesGeneratorModal } from './StoriesGeneratorModal';
+import { BulkPriceEditorTab } from './BulkPriceEditorTab';
 import {
   saveProductToFirestore,
   deleteProductFromFirestore,
   saveSettingsToFirestore,
   saveCategoryToFirestore,
   deleteCategoryFromFirestore,
+  pushDeltaToFirestore,
 } from '../services/firestoreService';
 import {
   getProductDirectUrl,
@@ -90,13 +92,14 @@ interface AdminModalProps {
   lang: Language;
   onUpdateConfig: (newConfig: StoreConfig) => void;
   onUpdateProduct: (product: Product) => void;
+  onBulkUpdateProducts?: (products: Product[]) => void;
   onAddProduct: (product: Product) => void;
   onDeleteProduct: (productId: string) => void;
   onPreviewProduct?: (product: Product) => void;
   onAddCategory?: (category: Category) => void;
   onUpdateCategory?: (category: Category) => void;
   onDeleteCategory?: (categoryId: string) => void;
-  initialTab?: 'products' | 'settings' | 'add' | 'categories' | 'stats';
+  initialTab?: 'products' | 'pricelist' | 'stories' | 'settings' | 'add' | 'categories' | 'stats';
   onClose: () => void;
 }
 
@@ -107,6 +110,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   lang,
   onUpdateConfig,
   onUpdateProduct,
+  onBulkUpdateProducts,
   onAddProduct,
   onDeleteProduct,
   onPreviewProduct,
@@ -121,11 +125,14 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   const [sessionRemainingMinutes, setSessionRemainingMinutes] = useState<number>(10);
   const [errorMsg, setErrorMsg] = useState('');
   const [currentConfig, setCurrentConfig] = useState<StoreConfig>(config);
-  const [activeTab, setActiveTab] = useState<'products' | 'settings' | 'add' | 'categories' | 'stats'>(
-    initialTab || 'products'
-  );
+  const [activeTab, setActiveTab] = useState<
+    'products' | 'pricelist' | 'stories' | 'settings' | 'add' | 'categories' | 'stats'
+  >(initialTab || 'products');
+  const [storyProduct, setStoryProduct] = useState<Product | null>(null);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSyncingCloud, setIsSyncingCloud] = useState(false);
+  const [cloudSyncedNotice, setCloudSyncedNotice] = useState(false);
   const [showPinInSettings, setShowPinInSettings] = useState(false);
   const [lockoutRemainingMs, setLockoutRemainingMs] = useState<number>(() => getLockoutRemainingMs());
   const isSubmittingAddProductRef = useRef(false);
@@ -240,94 +247,6 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   const [newIsHit, setNewIsHit] = useState(false);
   const [newIsNew, setNewIsNew] = useState(true);
   const [isCompressingImage, setIsCompressingImage] = useState(false);
-  const [isSyncingToServer, setIsSyncingToServer] = useState(false);
-  const [syncStatusMsg, setSyncStatusMsg] = useState<string | null>(null);
-
-  const handleSyncToServer = async () => {
-    setIsSyncingToServer(true);
-    try {
-      const realOnly = products.filter(
-        (p) =>
-          p.id !== 'prod-ginseng-1' &&
-          p.sku !== 'MS-2401' &&
-          p.sku !== 'MS-101-OIL' &&
-          !p.titleRu?.includes('Масло черного тмина «Королевское»')
-      );
-      const res = await fetch('/api/products/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ products: realOnly }),
-      });
-      const data = await res.json();
-      if (data && data.success) {
-        setSyncStatusMsg(`Успешно! ${data.count} товаров синхронизированы на сервере. Теперь они отображаются во всех браузерах (Яндекс, Safari, Chrome).`);
-        setTimeout(() => setSyncStatusMsg(null), 6000);
-      } else {
-        alert('Ошибка синхронизации: ' + (data.error || 'Неизвестная ошибка'));
-      }
-    } catch (e: any) {
-      alert('Ошибка соединения с сервером: ' + e.message);
-    } finally {
-      setIsSyncingToServer(false);
-    }
-  };
-
-  const handleExportProductsJson = () => {
-    try {
-      const realOnly = products.filter(
-        (p) =>
-          p.id !== 'prod-ginseng-1' &&
-          p.sku !== 'MS-2401' &&
-          p.sku !== 'MS-101-OIL' &&
-          !p.titleRu?.includes('Масло черного тмина «Королевское»')
-      );
-      const jsonStr = JSON.stringify(realOnly, null, 2);
-      const blob = new Blob([jsonStr], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `muslim_shop_catalog_${new Date().toISOString().slice(0, 10)}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (e: any) {
-      alert('Ошибка экспорта: ' + e.message);
-    }
-  };
-
-  const handleImportProductsJson = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (evt) => {
-      try {
-        const text = evt.target?.result as string;
-        const parsed = JSON.parse(text);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const valid = parsed.filter((p: any) => p && p.titleRu && p.price);
-          if (valid.length > 0) {
-            for (const prod of valid) {
-              onAddProduct(prod);
-              try {
-                await saveProductToFirestore(prod);
-              } catch {}
-            }
-            fetch('/api/products/sync', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ products: valid }),
-            }).catch(() => {});
-            alert(`Успешно импортировано ${valid.length} товаров!`);
-          } else {
-            alert('В файле нет корректных товаров.');
-          }
-        }
-      } catch (err: any) {
-        alert('Ошибка чтения JSON: ' + err.message);
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
-  };
 
   const handleImageFileUpload = async (
     file: File,
@@ -336,7 +255,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
     if (!file) return;
     setIsCompressingImage(true);
     try {
-      const compressedDataUrl = await compressImageFile(file, 900, 900, 0.82);
+      const compressedDataUrl = await compressImageFile(file, 720, 720, 0.78);
       if (target === 'new') {
         setNewImageUrl(compressedDataUrl);
       } else if (editingProduct) {
@@ -469,12 +388,17 @@ export const AdminModal: React.FC<AdminModalProps> = ({
     setIsDeletingProduct(true);
     try {
       onDeleteProduct(product.id);
+      if (editingProduct?.id === product.id) {
+        setEditingProduct(null);
+      }
       try {
         await deleteProductFromFirestore(product.id);
       } catch (err: any) {
         console.warn('Firestore product delete warning:', err);
       }
       setProductToDelete(null);
+      setCopyFeedbackMsg(`🗑 Товар «${product.titleRu}» удален из каталога и базы данных`);
+      setTimeout(() => setCopyFeedbackMsg(null), 4000);
     } catch (err: any) {
       console.error('Error deleting product:', err);
     } finally {
@@ -601,13 +525,22 @@ export const AdminModal: React.FC<AdminModalProps> = ({
     if (!editingProduct) return;
     setIsSaving(true);
     try {
-      await saveProductToFirestore(editingProduct);
-      onUpdateProduct(editingProduct);
+      const updatedProd: Product = {
+        ...editingProduct,
+        createdAt: new Date().toISOString(),
+      };
+      const updatedTitle = updatedProd.titleRu;
+      onUpdateProduct(updatedProd);
+      await saveProductToFirestore(updatedProd);
       setEditingProduct(null);
       setSavedSuccess(true);
-      setTimeout(() => setSavedSuccess(false), 2500);
+      setCopyFeedbackMsg(`✅ Товар «${updatedTitle}» (включая описание) успешно сохранён и синхронизирован!`);
+      setTimeout(() => {
+        setSavedSuccess(false);
+        setCopyFeedbackMsg(null);
+      }, 4500);
     } catch (err: any) {
-      alert('Ошибка сохранения товара в Firestore: ' + err.message);
+      alert('Ошибка сохранения товара: ' + err.message);
     } finally {
       setIsSaving(false);
     }
@@ -635,7 +568,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
       inStock: newInStock,
       isHit: newIsHit,
       isNew: newIsNew,
-      sku: `MS-${Math.floor(100 + Math.random() * 900)}`,
+      sku: `MS-${Date.now().toString().slice(-5)}`,
       images: [
         newImageUrl.trim() ||
           'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=800&q=80',
@@ -644,8 +577,17 @@ export const AdminModal: React.FC<AdminModalProps> = ({
     };
 
     try {
-      // 1. Immediately add to local state and catalog
+      // 1. Immediately add to local state & delta store (0ms synchronous persistence)
       onAddProduct(newProd);
+
+      // 2. Persist to Cloud Relay, IndexedDB & Firestore before switching tabs
+      try {
+        await saveProductToFirestore(newProd);
+      } catch (err: any) {
+        console.warn('Firestore product sync warning (saved locally):', err);
+      }
+
+      const addedTitle = newProd.titleRu;
       setNewTitleRu('');
       setNewTitleKz('');
       setNewPrice('');
@@ -656,14 +598,15 @@ export const AdminModal: React.FC<AdminModalProps> = ({
       setNewInStock(true);
       setNewIsHit(false);
       setNewIsNew(true);
+      setSavedSuccess(true);
+      setCopyFeedbackMsg(
+        `✅ Товар «${addedTitle}» успешно добавлен и отправлен клиентам во все браузеры!`
+      );
+      setTimeout(() => {
+        setSavedSuccess(false);
+        setCopyFeedbackMsg(null);
+      }, 5000);
       setActiveTab('products');
-
-      // 2. Persist to Firestore asynchronously
-      try {
-        await saveProductToFirestore(newProd);
-      } catch (err: any) {
-        console.warn('Firestore product sync warning (saved locally):', err);
-      }
     } catch (err: any) {
       alert('Ошибка добавления товара: ' + err.message);
     } finally {
@@ -717,11 +660,26 @@ export const AdminModal: React.FC<AdminModalProps> = ({
         className="w-full max-w-5xl xl:max-w-6xl bg-white rounded-3xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden"
       >
         {/* Header */}
-        <div className="p-4 sm:p-5 bg-stone-900 text-white flex items-center justify-between border-b border-stone-800">
-          <div className="flex items-center gap-2.5">
-            <Lock className="w-5 h-5 text-amber-400 shrink-0" />
-            <div>
-              <h3 className="font-bold text-sm sm:text-base font-serif leading-tight">
+        <div className="p-4 sm:p-5 bg-stone-900 text-white flex items-center justify-between gap-2 border-b border-stone-800">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <button
+              type="button"
+              onClick={() => {
+                if (editingProduct) {
+                  setEditingProduct(null);
+                } else {
+                  onClose();
+                }
+              }}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-amber-400/15 hover:bg-amber-400/25 text-amber-300 border border-amber-400/40 font-extrabold text-xs transition-colors cursor-pointer shrink-0"
+              title={editingProduct ? 'Назад к списку товаров' : 'Назад в магазин'}
+            >
+              <ArrowLeft className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>{editingProduct ? 'Назад к списку' : 'Назад'}</span>
+            </button>
+            <Lock className="w-5 h-5 text-amber-400 hidden sm:inline shrink-0" />
+            <div className="min-w-0">
+              <h3 className="font-bold text-sm sm:text-base font-serif leading-tight truncate">
                 Панель администратора • MUSLIM SHOP
               </h3>
               <p className="text-[11px] text-stone-400 hidden sm:block">
@@ -733,6 +691,37 @@ export const AdminModal: React.FC<AdminModalProps> = ({
           <div className="flex items-center gap-2">
             {isAuthenticated && (
               <>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (isSyncingCloud) return;
+                    setIsSyncingCloud(true);
+                    try {
+                      await pushDeltaToFirestore(products, categories, currentConfig);
+                      setCloudSyncedNotice(true);
+                      setCopyFeedbackMsg(
+                        `✅ Все товары (${products.length} шт.) успешно синхронизированы во все браузеры!`
+                      );
+                      setTimeout(() => {
+                        setCloudSyncedNotice(false);
+                        setCopyFeedbackMsg(null);
+                      }, 4500);
+                    } finally {
+                      setIsSyncingCloud(false);
+                    }
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-semibold transition-colors cursor-pointer shadow-xs"
+                  title="Мгновенно отправить все новые товары во все браузеры (Яндекс, Safari, телефоны клиентов)"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isSyncingCloud ? 'animate-spin' : ''}`} />
+                  <span>
+                    {isSyncingCloud
+                      ? 'Синхронизация...'
+                      : cloudSyncedNotice
+                      ? 'Синхронизировано!'
+                      : 'Обновить для всех'}
+                  </span>
+                </button>
                 <button
                   id="admin-header-settings-btn"
                   onClick={() => {
@@ -769,11 +758,13 @@ export const AdminModal: React.FC<AdminModalProps> = ({
               </>
             )}
             <button
+              type="button"
               onClick={onClose}
-              className="p-1.5 rounded-xl text-stone-400 hover:text-white hover:bg-stone-800 transition-colors cursor-pointer"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-stone-800 hover:bg-rose-700 text-stone-100 hover:text-white border border-stone-700 font-bold text-xs transition-colors cursor-pointer shrink-0"
               title="Закрыть окно (сессия 10 минут сохраняется)"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4 text-amber-300" />
+              <span>Закрыть</span>
             </button>
           </div>
         </div>
@@ -845,6 +836,36 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                 Все товары ({products.length})
               </button>
               <button
+                id="admin-tab-pricelist"
+                onClick={() => {
+                  setEditingProduct(null);
+                  setActiveTab('pricelist');
+                }}
+                className={`pb-2.5 border-b-2 transition-colors flex items-center gap-1.5 shrink-0 ${
+                  activeTab === 'pricelist'
+                    ? 'border-emerald-800 text-emerald-950 font-extrabold'
+                    : 'border-transparent text-stone-500 hover:text-stone-800'
+                }`}
+              >
+                <List className="w-3.5 h-3.5 text-emerald-700" />
+                <span>Быстрый прайс-лист</span>
+              </button>
+              <button
+                id="admin-tab-stories"
+                onClick={() => {
+                  setEditingProduct(null);
+                  setActiveTab('stories');
+                }}
+                className={`pb-2.5 border-b-2 transition-colors flex items-center gap-1.5 shrink-0 ${
+                  activeTab === 'stories'
+                    ? 'border-emerald-800 text-emerald-950 font-extrabold'
+                    : 'border-transparent text-stone-500 hover:text-stone-800'
+                }`}
+              >
+                <Camera className="w-3.5 h-3.5 text-amber-600" />
+                <span>Stories / Статус</span>
+              </button>
+              <button
                 onClick={() => {
                   setEditingProduct(null);
                   setActiveTab('add');
@@ -905,22 +926,52 @@ export const AdminModal: React.FC<AdminModalProps> = ({
               </button>
             </div>
 
+            {/* Universal Feedback Banner (Product Added / Updated / Cloud Synced) */}
+            {copyFeedbackMsg && (
+              <div className="mx-4 sm:mx-5 mt-3 p-3 bg-emerald-50 border-2 border-emerald-400 rounded-2xl text-emerald-950 text-xs sm:text-sm font-bold flex items-center justify-between gap-3 shadow-xs animate-in fade-in duration-200">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                    <Check className="w-3.5 h-3.5" />
+                  </div>
+                  <span>{copyFeedbackMsg}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCopyFeedbackMsg(null)}
+                  className="text-emerald-700 hover:text-emerald-950 text-sm font-bold px-2 py-0.5 cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
             {/* Tab content */}
             <div className="flex-1 overflow-y-auto p-4 sm:p-5">
               {/* EDIT PRODUCT SUB-VIEW */}
               {editingProduct ? (
                 <form onSubmit={handleSaveEditedProduct} className="space-y-4 max-w-xl mx-auto">
-                  <div className="flex items-center justify-between pb-3 border-b border-stone-200">
+                  <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-stone-200">
                     <h4 className="font-bold text-stone-900 text-sm">
                       Редактирование: {editingProduct.titleRu}
                     </h4>
-                    <button
-                      type="button"
-                      onClick={() => setEditingProduct(null)}
-                      className="text-xs text-stone-500 hover:text-stone-800 underline"
-                    >
-                      Отмена
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(editingProduct)}
+                        className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                        title="Удалить этот товар из каталога"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                        <span>Удалить товар</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingProduct(null)}
+                        className="px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-xs transition-colors cursor-pointer"
+                      >
+                        Отмена
+                      </button>
+                    </div>
                   </div>
 
                   <div>
@@ -1095,20 +1146,38 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                         </div>
 
                         <div className="flex-1 space-y-2">
-                          <label className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-800 text-white text-xs font-bold hover:bg-emerald-900 cursor-pointer transition-colors shadow-xs active:scale-95">
-                            <Camera className="w-4 h-4" />
-                            <span>{isCompressingImage ? 'Обработка фото...' : 'Выбрать фото с телефона'}</span>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              disabled={isCompressingImage}
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) handleImageFileUpload(file, 'edit');
-                              }}
-                            />
-                          </label>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <label className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-800 text-white text-xs font-bold hover:bg-emerald-900 cursor-pointer transition-colors shadow-xs active:scale-95">
+                              <Camera className="w-4 h-4" />
+                              <span>{isCompressingImage ? 'Обработка фото...' : 'Выбрать фото с телефона'}</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                disabled={isCompressingImage}
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) handleImageFileUpload(file, 'edit');
+                                }}
+                              />
+                            </label>
+                            {editingProduct.images?.[0] && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setEditingProduct({
+                                    ...editingProduct,
+                                    images: [''],
+                                  })
+                                }
+                                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 text-xs font-bold transition-colors cursor-pointer"
+                                title="Удалить текущее фото товара"
+                              >
+                                <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                                <span>Удалить фото</span>
+                              </button>
+                            )}
+                          </div>
                           <p className="text-[11px] text-stone-500 leading-snug">
                             Сделайте фото на камеру или выберите из галереи телефона. Фото автоматически оптимизируется.
                           </p>
@@ -1137,57 +1206,65 @@ export const AdminModal: React.FC<AdminModalProps> = ({
 
                   <div>
                     <label className="block text-xs font-bold text-stone-700 mb-1">
-                      Описание товара
+                      Описание товара (RU)
                     </label>
                     <textarea
                       value={editingProduct.descriptionRu || ''}
                       onChange={(e) =>
                         setEditingProduct({ ...editingProduct, descriptionRu: e.target.value })
                       }
-                      rows={4}
+                      rows={5}
+                      placeholder="Подробное описание полезных свойств, назначения и преимуществ товара..."
                       className="w-full px-3 py-2 text-xs rounded-xl border border-stone-300 focus:ring-1 focus:ring-emerald-700"
                     />
                   </div>
 
-                  <div className="flex items-center gap-3 pt-2">
-                    <button
-                      type="submit"
-                      disabled={isSaving}
-                      className="px-5 py-2.5 rounded-xl bg-emerald-900 text-white font-bold text-xs hover:bg-emerald-950 transition-colors flex items-center gap-1.5"
-                    >
-                      <Save className="w-4 h-4" />
-                      <span>{isSaving ? 'Сохранение...' : 'Сохранить изменения в Firestore'}</span>
-                    </button>
+                  <div>
+                    <label className="block text-xs font-bold text-stone-700 mb-1">
+                      Состав и характеристики (необязательно)
+                    </label>
+                    <textarea
+                      value={editingProduct.specsRu || ''}
+                      onChange={(e) =>
+                        setEditingProduct({ ...editingProduct, specsRu: e.target.value })
+                      }
+                      rows={3}
+                      placeholder="Состав, количество капсул/объём, страна производства..."
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-stone-300 focus:ring-1 focus:ring-emerald-700"
+                    />
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                    <div className="flex items-center gap-2.5">
+                      <button
+                        type="submit"
+                        disabled={isSaving}
+                        className="px-5 py-2.5 rounded-xl bg-emerald-900 text-white font-bold text-xs hover:bg-emerald-950 transition-colors flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Save className="w-4 h-4" />
+                        <span>{isSaving ? 'Сохранение...' : 'Сохранить изменения в Firestore'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingProduct(null)}
+                        className="px-4 py-2.5 rounded-xl border border-stone-300 text-stone-700 font-bold text-xs hover:bg-stone-50 cursor-pointer"
+                      >
+                        Отмена
+                      </button>
+                    </div>
+
                     <button
                       type="button"
-                      onClick={() => setEditingProduct(null)}
-                      className="px-4 py-2.5 rounded-xl border border-stone-300 text-stone-700 font-bold text-xs hover:bg-stone-50"
+                      onClick={() => handleDelete(editingProduct)}
+                      className="px-4 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
                     >
-                      Отмена
+                      <Trash2 className="w-4 h-4 shrink-0" />
+                      <span>Удалить товар</span>
                     </button>
                   </div>
                 </form>
               ) : activeTab === 'products' ? (
                 <div className="space-y-3.5">
-                  {/* Copy Feedback Alert Toast */}
-                  {copyFeedbackMsg && (
-                    <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-2xl text-emerald-950 text-xs font-semibold flex items-center justify-between gap-3 shadow-xs animate-in fade-in duration-200">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0">
-                          <Check className="w-3.5 h-3.5" />
-                        </div>
-                        <span>{copyFeedbackMsg}</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setCopyFeedbackMsg(null)}
-                        className="text-emerald-700 hover:text-emerald-950 text-sm font-bold px-2 py-0.5"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  )}
-
                   {/* Filter, Search & View Switcher */}
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-3 border-b border-stone-200/80">
                     <div className="flex flex-1 items-center gap-2">
@@ -1247,69 +1324,6 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                       </button>
                     </div>
                   </div>
-
-                  {/* Universal Browser Sync & Backup Toolbar */}
-                  <div className="bg-emerald-50 border border-emerald-200/90 rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-                        <UploadCloud className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h4 className="text-xs sm:text-sm font-bold text-emerald-950 flex items-center gap-1.5 flex-wrap">
-                          <span>Синхронизация каталога со всеми браузерами</span>
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-800 font-extrabold">Яндекс, Safari, мобильные</span>
-                        </h4>
-                        <p className="text-[11px] text-emerald-850/80">
-                          Нажмите кнопку, чтобы все {products.length} товаров мгновенно отображались у всех пользователей и во всех браузерах.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 flex-wrap">
-                      <button
-                        type="button"
-                        onClick={handleSyncToServer}
-                        disabled={isSyncingToServer}
-                        className="flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-extrabold bg-emerald-700 hover:bg-emerald-800 text-white flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer disabled:opacity-50"
-                      >
-                        <RefreshCw className={`w-3.5 h-3.5 ${isSyncingToServer ? 'animate-spin' : ''}`} />
-                        <span>{isSyncingToServer ? 'Синхронизация...' : 'Синхронизировать сейчас'}</span>
-                      </button>
-
-                      {/* Export JSON */}
-                      <button
-                        type="button"
-                        onClick={handleExportProductsJson}
-                        className="px-2.5 py-2 rounded-xl text-xs font-bold bg-white hover:bg-stone-100 text-stone-700 border border-stone-200 flex items-center gap-1 shadow-2xs cursor-pointer"
-                        title="Скачать файл с резервной копией всех товаров"
-                      >
-                        <Download className="w-3.5 h-3.5 text-stone-500" />
-                        <span>Экспорт</span>
-                      </button>
-
-                      {/* Import JSON */}
-                      <label
-                        className="px-2.5 py-2 rounded-xl text-xs font-bold bg-white hover:bg-stone-100 text-stone-700 border border-stone-200 flex items-center gap-1 shadow-2xs cursor-pointer"
-                        title="Загрузить товары из файла JSON"
-                      >
-                        <Upload className="w-3.5 h-3.5 text-stone-500" />
-                        <span>Импорт</span>
-                        <input
-                          type="file"
-                          accept=".json"
-                          onChange={handleImportProductsJson}
-                          className="hidden"
-                        />
-                      </label>
-                    </div>
-                  </div>
-
-                  {syncStatusMsg && (
-                    <div className="p-3 bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-xl text-xs font-bold flex items-center gap-2">
-                      <Check className="w-4 h-4 text-emerald-700 shrink-0" />
-                      <span>{syncStatusMsg}</span>
-                    </div>
-                  )}
 
                   <div className="flex items-center justify-between text-[11px] text-stone-500">
                     <span>
@@ -1376,6 +1390,15 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                               >
                                 <ExternalLink className="w-3.5 h-3.5" />
                               </a>
+
+                              <button
+                                type="button"
+                                onClick={() => handleDelete(p)}
+                                className="p-1.5 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border border-rose-200 transition-colors cursor-pointer shrink-0"
+                                title="Удалить товар"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
                             </div>
 
                             {/* LARGE VISUAL IMAGE (9:16 Vertical Ratio) */}
@@ -1510,15 +1533,29 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                               </div>
 
                               {/* Action Buttons */}
-                              <div className="flex items-center gap-2 pt-2.5 border-t border-stone-100">
+                              <div className="flex items-center gap-1.5 pt-2.5 border-t border-stone-100">
                                 <button
                                   type="button"
                                   onClick={() => setEditingProduct(p)}
-                                  className="flex-1 py-1.5 px-2.5 rounded-xl bg-emerald-900 hover:bg-emerald-950 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                                  className="flex-1 py-1.5 px-2 rounded-xl bg-emerald-900 hover:bg-emerald-950 text-white font-bold text-xs flex items-center justify-center gap-1 transition-colors cursor-pointer"
                                   title="Редактировать описание, фото и характеристики"
                                 >
-                                  <Edit2 className="w-3.5 h-3.5 text-amber-300" />
-                                  <span>Редактировать</span>
+                                  <Edit2 className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                                  <span>Изменить</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setStoryProduct(p);
+                                    setEditingProduct(null);
+                                    setActiveTab('stories');
+                                  }}
+                                  className="py-1.5 px-2.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300/70 font-bold text-xs flex items-center justify-center gap-1 transition-colors cursor-pointer shrink-0"
+                                  title="Создать красивую карточку для Instagram Stories и WhatsApp Status в 1 клик"
+                                >
+                                  <Camera className="w-3.5 h-3.5 text-amber-800 shrink-0" />
+                                  <span>Stories</span>
                                 </button>
 
                                 {onPreviewProduct && (
@@ -1538,10 +1575,11 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => handleDelete(p)}
-                                  className="p-1.5 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                                  className="py-1.5 px-2.5 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 font-bold text-xs flex items-center justify-center gap-1 transition-colors cursor-pointer shrink-0"
                                   title="Удалить товар из базы данных"
                                 >
-                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                                  <span>Удалить</span>
                                 </button>
                               </div>
                             </div>
@@ -1668,19 +1706,35 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                               </button>
 
                               <button
+                                type="button"
+                                onClick={() => {
+                                  setStoryProduct(p);
+                                  setEditingProduct(null);
+                                  setActiveTab('stories');
+                                }}
+                                className="px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-950 font-bold text-[10px] sm:text-[11px] flex items-center gap-1 transition-colors cursor-pointer"
+                                title="Создать карточку для Instagram Stories / WhatsApp Status"
+                              >
+                                <Camera className="w-3 h-3 text-amber-800" />
+                                <span>Stories</span>
+                              </button>
+
+                              <button
                                 onClick={() => setEditingProduct(p)}
-                                className="p-1.5 rounded-lg text-stone-500 hover:text-emerald-900 hover:bg-emerald-50 transition-colors"
+                                className="px-2.5 py-1 rounded-lg bg-stone-100 hover:bg-emerald-50 text-stone-700 hover:text-emerald-900 font-bold text-[10px] sm:text-[11px] flex items-center gap-1 transition-colors cursor-pointer"
                                 title="Редактировать товар"
                               >
-                                <Edit2 className="w-3.5 h-3.5" />
+                                <Edit2 className="w-3 h-3" />
+                                <span>Изменить</span>
                               </button>
 
                               <button
                                 onClick={() => handleDelete(p)}
-                                className="p-1.5 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                                className="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 font-bold text-[10px] sm:text-[11px] flex items-center gap-1 transition-colors cursor-pointer"
                                 title="Удалить из каталога"
                               >
-                                <Trash2 className="w-3.5 h-3.5" />
+                                <Trash2 className="w-3 h-3 shrink-0" />
+                                <span>Удалить</span>
                               </button>
                             </div>
                           </div>
@@ -1837,20 +1891,33 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                         </div>
 
                         <div className="flex-1 space-y-2">
-                          <label className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-800 text-white text-xs font-bold hover:bg-emerald-900 cursor-pointer transition-colors shadow-xs active:scale-95">
-                            <Camera className="w-4 h-4" />
-                            <span>{isCompressingImage ? 'Обработка фото...' : 'Выбрать фото с телефона'}</span>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              disabled={isCompressingImage}
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) handleImageFileUpload(file, 'new');
-                              }}
-                            />
-                          </label>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <label className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-800 text-white text-xs font-bold hover:bg-emerald-900 cursor-pointer transition-colors shadow-xs active:scale-95">
+                              <Camera className="w-4 h-4" />
+                              <span>{isCompressingImage ? 'Обработка фото...' : 'Выбрать фото с телефона'}</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                disabled={isCompressingImage}
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) handleImageFileUpload(file, 'new');
+                                }}
+                              />
+                            </label>
+                            {newImageUrl && (
+                              <button
+                                type="button"
+                                onClick={() => setNewImageUrl('')}
+                                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 text-xs font-bold transition-colors cursor-pointer"
+                                title="Удалить выбранное фото"
+                              >
+                                <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                                <span>Удалить фото</span>
+                              </button>
+                            )}
+                          </div>
                           <p className="text-[11px] text-stone-500 leading-snug">
                             Сделайте снимок на камеру или выберите фотографию из галереи телефона.
                           </p>
@@ -1898,14 +1965,36 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                     />
                   </div>
 
-                  <button
-                    type="submit"
-                    disabled={isSaving}
-                    className="px-5 py-2.5 rounded-xl bg-emerald-900 text-white font-bold text-xs hover:bg-emerald-950 transition-colors flex items-center gap-2"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>{isSaving ? 'Сохранение...' : 'Добавить товар в Firestore'}</span>
-                  </button>
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <button
+                      type="submit"
+                      disabled={isSaving}
+                      className="px-5 py-2.5 rounded-xl bg-emerald-900 text-white font-bold text-xs hover:bg-emerald-950 transition-colors flex items-center gap-2 cursor-pointer"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>{isSaving ? 'Сохранение...' : 'Добавить товар в Firestore'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNewTitleRu('');
+                        setNewTitleKz('');
+                        setNewPrice('');
+                        setNewOldPrice('');
+                        setNewDescRu('');
+                        setNewSpecsRu('');
+                        setNewImageUrl('');
+                        setNewInStock(true);
+                        setNewIsHit(false);
+                        setNewIsNew(true);
+                      }}
+                      className="px-4 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="w-4 h-4 shrink-0" />
+                      <span>Очистить форму</span>
+                    </button>
+                  </div>
                 </form>
               ) : activeTab === 'settings' ? (
                 <form onSubmit={handleSaveConfig} className="space-y-4 max-w-xl mx-auto pb-8">
@@ -2549,27 +2638,29 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-1.5">
-                              <button
-                                type="button"
-                                onClick={() => setEditingCategory(cat)}
-                                className="p-1.5 rounded-lg text-stone-500 hover:text-emerald-900 hover:bg-emerald-50 transition-colors"
-                                title="Редактировать название или иконку"
-                              >
-                                <Edit2 className="w-3.5 h-3.5" />
-                              </button>
-
-                              {!isSystemAll && (
+                              <div className="flex items-center gap-1.5">
                                 <button
                                   type="button"
-                                  onClick={() => handleDeleteCategoryClick(cat)}
-                                  className="p-1.5 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                                  title="Удалить каталог"
+                                  onClick={() => setEditingCategory(cat)}
+                                  className="px-2.5 py-1.5 rounded-lg bg-stone-100 hover:bg-emerald-50 text-stone-700 hover:text-emerald-900 font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer"
+                                  title="Редактировать название или иконку"
                                 >
-                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                  <span>Изменить</span>
                                 </button>
-                              )}
-                            </div>
+
+                                {!isSystemAll && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteCategoryClick(cat)}
+                                    className="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer"
+                                    title="Удалить каталог"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                                    <span>Удалить</span>
+                                  </button>
+                                )}
+                              </div>
                           </div>
                         );
                       })}
@@ -2577,6 +2668,33 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                   </div>
                 </div>
               ) : null}
+
+              {/* FAST PRICE LIST / BULK EDITOR TAB */}
+              {activeTab === 'pricelist' && !editingProduct && (
+                <BulkPriceEditorTab
+                  products={products}
+                  categories={categories}
+                  currency={currentConfig.currency || '₸'}
+                  onUpdateProduct={onUpdateProduct}
+                  onBulkUpdateProducts={onBulkUpdateProducts}
+                  onDeleteProduct={(prod) => handleDelete(prod)}
+                  onOpenStoriesForProduct={(prod) => {
+                    setStoryProduct(prod);
+                    setActiveTab('stories');
+                  }}
+                />
+              )}
+
+              {/* INSTAGRAM STORIES & WHATSAPP STATUS GENERATOR TAB */}
+              {activeTab === 'stories' && !editingProduct && (
+                <StoriesGeneratorModal
+                  products={products}
+                  categories={categories}
+                  config={currentConfig}
+                  initialProduct={storyProduct}
+                  onClose={() => setActiveTab('products')}
+                />
+              )}
 
               {/* STATS & ANALYTICS TAB */}
               {activeTab === 'stats' && !editingProduct && (
