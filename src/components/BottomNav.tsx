@@ -40,21 +40,23 @@ export const BottomNav: React.FC<BottomNavProps> = ({
     <nav
       id="bottom-navigation-bar"
       aria-label={isKz ? 'Төменгі навигация мәзірі' : 'Нижняя панель навигации'}
-      className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/90 text-slate-600 shadow-lg select-none pb-[env(safe-area-inset-bottom)]"
+      className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[#121212]/95 backdrop-blur-md border-t border-[#262626] text-[#A3A3A3] select-none pb-[env(safe-area-inset-bottom)] shadow-2xl"
     >
-      <div className="max-w-md mx-auto px-2">
-        <div className="grid grid-cols-5 items-center h-14 sm:h-16">
+      <div className="max-w-md mx-auto px-1">
+        <div className="grid grid-cols-5 items-center h-16">
           {/* 1. Главная */}
           <button
             id="bottom-nav-home"
             type="button"
             onClick={onSelectHome}
             className={`flex flex-col items-center justify-center gap-1 w-full h-full cursor-pointer transition-colors ${
-              activeTab === 'home' ? 'text-blue-600 font-bold' : 'text-slate-500 hover:text-slate-800'
+              activeTab === 'home'
+                ? 'text-[#C5A059] font-bold'
+                : 'text-[#8E8E8E] hover:text-white'
             }`}
           >
             <Home className="w-5 h-5" />
-            <span className="text-[10px] leading-none">
+            <span className="text-[11px] font-medium leading-none">
               {isKz ? 'Басты' : 'Главная'}
             </span>
           </button>
@@ -65,11 +67,13 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             type="button"
             onClick={onOpenCatalog}
             className={`flex flex-col items-center justify-center gap-1 w-full h-full cursor-pointer transition-colors ${
-              activeTab === 'catalog' ? 'text-blue-600 font-bold' : 'text-slate-500 hover:text-slate-800'
+              activeTab === 'catalog'
+                ? 'text-[#C5A059] font-bold'
+                : 'text-[#8E8E8E] hover:text-white'
             }`}
           >
             <Layers className="w-5 h-5" />
-            <span className="text-[10px] leading-none">
+            <span className="text-[11px] font-medium leading-none">
               {isKz ? 'Каталог' : 'Каталог'}
             </span>
           </button>
@@ -80,22 +84,24 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             type="button"
             onClick={onOpenFavorites}
             className={`relative flex flex-col items-center justify-center gap-1 w-full h-full cursor-pointer transition-colors ${
-              activeTab === 'favorites' ? 'text-blue-600 font-bold' : 'text-slate-500 hover:text-slate-800'
+              activeTab === 'favorites'
+                ? 'text-[#C5A059] font-bold'
+                : 'text-[#8E8E8E] hover:text-white'
             }`}
           >
             <div className="relative">
               <Heart
                 className={`w-5 h-5 ${
-                  favoritesCount > 0 ? 'fill-rose-500 text-rose-500' : ''
+                  favoritesCount > 0 ? 'fill-[#C5A059] text-[#C5A059]' : ''
                 }`}
               />
               {favoritesCount > 0 && (
-                <span className="absolute -top-1 -right-2 min-w-[15px] h-[15px] px-0.5 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center">
+                <span className="absolute -top-1 -right-2 min-w-[16px] h-[16px] px-1 rounded-full bg-[#C5A059] text-black text-[10px] font-black flex items-center justify-center">
                   {favoritesCount}
                 </span>
               )}
             </div>
-            <span className="text-[10px] leading-none">
+            <span className="text-[11px] font-medium leading-none">
               {isKz ? 'Таңдаулы' : 'Избранное'}
             </span>
           </button>
@@ -106,18 +112,20 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             type="button"
             onClick={onOpenCart}
             className={`relative flex flex-col items-center justify-center gap-1 w-full h-full cursor-pointer transition-colors ${
-              activeTab === 'cart' ? 'text-blue-600 font-bold' : 'text-slate-500 hover:text-slate-800'
+              activeTab === 'cart'
+                ? 'text-[#C5A059] font-bold'
+                : 'text-[#8E8E8E] hover:text-white'
             }`}
           >
             <div className="relative">
               <ShoppingBag className="w-5 h-5" />
               {cartCount > 0 && (
-                <span className="absolute -top-1.5 -right-2.5 min-w-[17px] h-[17px] px-1 rounded-full bg-blue-600 text-white text-[10px] font-black flex items-center justify-center shadow-xs">
+                <span className="absolute -top-1.5 -right-2.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#C5A059] text-black text-[10px] font-black flex items-center justify-center shadow-md">
                   {cartCount}
                 </span>
               )}
             </div>
-            <span className="text-[10px] leading-none">
+            <span className="text-[11px] font-medium leading-none">
               {isKz ? 'Себет' : 'Корзина'}
             </span>
           </button>
@@ -128,11 +136,13 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             type="button"
             onClick={onOpenContact}
             className={`flex flex-col items-center justify-center gap-1 w-full h-full cursor-pointer transition-colors ${
-              activeTab === 'contact' ? 'text-blue-600 font-bold' : 'text-slate-500 hover:text-slate-800'
+              activeTab === 'contact'
+                ? 'text-[#C5A059] font-bold'
+                : 'text-[#8E8E8E] hover:text-white'
             }`}
           >
-            <MessageCircle className="w-5 h-5 text-emerald-600" />
-            <span className="text-[10px] leading-none">
+            <MessageCircle className="w-5 h-5 text-emerald-400" />
+            <span className="text-[11px] font-medium leading-none">
               {isKz ? 'Бутик №24' : 'Бутик №24'}
             </span>
           </button>

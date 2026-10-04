@@ -1,5 +1,16 @@
-import React from 'react';
-import { Layers, RotateCcw, Settings2 } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+  BookOpen,
+  Pill,
+  HeartPulse,
+  Shield,
+  Flower2,
+  Droplets,
+  ArrowRight,
+  RotateCcw,
+  Layers,
+  Settings2,
+} from 'lucide-react';
 import { Category, Language } from '../types';
 
 interface CategoryFilterProps {
@@ -11,6 +22,58 @@ interface CategoryFilterProps {
   onOpenAdminCategories?: () => void;
 }
 
+// 6 Core Categories with elegant vector icons and bilingual titles
+const MAIN_6_TILES = [
+  {
+    key: 'cat-muslim',
+    titleRu: 'ИСЛАМСКИЕ ТОВАРЫ',
+    titleKz: 'ИСЛАМ ТАУАРЛАРЫ',
+    subRu: 'Тмин, кыст, сурьма, сивак, хиджама',
+    subKz: 'Зере майы, қыст, мисуак, хиджама',
+    icon: BookOpen,
+  },
+  {
+    key: 'cat-iherb',
+    titleRu: 'ВИТАМИНЫ',
+    titleKz: 'ВИТАМИНДЕР',
+    subRu: 'iHerb, D3, Омега-3, Магний, Цинк',
+    subKz: 'iHerb, D3, Омега-3, Магний, Мырыш',
+    icon: Pill,
+  },
+  {
+    key: 'cat-health',
+    titleRu: 'ЗДОРОВЬЕ',
+    titleKz: 'ДЕНСАУЛЫҚ',
+    subRu: 'Натуральные БАДы, мед, иммунитет',
+    subKz: 'Табиғи ББҚ, бал, иммунитет',
+    icon: HeartPulse,
+  },
+  {
+    key: 'cat-men',
+    titleRu: 'МУЖСКОЕ ЗДОРОВЬЕ',
+    titleKz: 'ЕРЛЕР ДЕНСАУЛЫҒЫ',
+    subRu: 'Эпимедиумные пасты, сила, тонус',
+    subKz: 'Эпимедиум пасталары, қуат, күш',
+    icon: Shield,
+  },
+  {
+    key: 'cat-women',
+    titleRu: 'ЖЕНСКОЕ ЗДОРОВЬЕ',
+    titleKz: 'ӘЙЕЛДЕР ДЕНСАУЛЫҒЫ',
+    subRu: 'Красота, уход, баланс, омоложение',
+    subKz: 'Сұлулық, күтім, гормон балансы',
+    icon: Flower2,
+  },
+  {
+    key: 'cat-perfume',
+    titleRu: 'ПАРФЮМЕРИЯ',
+    titleKz: 'ПАРФЮМЕРИЯ',
+    subRu: 'Арабские масляные духи, миски',
+    subKz: 'Араб майлы әтірлері, мисктер',
+    icon: Droplets,
+  },
+];
+
 export const CategoryFilter: React.FC<CategoryFilterProps> = ({
   categories,
   selectedCategoryId,
@@ -20,28 +83,42 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
   onOpenAdminCategories,
 }) => {
   const isKz = lang === 'kz';
+  const [showAllCategories, setShowAllCategories] = useState(false);
+
+  // Helper to resolve actual category id for the 6 tiles
+  const resolveCategoryId = (key: string): string => {
+    if (key === 'cat-perfume') {
+      const perfCat = categories.find(
+        (c) =>
+          c.id === 'cat-muslim' ||
+          c.nameRu.toLowerCase().includes('аромат') ||
+          c.nameRu.toLowerCase().includes('парфюм')
+      );
+      return perfCat?.id || 'cat-muslim';
+    }
+    const found = categories.find((c) => c.id === key);
+    return found ? found.id : key;
+  };
+
+  const isMainTileActive = (key: string) => {
+    const targetId = resolveCategoryId(key);
+    return selectedCategoryId === targetId;
+  };
 
   return (
     <section
       id="category-nav-bar"
-      aria-label={isKz ? 'Санаттар каталогы' : 'Каталог категорий'}
-      className="w-full max-w-full overflow-x-hidden bg-white border-b border-slate-200/80 py-4 sm:py-6"
+      aria-label={isKz ? 'Санаттар каталогы' : 'Категории товаров'}
+      className="w-full max-w-full overflow-x-hidden bg-[#0F0F0F] border-b border-[#242424] py-6 sm:py-8"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        {/* Header toolbar for Categories */}
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center shrink-0">
-              <Layers className="w-4 h-4" />
-            </div>
-            <div>
-              <h2 className="text-base sm:text-xl font-bold text-slate-900 flex items-center gap-2">
-                <span>{isKz ? 'Каталог бөлімдері' : 'Каталог товаров'}</span>
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
-                  {categories.length} {isKz ? 'санат' : 'категорий'}
-                </span>
-              </h2>
-            </div>
+        {/* Section Header */}
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+          <div className="flex items-center gap-3">
+            <span className="w-1.5 h-6 bg-[#C5A059] rounded-full" />
+            <h2 className="text-lg sm:text-2xl font-black text-white tracking-tight">
+              {isKz ? 'НЕГІЗГІ БӨЛІМДЕР' : 'ОСНОВНЫЕ КАТЕГОРИИ'}
+            </h2>
           </div>
 
           <div className="flex items-center gap-2">
@@ -50,7 +127,7 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
                 type="button"
                 id="reset-category-filter-btn"
                 onClick={() => onSelectCategory('cat-all')}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-[#1F1F1F] hover:bg-[#2A2A2A] text-[#C5A059] border border-[#C5A059]/40 transition-colors cursor-pointer"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 <span>{isKz ? 'Барлығын көрсету' : 'Сбросить фильтр'}</span>
@@ -60,65 +137,146 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
             {onOpenAdminCategories && (
               <button
                 type="button"
-                id="manage-categories-btn"
                 onClick={onOpenAdminCategories}
-                title={isKz ? 'Каталогтарды баптау' : 'Управление каталогами'}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 transition-colors cursor-pointer"
+                title="Настроить"
+                className="p-2 rounded-lg text-[#737373] hover:text-[#C5A059] hover:bg-[#1A1A1A] transition-colors"
               >
-                <Settings2 className="w-3.5 h-3.5 text-slate-500" />
-                <span className="hidden sm:inline">
-                  {isKz ? 'Баптау' : 'Настроить'}
-                </span>
+                <Settings2 className="w-4 h-4" />
               </button>
             )}
           </div>
         </div>
 
-        {/* Categories Grid / Chips in Flip.kz Style */}
-        <div
-          id="category-grid-chips"
-          className="flex flex-wrap items-center gap-2 sm:gap-2.5"
-        >
-          {categories.map((cat) => {
-            const isSelected = selectedCategoryId === cat.id;
-            const count = productCounts[cat.id] ?? 0;
-            const catName = isKz && cat.nameKz ? cat.nameKz : cat.nameRu;
+        {/* 2 × 3 Tiles Grid: Serious, Graphite, Thin Gold Border, Large Icon & Typography */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+          {MAIN_6_TILES.map((tile) => {
+            const targetId = resolveCategoryId(tile.key);
+            const isActive = isMainTileActive(tile.key);
+            const Icon = tile.icon;
+            const count = productCounts[targetId] ?? 0;
 
             return (
               <button
-                key={cat.id}
-                id={`cat-btn-${cat.id}`}
+                key={tile.key}
                 type="button"
-                onClick={() => onSelectCategory(cat.id)}
-                className={`group inline-flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer select-none active:scale-98 ${
-                  isSelected
-                    ? 'bg-blue-600 text-white shadow-xs border border-blue-600'
-                    : 'bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-blue-600 border border-slate-200'
+                onClick={() => {
+                  if (isActive) {
+                    onSelectCategory('cat-all');
+                  } else {
+                    onSelectCategory(targetId);
+                  }
+                }}
+                className={`group relative flex flex-col items-start justify-between p-4 sm:p-5 rounded-xl transition-all duration-200 cursor-pointer text-left ${
+                  isActive
+                    ? 'bg-[#1C1C1C] border-2 border-[#C5A059] shadow-[0_0_20px_rgba(197,160,89,0.2)]'
+                    : 'bg-[#171717] border border-[#2E2E2E] hover:border-[#C5A059] hover:bg-[#1D1D1D]'
                 }`}
               >
-                <span className="text-base leading-none">
-                  {cat.icon || '•'}
-                </span>
-
-                <span className="whitespace-nowrap">
-                  {catName}
-                </span>
-
-                {count > 0 && (
-                  <span
-                    className={`text-[11px] px-1.5 py-0.2 rounded-full font-bold tabular-nums ${
-                      isSelected
-                        ? 'bg-white/20 text-white'
-                        : 'bg-white text-slate-500 border border-slate-200'
+                <div className="flex items-center justify-between w-full mb-3">
+                  <div
+                    className={`w-11 h-11 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center transition-colors ${
+                      isActive
+                        ? 'bg-[#C5A059] text-black'
+                        : 'bg-[#222222] text-[#C5A059] group-hover:bg-[#C5A059] group-hover:text-black'
                     }`}
                   >
-                    {count}
-                  </span>
-                )}
+                    <Icon className="w-6 h-6 stroke-[2]" />
+                  </div>
+
+                  {count > 0 && (
+                    <span className="text-[11px] font-bold font-mono px-2 py-0.5 rounded bg-[#242424] text-[#A3A3A3] border border-[#333333]">
+                      {count}
+                    </span>
+                  )}
+                </div>
+
+                <div className="space-y-1 w-full">
+                  <h3
+                    className={`font-black tracking-wide text-xs sm:text-base leading-tight transition-colors ${
+                      isActive
+                        ? 'text-[#C5A059]'
+                        : 'text-white group-hover:text-[#C5A059]'
+                    }`}
+                  >
+                    {isKz ? tile.titleKz : tile.titleRu}
+                  </h3>
+                  <p className="text-[11px] sm:text-xs text-[#8E8E8E] leading-normal line-clamp-1">
+                    {isKz ? tile.subKz : tile.subRu}
+                  </p>
+                </div>
               </button>
             );
           })}
         </div>
+
+        {/* «ВСЕ КАТЕГОРИИ →» Button directly below the 6 tiles */}
+        <div className="mt-4 sm:mt-5 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <button
+            type="button"
+            onClick={() => setShowAllCategories((prev) => !prev)}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3 rounded-xl bg-[#171717] hover:bg-[#202020] border border-[#C5A059]/40 hover:border-[#C5A059] text-white font-extrabold text-xs sm:text-sm tracking-wide transition-all cursor-pointer shadow-sm group"
+          >
+            <Layers className="w-4 h-4 text-[#C5A059]" />
+            <span>
+              {showAllCategories
+                ? isKz
+                  ? 'САНАТТАРДЫ ЖАСЫРУ ↑'
+                  : 'СКРЫТЬ КАТЕГОРИИ ↑'
+                : isKz
+                ? 'БАРЛЫҚ САНАТТАР →'
+                : 'ВСЕ КАТЕГОРИИ →'}
+            </span>
+            <ArrowRight
+              className={`w-4 h-4 text-[#C5A059] transition-transform ${
+                showAllCategories ? '-rotate-90' : 'group-hover:translate-x-1'
+              }`}
+            />
+          </button>
+        </div>
+
+        {/* Expanded All Categories List (when user clicks «ВСЕ КАТЕГОРИИ →») */}
+        {showAllCategories && (
+          <div className="mt-5 pt-5 border-t border-[#242424] animate-in fade-in duration-200">
+            <p className="text-xs text-[#A3A3A3] mb-3 uppercase tracking-wider font-semibold">
+              {isKz ? 'Барлық бөлімдер тізімі:' : 'Все разделы магазина:'}
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              {categories.map((cat) => {
+                const isSelected = selectedCategoryId === cat.id;
+                const count = productCounts[cat.id] ?? 0;
+                const catName = isKz && cat.nameKz ? cat.nameKz : cat.nameRu;
+
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => {
+                      onSelectCategory(cat.id);
+                    }}
+                    className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-[#C5A059] text-black font-extrabold'
+                        : 'bg-[#171717] hover:bg-[#222222] text-[#E5E5E5] border border-[#2D2D2D] hover:border-[#C5A059]'
+                    }`}
+                  >
+                    <span>{catName}</span>
+                    {count > 0 && (
+                      <span
+                        className={`text-[10px] px-1.5 py-0.2 rounded font-mono font-bold ${
+                          isSelected
+                            ? 'bg-black text-[#C5A059]'
+                            : 'bg-[#262626] text-[#A3A3A3]'
+                        }`}
+                      >
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );

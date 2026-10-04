@@ -248,7 +248,7 @@ export function getProductDirectUrl(productId: string): string {
   if (!productId) return '';
   const cleanId = encodeURIComponent(productId.toString().trim());
 
-  if (typeof window === 'undefined') return `?p=${cleanId}`;
+  if (typeof window === 'undefined') return `/product/${cleanId}`;
 
   let origin = window.location.origin || '';
 
@@ -259,15 +259,7 @@ export function getProductDirectUrl(productId: string): string {
     origin = origin.replace('ais-dev-', 'ais-pre-');
   }
 
-  let pathname = window.location.pathname || '/';
-  if (pathname.endsWith('/index.html')) {
-    pathname = pathname.substring(0, pathname.length - 10);
-  }
-  if (!pathname.endsWith('/')) {
-    pathname = `${pathname}/`;
-  }
-
-  return `${origin}${pathname}?p=${cleanId}`;
+  return `${origin}/product/${cleanId}`;
 }
 
 /**

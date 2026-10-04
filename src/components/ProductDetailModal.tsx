@@ -276,16 +276,16 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         }}
         transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
         onClick={(e) => e.stopPropagation()}
-        className={`bg-white text-slate-900 border border-slate-200 overflow-hidden flex flex-col will-change-transform ${
+        className={`bg-[#141414] text-white border border-[#2E2E2E] overflow-hidden flex flex-col will-change-transform ${
           isFullscreen
             ? 'fixed inset-0 w-full h-full rounded-none z-[110]'
-            : 'w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-4xl sm:rounded-2xl shadow-2xl my-0 sm:my-auto'
+            : 'w-full h-full sm:h-auto sm:max-h-[92vh] sm:max-w-4xl sm:rounded-2xl shadow-2xl my-0 sm:my-auto'
         }`}
       >
-        {/* Top Control Bar in Flip.kz Style */}
+        {/* Top Control Bar: Dark Graphite & Gold Accents */}
         <div
           id="modal-control-bar"
-          className="bg-slate-50 text-slate-800 px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2 border-b border-slate-200 shrink-0"
+          className="bg-[#1C1C1C] text-white px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2 border-b border-[#2A2A2A] shrink-0"
         >
           {/* Left: Back Button & Zoom Tools */}
           <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
@@ -293,7 +293,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               type="button"
               id="modal-back-btn"
               onClick={handleBackAction}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold text-xs sm:text-sm transition-colors cursor-pointer shadow-2xs"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#242424] hover:bg-[#2E2E2E] text-white border border-[#383838] font-bold text-xs sm:text-sm transition-colors cursor-pointer"
               title={
                 previousProducts.length > 0
                   ? isKz
@@ -304,12 +304,12 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   : 'Назад в каталог'
               }
             >
-              <ArrowLeft className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+              <ArrowLeft className="w-3.5 h-3.5 text-[#C5A059] shrink-0" />
               <span>{isKz ? 'Артқа' : 'Назад'}</span>
             </button>
 
-            <span className="hidden md:inline text-xs text-emerald-300 font-semibold ml-1 flex items-center gap-1">
-              <Eye className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden md:inline text-xs text-[#A3A3A3] font-semibold ml-1 flex items-center gap-1">
+              <Eye className="w-3.5 h-3.5 text-[#C5A059]" />
               {lang === 'kz' ? 'Масштаб:' : 'Масштаб:'}
             </span>
 
@@ -317,7 +317,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               id="zoom-out-btn"
               onClick={handleZoomOut}
               disabled={zoomLevel <= 100}
-              className="p-1.5 rounded-lg bg-[#0B241B] hover:bg-[#113628] disabled:opacity-40 text-white border border-amber-500/20 transition-colors cursor-pointer"
+              className="p-1.5 rounded-lg bg-[#242424] hover:bg-[#2E2E2E] disabled:opacity-40 text-white border border-[#383838] transition-colors cursor-pointer"
               title="Уменьшить шрифт"
             >
               <ZoomOut className="w-4 h-4" />
@@ -325,7 +325,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
             <span
               id="zoom-percentage-badge"
-              className="hidden sm:inline-block px-2 py-0.5 rounded-md bg-[#0B241B] border border-amber-500/30 text-amber-300 font-bold text-xs"
+              className="hidden sm:inline-block px-2 py-0.5 rounded-md bg-[#242424] border border-[#3A3A3A] text-[#C5A059] font-bold text-xs"
             >
               {zoomLevel}%
             </span>
@@ -334,7 +334,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               id="zoom-in-btn"
               onClick={handleZoomIn}
               disabled={zoomLevel >= 225}
-              className="p-1.5 rounded-lg bg-[#0B241B] hover:bg-[#113628] disabled:opacity-40 text-white border border-amber-500/20 transition-colors cursor-pointer"
+              className="p-1.5 rounded-lg bg-[#242424] hover:bg-[#2E2E2E] disabled:opacity-40 text-white border border-[#383838] transition-colors cursor-pointer"
               title="Увеличить шрифт"
             >
               <ZoomIn className="w-4 h-4" />
@@ -344,7 +344,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               <button
                 id="zoom-reset-btn"
                 onClick={handleResetZoom}
-                className="p-1.5 rounded-lg bg-[#0B241B] hover:bg-[#113628] text-stone-300 border border-amber-500/20 transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg bg-[#242424] hover:bg-[#2E2E2E] text-[#A3A3A3] border border-[#383838] transition-colors cursor-pointer"
                 title="Сбросить масштаб"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
@@ -355,15 +355,15 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           {/* Right controls: Language Switcher, Share/Copy Link, Fullscreen toggle & Close */}
           <div className="flex items-center gap-1.5 sm:gap-2">
             {/* Quick Language Toggle [ ҚАЗ | РУС ] */}
-            <div className="flex items-center rounded-lg bg-slate-200/80 p-0.5 text-xs font-bold">
+            <div className="flex items-center rounded-lg bg-[#242424] p-0.5 text-xs font-bold border border-[#333333]">
               <button
                 type="button"
                 id="modal-lang-kz"
                 onClick={() => handleLangSwitch('kz')}
                 className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
                   isKz
-                    ? 'bg-white text-blue-700 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-[#C5A059] text-black shadow-xs'
+                    : 'text-[#A3A3A3] hover:text-white'
                 }`}
                 title="Қазақ тіліне аудару және оқу"
               >
@@ -375,8 +375,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 onClick={() => handleLangSwitch('ru')}
                 className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
                   !isKz
-                    ? 'bg-white text-blue-700 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-[#C5A059] text-black shadow-xs'
+                    : 'text-[#A3A3A3] hover:text-white'
                 }`}
                 title="Читать описание на русском языке"
               >
@@ -395,8 +395,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               }}
               className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-xs transition-colors cursor-pointer border ${
                 isLinkCopied
-                  ? 'bg-emerald-600 text-white border-emerald-600'
-                  : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-300'
+                  ? 'bg-[#1E3A2B] text-[#25D366] border-[#25D366]/40'
+                  : 'bg-[#242424] hover:bg-[#2E2E2E] text-white border-[#383838]'
               }`}
               title="Скопировать прямую ссылку на товар"
             >
@@ -407,7 +407,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 </>
               ) : (
                 <>
-                  <Share2 className="w-3.5 h-3.5" />
+                  <Share2 className="w-3.5 h-3.5 text-[#C5A059]" />
                   <span>{isKz ? 'Сілтеме' : 'Ссылка'}</span>
                 </>
               )}
@@ -416,7 +416,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             <button
               id="toggle-fullscreen-btn"
               onClick={() => setIsFullscreen(!isFullscreen)}
-              className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-medium text-xs transition-colors cursor-pointer"
+              className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#242424] hover:bg-[#2E2E2E] text-white border border-[#383838] font-medium text-xs transition-colors cursor-pointer"
               title={isFullscreen ? 'Свернуть окно' : 'На весь экран смартфона'}
             >
               {isFullscreen ? (
@@ -430,7 +430,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               type="button"
               id="close-modal-btn"
               onClick={handleAnimatedClose}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm transition-colors cursor-pointer"
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#242424] hover:bg-[#2E2E2E] text-white font-bold text-xs sm:text-sm transition-colors cursor-pointer border border-[#383838]"
               title={isKz ? 'Жабу' : 'Закрыть карточку'}
             >
               <X className="w-4 h-4" />
@@ -443,12 +443,12 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         <div
           ref={scrollBodyRef}
           id="modal-scroll-body"
-          className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 lg:p-8 space-y-6"
+          className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 lg:p-8 space-y-6 bg-[#141414]"
         >
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-8">
             {/* Left Column: Images & Badges (aspect ratio) */}
             <div className="md:col-span-5 space-y-4">
-              <div className="relative aspect-square sm:aspect-[4/5] max-h-[460px] mx-auto rounded-2xl bg-white overflow-hidden border border-slate-200 p-4 shadow-xs flex items-center justify-center">
+              <div className="relative aspect-square sm:aspect-[4/5] max-h-[460px] mx-auto rounded-2xl bg-white overflow-hidden border border-[#2A2A2A] p-4 shadow-md flex items-center justify-center">
                 <img
                   id="modal-main-image"
                   src={product.images[selectedImageIndex] || product.images[0]}
@@ -457,27 +457,21 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   style={{ transform: `scale(${zoomLevel > 150 ? 1.15 : 1})`, transition: 'transform 0.2s ease' }}
                 />
 
-                {/* Badges in Flip.kz Style */}
-                <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
+                {/* Minimal Badges */}
+                <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10 pointer-events-none">
                   {discountPercent && (
-                    <span className="px-2 py-0.5 rounded text-xs font-black bg-rose-500 text-white shadow-xs">
+                    <span className="px-2 py-0.5 rounded text-xs font-black bg-[#C5A059] text-black shadow-md">
                       -{discountPercent}%
                     </span>
                   )}
                   {product.isHit && (
-                    <span className="px-2 py-0.5 rounded text-xs font-black bg-amber-500 text-white shadow-xs flex items-center gap-1">
-                      <span>🔥</span>
-                      <span>ХИТ</span>
+                    <span className="px-2 py-0.5 rounded text-xs font-black bg-black/85 text-[#C5A059] border border-[#C5A059]/50 shadow-md">
+                      ХИТ
                     </span>
                   )}
                   {product.isNew && (
-                    <span className="px-2 py-0.5 rounded text-xs font-black bg-blue-600 text-white shadow-xs">
+                    <span className="px-2 py-0.5 rounded text-xs font-black bg-[#1C1C1C] text-white border border-[#444] shadow-md">
                       НОВИНКА
-                    </span>
-                  )}
-                  {!product.inStock && (
-                    <span className="px-2 py-0.5 rounded text-xs font-bold bg-slate-700 text-white">
-                      {lang === 'kz' ? 'Жақында' : 'Под заказ'}
                     </span>
                   )}
                 </div>
@@ -486,17 +480,18 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 <button
                   id="modal-favorite-btn"
                   onClick={() => onToggleFavorite(product)}
-                  className={`absolute top-3 right-3 p-2.5 rounded-full shadow-xs transition-colors cursor-pointer border ${
+                  className={`absolute top-3 right-3 p-2.5 rounded-full shadow-md transition-colors cursor-pointer border ${
                     isFavorite
-                      ? 'bg-rose-50 text-rose-600 border-rose-200'
-                      : 'bg-white/90 hover:bg-white text-slate-400 hover:text-rose-500 border-slate-200'
+                      ? 'bg-black/85 text-[#C5A059] border-[#C5A059]'
+                      : 'bg-black/60 hover:bg-black text-white/80 hover:text-white border-white/20'
                   }`}
+                  aria-label="В избранное"
                 >
-                  <Heart className={`w-5 h-5 ${isFavorite ? 'fill-rose-500 text-rose-500' : ''}`} />
+                  <Heart className={`w-5 h-5 ${isFavorite ? 'fill-[#C5A059] text-[#C5A059]' : ''}`} />
                 </button>
 
                 {product.country && (
-                  <div className="absolute bottom-3 left-3 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 border border-slate-200 text-xs font-semibold">
+                  <div className="absolute bottom-3 left-3 px-2.5 py-1 rounded-md bg-black/75 text-[#D4D4D4] border border-white/10 text-xs font-semibold backdrop-blur-xs">
                     {product.country}
                   </div>
                 )}
@@ -511,8 +506,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       onClick={() => setSelectedImageIndex(idx)}
                       className={`w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 transition-all cursor-pointer bg-white p-1 ${
                         selectedImageIndex === idx
-                          ? 'border-blue-600 shadow-sm'
-                          : 'border-slate-200 opacity-70 hover:opacity-100'
+                          ? 'border-[#C5A059] shadow-md'
+                          : 'border-[#2A2A2A] opacity-70 hover:opacity-100'
                       }`}
                     >
                       <img
@@ -525,18 +520,18 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 </div>
               )}
 
-              {/* Flip.kz Style Delivery & Boutique Assurance Box */}
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-700 space-y-2">
-                <div className="flex items-center gap-2 font-bold text-slate-900">
-                  <MapPin className="w-4 h-4 text-blue-600 shrink-0" />
+              {/* Boutique Assurance Box */}
+              <div className="p-4 rounded-xl bg-[#1A1A1A] border border-[#2A2A2A] text-xs sm:text-sm text-[#D4D4D4] space-y-2">
+                <div className="flex items-center gap-2 font-bold text-white">
+                  <MapPin className="w-4 h-4 text-[#C5A059] shrink-0" />
                   <span>{config.city} · {config.boutiqueNumber} (ТД «Дина Байзар»)</span>
                 </div>
-                <div className="text-xs text-slate-500 space-y-1">
+                <div className="text-xs text-[#A3A3A3] space-y-1">
                   <p>📍 {config.address}</p>
                   <p>🕙 Режим работы: {lang === 'kz' ? config.workingHoursKz : config.workingHoursRu}</p>
-                  <p className="text-emerald-700 font-semibold flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    Самовывоз сегодня — 0 ₸
+                  <p className="text-emerald-400 font-semibold flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    Самовывоз из Бутика №24 — бесплатно
                   </p>
                 </div>
               </div>
@@ -546,10 +541,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             <div className="md:col-span-7 flex flex-col justify-between space-y-5">
               <div>
                 {/* SKU & Category */}
-                <div className="flex items-center justify-between text-xs sm:text-sm text-slate-500 mb-2">
-                  <span>Артикул: <strong className="text-slate-800 font-mono">#{product.sku}</strong></span>
+                <div className="flex items-center justify-between text-xs sm:text-sm text-[#A3A3A3] mb-2">
+                  <span>Артикул: <strong className="text-white font-mono">#{product.sku}</strong></span>
                   {product.volumeOrWeight && (
-                    <span className="px-2.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-slate-700 font-semibold text-xs">
+                    <span className="px-2.5 py-0.5 rounded-md bg-[#222222] border border-[#333333] text-[#D4D4D4] font-semibold text-xs">
                       {product.volumeOrWeight}
                     </span>
                   )}
@@ -558,7 +553,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 {/* Title (Scaled) */}
                 <h1
                   id="modal-product-title"
-                  className="font-bold text-slate-900 leading-snug"
+                  className="font-bold text-white leading-snug"
                   style={{ fontSize: `calc(${dynamicFontSize} * 1.35)` }}
                 >
                   {title}
@@ -568,23 +563,23 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 <div className="mt-3 flex items-baseline gap-3 flex-wrap">
                   <span
                     id="modal-product-price"
-                    className="font-black text-slate-900 tracking-tight"
+                    className="font-black text-[#C5A059] tracking-tight tabular-nums"
                     style={{ fontSize: `calc(${dynamicFontSize} * 1.5)` }}
                   >
                     {formatPrice(product.price)}
                   </span>
                   {product.oldPrice && (
-                    <span className="text-sm text-slate-400 line-through">
+                    <span className="text-sm text-[#737373] line-through tabular-nums">
                       {formatPrice(product.oldPrice)}
                     </span>
                   )}
                   {product.inStock ? (
-                    <span className="text-xs sm:text-sm font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    <span className="text-xs sm:text-sm font-semibold px-2.5 py-0.5 rounded-full bg-[#1E3A2B] text-emerald-400 border border-[#25D366]/30 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                       {isKz ? 'Бутик №24 • Қолда бар' : 'Бутик №24 • В наличии'}
                     </span>
                   ) : (
-                    <span className="text-xs sm:text-sm font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 flex items-center gap-1.5">
+                    <span className="text-xs sm:text-sm font-semibold px-2.5 py-0.5 rounded-full bg-[#242424] text-[#A3A3A3] border border-[#3A3A3A] flex items-center gap-1.5">
                       <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
                       {isKz ? 'Қолда жоқ • Жақында болады' : 'Нет в наличии • Скоро будет'}
                     </span>
@@ -592,9 +587,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 </div>
 
                 {/* In-Card Language Switcher Bar directly for reading description */}
-                <div className="mt-4 p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3 flex-wrap shadow-2xs">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-slate-700">
-                    <Globe className="w-4 h-4 text-blue-600 shrink-0" />
+                <div className="mt-4 p-3 rounded-xl bg-[#1A1A1A] border border-[#2A2A2A] flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-[#D4D4D4]">
+                    <Globe className="w-4 h-4 text-[#C5A059] shrink-0" />
                     <span>{isKz ? 'Тілі:' : 'Язык описания:'}</span>
                   </div>
 
@@ -605,8 +600,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       onClick={() => handleLangSwitch('kz')}
                       className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                         isKz
-                          ? 'bg-blue-600 text-white shadow-2xs'
-                          : 'bg-white text-slate-700 hover:text-slate-900 border border-slate-200'
+                          ? 'bg-[#C5A059] text-black'
+                          : 'bg-[#242424] text-[#D4D4D4] hover:text-white border border-[#333333]'
                       }`}
                       title="Қазақ тілінде оқу"
                     >
@@ -618,8 +613,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       onClick={() => handleLangSwitch('ru')}
                       className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                         !isKz
-                          ? 'bg-blue-600 text-white shadow-2xs'
-                          : 'bg-white text-slate-700 hover:text-slate-900 border border-slate-200'
+                          ? 'bg-[#C5A059] text-black'
+                          : 'bg-[#242424] text-[#D4D4D4] hover:text-white border border-[#333333]'
                       }`}
                       title="Читать на русском"
                     >
@@ -632,10 +627,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         id="card-retranslate-btn"
                         onClick={() => runKazakhTranslation(true)}
                         disabled={isTranslating}
-                        className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                        className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#242424] hover:bg-[#2E2E2E] text-white border border-[#383838] flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
                         title="Қазақ тіліне қайта аудару"
                       >
-                        <RotateCw className={`w-3.5 h-3.5 text-blue-600 ${isTranslating ? 'animate-spin' : ''}`} />
+                        <RotateCw className={`w-3.5 h-3.5 text-[#C5A059] ${isTranslating ? 'animate-spin' : ''}`} />
                         <span className="hidden sm:inline">{isTranslating ? 'Аударылуда...' : 'Қайта аудару'}</span>
                       </button>
                     )}
@@ -644,21 +639,21 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
                 {/* Translation in-progress status pill */}
                 {isKz && isTranslating && (
-                  <div className="mt-2.5 px-3 py-2 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 text-xs font-medium flex items-center gap-2 animate-pulse">
-                    <Loader2 className="w-4 h-4 animate-spin text-blue-600 shrink-0" />
+                  <div className="mt-2.5 px-3 py-2 rounded-lg bg-[#1A1A1A] border border-[#C5A059]/40 text-[#C5A059] text-xs font-medium flex items-center gap-2 animate-pulse">
+                    <Loader2 className="w-4 h-4 animate-spin text-[#C5A059] shrink-0" />
                     <span>Қазақ тіліне аударылуда... (Сипаттамасы аударылып жатыр)</span>
                   </div>
                 )}
 
                 {/* Tabs Navigation */}
-                <div id="modal-tabs-nav" className="mt-5 flex border-b border-slate-200 overflow-x-auto gap-2">
+                <div id="modal-tabs-nav" className="mt-5 flex border-b border-[#2A2A2A] overflow-x-auto gap-2">
                   <button
                     id="tab-btn-desc"
                     onClick={() => setActiveTab('desc')}
                     className={`pb-3 px-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
                       activeTab === 'desc'
-                        ? 'border-blue-600 text-blue-600'
-                        : 'border-transparent text-slate-500 hover:text-slate-800'
+                        ? 'border-[#C5A059] text-[#C5A059]'
+                        : 'border-transparent text-[#8E8E8E] hover:text-white'
                     }`}
                   >
                     {isKz ? 'Сипаттама' : 'Описание'}
@@ -670,8 +665,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       onClick={() => setActiveTab('benefits')}
                       className={`pb-3 px-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
                         activeTab === 'benefits'
-                          ? 'border-blue-600 text-blue-600'
-                          : 'border-transparent text-slate-500 hover:text-slate-800'
+                          ? 'border-[#C5A059] text-[#C5A059]'
+                          : 'border-transparent text-[#8E8E8E] hover:text-white'
                       }`}
                     >
                       {isKz ? 'Пайдасы' : 'Польза и свойства'}
@@ -684,8 +679,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       onClick={() => setActiveTab('howTo')}
                       className={`pb-3 px-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
                         activeTab === 'howTo'
-                          ? 'border-blue-600 text-blue-600'
-                          : 'border-transparent text-slate-500 hover:text-slate-800'
+                          ? 'border-[#C5A059] text-[#C5A059]'
+                          : 'border-transparent text-[#8E8E8E] hover:text-white'
                       }`}
                     >
                       {isKz ? 'Қолдану тәсілі' : 'Как применять'}
@@ -698,8 +693,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       onClick={() => setActiveTab('specs')}
                       className={`pb-3 px-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
                         activeTab === 'specs'
-                          ? 'border-blue-600 text-blue-600'
-                          : 'border-transparent text-slate-500 hover:text-slate-800'
+                          ? 'border-[#C5A059] text-[#C5A059]'
+                          : 'border-transparent text-[#8E8E8E] hover:text-white'
                       }`}
                     >
                       {isKz ? 'Сипаттамалары' : 'Характеристики'}
@@ -710,7 +705,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 {/* Tab Content Box with DYNAMIC ZOOM SCALING for easy reading */}
                 <div
                   id="modal-tab-content-area"
-                  className="mt-4 p-4 sm:p-5 rounded-xl bg-slate-50 border border-slate-200"
+                  className="mt-4 p-4 sm:p-5 rounded-xl bg-[#1A1A1A] border border-[#2A2A2A]"
                   style={{
                     fontSize: dynamicFontSize,
                     lineHeight: dynamicLineHeight,
@@ -719,12 +714,12 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   {activeTab === 'desc' && (
                     <div className="space-y-3">
                       {isKz && isTranslating && (
-                        <div className="p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold flex items-center gap-2">
-                          <Loader2 className="w-4 h-4 animate-spin text-blue-600 shrink-0" />
+                        <div className="p-3 rounded-lg bg-[#222222] border border-[#333333] text-[#C5A059] text-xs font-semibold flex items-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin text-[#C5A059] shrink-0" />
                           <span>Қазақ тіліне аударылуда... Бірнеше секунд күте тұрыңыз</span>
                         </div>
                       )}
-                      <p className="text-slate-700 font-normal leading-relaxed whitespace-pre-line">
+                      <p className="text-[#E5E5E5] font-normal leading-relaxed whitespace-pre-line">
                         {description}
                       </p>
                     </div>
@@ -734,8 +729,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     <ul className="space-y-2.5">
                       {benefits.map((b, idx) => (
                         <li key={idx} className="flex items-start gap-2.5">
-                          <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-                          <span className="text-slate-700">{b}</span>
+                          <CheckCircle2 className="w-5 h-5 text-[#C5A059] shrink-0 mt-0.5" />
+                          <span className="text-[#E5E5E5]">{b}</span>
                         </li>
                       ))}
                     </ul>
@@ -743,11 +738,11 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
                   {activeTab === 'howTo' && howToUse && (
                     <div className="space-y-2">
-                      <div className="flex items-center gap-2 font-bold text-slate-900 text-sm mb-1">
-                        <Clock className="w-4 h-4 text-blue-600" />
+                      <div className="flex items-center gap-2 font-bold text-white text-sm mb-1">
+                        <Clock className="w-4 h-4 text-[#C5A059]" />
                         <span>{isKz ? 'Нұсқаулық:' : 'Рекомендации по приему:'}</span>
                       </div>
-                      <p className="text-slate-700 leading-relaxed whitespace-pre-line">
+                      <p className="text-[#E5E5E5] leading-relaxed whitespace-pre-line">
                         {howToUse}
                       </p>
                     </div>
@@ -755,7 +750,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
                   {activeTab === 'specs' && specs && (
                     <div className="space-y-2">
-                      <pre className="font-sans text-slate-700 whitespace-pre-line leading-relaxed text-xs sm:text-sm">
+                      <pre className="font-sans text-[#E5E5E5] whitespace-pre-line leading-relaxed text-xs sm:text-sm">
                         {specs}
                       </pre>
                     </div>
@@ -764,22 +759,22 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </div>
 
               {/* Action Buttons: WhatsApp direct order, 1-Click order, Add to cart */}
-              <div id="modal-actions-box" className="pt-4 border-t border-slate-200 space-y-3">
+              <div id="modal-actions-box" className="pt-4 border-t border-[#2A2A2A] space-y-3">
                 {/* Visual Feedback Banner: Товар отправлен в корзину */}
                 {isAddedToCartFeedback && (
                   <div
                     id="modal-cart-success-banner"
-                    className="p-3.5 bg-blue-50 border border-blue-200 rounded-xl text-slate-900 text-xs sm:text-sm font-bold flex items-center justify-between gap-3 shadow-xs animate-in fade-in zoom-in-95 duration-200"
+                    className="p-3.5 bg-[#1E3A2B] border border-[#25D366]/40 rounded-xl text-white text-xs sm:text-sm font-bold flex items-center justify-between gap-3 shadow-md animate-in fade-in zoom-in-95 duration-200"
                   >
                     <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0">
+                      <div className="w-7 h-7 rounded-full bg-[#25D366] text-black flex items-center justify-center shrink-0">
                         <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
                       </div>
                       <div>
-                        <p className="font-bold text-blue-900 text-xs sm:text-sm">
+                        <p className="font-bold text-white text-xs sm:text-sm">
                           {isKz ? 'Өнім себетке қосылды!' : 'Товар добавлен в корзину!'}
                         </p>
-                        <p className="text-xs text-slate-600 font-normal">
+                        <p className="text-xs text-[#A3A3A3] font-normal">
                           {isKz ? 'Тапсырысты себеттен рәсімдеуге болады' : 'Перейдите к оформлению или продолжите покупки'}
                         </p>
                       </div>
@@ -791,7 +786,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                           onClose();
                           onOpenCart();
                         }}
-                        className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-bold flex items-center gap-1 shrink-0 transition-colors cursor-pointer"
+                        className="px-3.5 py-1.5 rounded-lg bg-[#C5A059] hover:bg-[#D4AF37] text-black text-xs sm:text-sm font-bold flex items-center gap-1 shrink-0 transition-colors cursor-pointer"
                       >
                         <span>{isKz ? 'Себетке' : 'В корзину'}</span>
                         <ArrowRight className="w-4 h-4" />
@@ -807,9 +802,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     href={`https://wa.me/${config.whatsappNumber}?text=${waDirectMessage}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-4 py-3 rounded-lg font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-colors text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200"
+                    className="px-4 py-3 rounded-lg font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-colors text-[#25D366] bg-[#163828] hover:bg-[#1E4A35] border border-[#25D366]/40"
                   >
-                    <MessageCircle className="w-4 h-4 text-emerald-600" />
+                    <MessageCircle className="w-4 h-4 text-[#25D366]" />
                     <span>
                       {product.inStock
                         ? (isKz ? 'WhatsApp арқылы тапсырыс' : 'Заказать в WhatsApp')
@@ -822,9 +817,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     id="modal-quick-order-btn"
                     type="button"
                     onClick={() => onQuickOrder(product)}
-                    className="px-4 py-3 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                    className="px-4 py-3 rounded-lg bg-[#222222] hover:bg-[#2B2B2B] text-white border border-[#383838] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
                   >
-                    <Zap className="w-4 h-4 text-amber-500 fill-amber-500" />
+                    <Zap className="w-4 h-4 text-[#C5A059] fill-[#C5A059]" />
                     <span>
                       {product.inStock
                         ? (isKz ? '1 басу арқылы сатып алу' : 'Купить в 1 клик')
@@ -842,13 +837,13 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       onClick={handleAddToCartClick}
                       className={`w-full px-5 py-3.5 rounded-lg font-bold text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all cursor-pointer shadow-sm ${
                         isAddedToCartFeedback
-                          ? 'bg-emerald-600 text-white'
-                          : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white'
+                          ? 'bg-[#1E3A2B] text-white'
+                          : 'bg-[#C5A059] hover:bg-[#D4AF37] active:bg-[#B38F46] text-black font-extrabold'
                       }`}
                     >
                       {isAddedToCartFeedback ? (
                         <>
-                          <CheckCircle2 className="w-5 h-5 text-white" />
+                          <CheckCircle2 className="w-5 h-5 text-[#25D366]" />
                           <span>{isKz ? '✓ Өнім себетке жіберілді!' : '✓ Товар добавлен в корзину!'}</span>
                         </>
                       ) : (
@@ -872,9 +867,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         type="button"
                         id="modal-remove-cart-btn"
                         onClick={() => onRemoveFromCart(product.id)}
-                        className="w-full py-2.5 px-4 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-semibold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                        className="w-full py-2.5 px-4 rounded-lg bg-[#222222] hover:bg-[#2B2B2B] text-rose-400 border border-rose-500/30 font-semibold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
                       >
-                        <Trash2 className="w-4 h-4 text-rose-500 shrink-0" />
+                        <Trash2 className="w-4 h-4 text-rose-400 shrink-0" />
                         <span>
                           {isKz
                             ? 'Тауарды себеттен өшіру'
@@ -884,12 +879,12 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     )}
                   </div>
                 ) : (
-                  <div className="w-full p-4 rounded-lg bg-slate-100 border border-slate-200 text-center">
-                    <p className="text-sm font-bold text-slate-800 flex items-center justify-center gap-2">
-                      <Clock className="w-4 h-4 text-slate-500" />
+                  <div className="w-full p-4 rounded-xl bg-[#222222] border border-[#333333] text-center">
+                    <p className="text-sm font-bold text-white flex items-center justify-center gap-2">
+                      <Clock className="w-4 h-4 text-[#C5A059]" />
                       <span>{isKz ? 'Өнім уақытша бітті • Жақында түседі' : 'Товар временно закончился • Скоро будет'}</span>
                     </p>
-                    <p className="text-xs text-slate-500 mt-1">
+                    <p className="text-xs text-[#A3A3A3] mt-1">
                       {isKz ? 'Бутик №24-тен алдын ала брондау үшін түймелерді басыңыз' : 'Нажмите кнопку «Оформить предзаказ», чтобы забронировать к новому завозу'}
                     </p>
                   </div>
@@ -906,23 +901,23 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         setTimeout(() => setIsLinkCopied(false), 3000);
                       }
                     }}
-                    className={`w-full py-2.5 px-4 rounded-lg border text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    className={`w-full py-2.5 px-4 rounded-xl border text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
                       isLinkCopied
-                        ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
-                        : 'bg-white hover:bg-slate-50 border-slate-300 text-slate-700'
+                        ? 'bg-[#1E3A2B] border-[#25D366]/40 text-[#25D366]'
+                        : 'bg-[#222222] hover:bg-[#2A2A2A] border-[#383838] text-white'
                     }`}
                     title="Скопировать ссылку"
                   >
                     {isLinkCopied ? (
                       <>
-                        <Check className="w-4 h-4 text-emerald-600" />
-                        <span className="font-bold text-emerald-700">
+                        <Check className="w-4 h-4 text-[#25D366]" />
+                        <span className="font-bold text-[#25D366]">
                           {isKz ? '✓ Сілтеме көшірілді!' : '✓ Ссылка скопирована!'}
                         </span>
                       </>
                     ) : (
                       <>
-                        <Share2 className="w-4 h-4 text-blue-600" />
+                        <Share2 className="w-4 h-4 text-[#C5A059]" />
                         <span>
                           {isKz ? 'Өнім сілтемесін көшіру (Сторис / WhatsApp)' : 'Скопировать ссылку на товар'}
                         </span>
@@ -938,17 +933,17 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           {recommendedProducts.length > 0 && (
             <div
               id="modal-frequently-bought-section"
-              className="pt-6 border-t border-slate-200"
+              className="pt-6 border-t border-[#2A2A2A]"
             >
               <div className="flex items-center justify-between gap-2 mb-4">
                 <div>
-                  <h3 className="font-bold text-base sm:text-lg text-slate-900 flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
+                  <h3 className="font-bold text-base sm:text-lg text-white flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-[#C5A059] shrink-0" />
                     <span>
                       {isKz ? 'Осы тауармен бірге жиі алады' : 'С этим товаром часто берут'}
                     </span>
                   </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-xs text-[#A3A3A3] mt-0.5">
                     {isKz
                       ? 'Кешенді нәтиже үшін сатып алушылар қосымша таңдайтын өнімдер'
                       : 'Рекомендуемые товары для комплексного приёма'}
@@ -962,7 +957,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   return (
                     <div
                       key={rec.id}
-                      className="group rounded-xl border border-slate-200 bg-white hover:border-blue-400 p-3 flex flex-col justify-between transition-all shadow-2xs"
+                      className="group rounded-xl border border-[#282828] bg-[#1A1A1A] hover:border-[#C5A059] p-3 flex flex-col justify-between transition-all"
                     >
                       <div
                         onClick={() => {
@@ -978,7 +973,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         }}
                         className="cursor-pointer"
                       >
-                        <div className="aspect-square rounded-lg overflow-hidden bg-white border border-slate-100 p-2 mb-2 flex items-center justify-center">
+                        <div className="aspect-square rounded-lg overflow-hidden bg-white border border-[#2E2E2E] p-2 mb-2 flex items-center justify-center">
                           <img
                             src={rec.images[0]}
                             alt={recTitle}
@@ -986,22 +981,22 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                             className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
                           />
                         </div>
-                        <h4 className="text-xs font-semibold text-slate-900 line-clamp-2 leading-snug group-hover:text-blue-600">
+                        <h4 className="text-xs font-semibold text-white line-clamp-2 leading-snug group-hover:text-[#C5A059]">
                           {recTitle}
                         </h4>
                       </div>
 
-                      <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5">
-                        <span className="text-xs sm:text-sm font-bold text-slate-900 tabular-nums">
+                      <div className="mt-2.5 pt-2 border-t border-[#2A2A2A] flex items-center justify-between gap-1.5">
+                        <span className="text-xs sm:text-sm font-black text-[#C5A059] tabular-nums">
                           {formatPrice(rec.price)}
                         </span>
                         <button
                           type="button"
                           onClick={() => onAddToCart(rec)}
-                          className="px-2.5 py-1 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer shrink-0"
+                          className="px-2.5 py-1 rounded-md bg-[#C5A059] hover:bg-[#D4AF37] text-black font-extrabold text-xs flex items-center gap-1 transition-colors cursor-pointer shrink-0"
                           title={isKz ? 'Себетке қосу' : 'Добавить в корзину'}
                         >
-                          <Plus className="w-3.5 h-3.5" />
+                          <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
                           <span>{isKz ? 'Қосу' : 'В корзину'}</span>
                         </button>
                       </div>
@@ -1013,13 +1008,13 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           )}
 
           {/* Bottom Back & Close Navigation Row inside Product Detail Modal */}
-          <div className="pt-4 border-t border-slate-200 flex items-center justify-between gap-3">
+          <div className="pt-4 border-t border-[#2A2A2A] flex items-center justify-between gap-3">
             <button
               type="button"
               onClick={handleBackAction}
-              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs sm:text-sm transition-colors cursor-pointer"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[#222222] hover:bg-[#2C2C2C] text-white border border-[#333333] font-semibold text-xs sm:text-sm transition-colors cursor-pointer"
             >
-              <ArrowLeft className="w-4 h-4 shrink-0" />
+              <ArrowLeft className="w-4 h-4 text-[#C5A059] shrink-0" />
               <span>
                 {previousProducts.length > 0
                   ? isKz
@@ -1034,7 +1029,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             <button
               type="button"
               onClick={handleAnimatedClose}
-              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs sm:text-sm transition-colors cursor-pointer"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[#222222] hover:bg-[#2C2C2C] text-white border border-[#333333] font-semibold text-xs sm:text-sm transition-colors cursor-pointer"
             >
               <X className="w-4 h-4 shrink-0" />
               <span>{isKz ? 'Жабу' : 'Закрыть карточку'}</span>

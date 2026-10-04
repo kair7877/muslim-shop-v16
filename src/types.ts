@@ -14,6 +14,9 @@ export interface Product {
   howToUseRu?: string;
   howToUseKz?: string;
   inStock: boolean;
+  isHidden?: boolean;
+  quantity?: number;
+  subcategoryId?: string;
   sku: string;
   isHit?: boolean;
   isNew?: boolean;
@@ -43,6 +46,9 @@ export interface StoreConfig {
   address: string;
   whatsappNumber: string;
   instagram: string;
+  instagramUrl?: string;
+  tiktok?: string;
+  tiktokUrl?: string;
   gis2Url: string;
   workingHoursRu: string;
   workingHoursKz: string;

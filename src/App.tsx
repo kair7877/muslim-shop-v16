@@ -302,11 +302,23 @@ export default function App() {
     }
   });
 
-  // Cart state
+  // Cart state with validation & localStorage sanitization
   const [cart, setCart] = useState<CartItem[]>(() => {
     try {
       const saved = localStorage.getItem('muslim_shop_cart');
-      return saved ? JSON.parse(saved) : [];
+      if (!saved) return [];
+      const parsed = JSON.parse(saved);
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter(
+        (item): item is CartItem =>
+          Boolean(
+            item &&
+            item.product &&
+            typeof item.product.id === 'string' &&
+            typeof item.quantity === 'number' &&
+            item.quantity > 0
+          )
+      );
     } catch {
       return [];
     }
@@ -528,9 +540,59 @@ export default function App() {
     try {
       localStorage.setItem('muslim_shop_cart', JSON.stringify(cart));
     } catch (e) {
-      console.warn(e);
+      console.warn('Failed to sync cart to localStorage', e);
     }
   }, [cart]);
+
+  // Cross-tab synchronization for cart
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'muslim_shop_cart' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) {
+            setCart(
+              parsed.filter(
+                (item): item is CartItem =>
+                  Boolean(
+                    item &&
+                    item.product &&
+                    typeof item.product.id === 'string' &&
+                    typeof item.quantity === 'number' &&
+                    item.quantity > 0
+                  )
+              )
+            );
+          }
+        } catch {}
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  // Re-sync cart items with freshly fetched products if price or stock changed
+  useEffect(() => {
+    if (!products || products.length === 0) return;
+    setCart((prevCart) => {
+      let changed = false;
+      const updated = prevCart.map((item) => {
+        const freshProduct = products.find((p) => p.id === item.product.id);
+        if (freshProduct && !areProductsDeepEqual(item.product, freshProduct)) {
+          changed = true;
+          return { ...item, product: freshProduct };
+        }
+        return item;
+      });
+      if (changed) {
+        try {
+          localStorage.setItem('muslim_shop_cart', JSON.stringify(updated));
+        } catch {}
+        return updated;
+      }
+      return prevCart;
+    });
+  }, [products]);
 
   useEffect(() => {
     try {
@@ -934,16 +996,21 @@ export default function App() {
 
   // Cart handlers
   const handleAddToCart = (product: Product) => {
+    if (!product || !product.id) return;
     setCart((prev) => {
       const existing = prev.find((item) => item.product.id === product.id);
-      const next = existing
+      const next: CartItem[] = existing
         ? prev.map((item) =>
-            item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+            item.product.id === product.id
+              ? { ...item, quantity: item.quantity + 1, product }
+              : item
           )
         : [...prev, { product, quantity: 1 }];
       try {
         localStorage.setItem('muslim_shop_cart', JSON.stringify(next));
-      } catch {}
+      } catch (err) {
+        console.warn('Failed to save cart to localStorage', err);
+      }
       return next;
     });
 
@@ -961,16 +1028,19 @@ export default function App() {
     setCart((prev) => {
       const next = [...prev];
       bundleProducts.forEach((product) => {
+        if (!product || !product.id) return;
         const idx = next.findIndex((item) => item.product.id === product.id);
         if (idx >= 0) {
-          next[idx] = { ...next[idx], quantity: next[idx].quantity + 1 };
+          next[idx] = { ...next[idx], quantity: next[idx].quantity + 1, product };
         } else {
           next.push({ product, quantity: 1 });
         }
       });
       try {
         localStorage.setItem('muslim_shop_cart', JSON.stringify(next));
-      } catch {}
+      } catch (err) {
+        console.warn('Failed to save cart to localStorage', err);
+      }
       return next;
     });
 
@@ -982,6 +1052,7 @@ export default function App() {
   };
 
   const handleUpdateQuantity = (productId: string, delta: number) => {
+    if (!productId) return;
     setCart((prev) => {
       const next = prev
         .map((item) => {
@@ -991,20 +1062,25 @@ export default function App() {
           }
           return item;
         })
-        .filter(Boolean) as CartItem[];
+        .filter((item): item is CartItem => item !== null);
       try {
         localStorage.setItem('muslim_shop_cart', JSON.stringify(next));
-      } catch {}
+      } catch (err) {
+        console.warn('Failed to save cart to localStorage', err);
+      }
       return next;
     });
   };
 
   const handleRemoveFromCart = (productId: string) => {
+    if (!productId) return;
     setCart((prev) => {
       const next = prev.filter((item) => item.product.id !== productId);
       try {
         localStorage.setItem('muslim_shop_cart', JSON.stringify(next));
-      } catch {}
+      } catch (err) {
+        console.warn('Failed to save cart to localStorage', err);
+      }
       return next;
     });
     showToast(
@@ -1018,7 +1094,9 @@ export default function App() {
     setCart([]);
     try {
       localStorage.setItem('muslim_shop_cart', JSON.stringify([]));
-    } catch {}
+    } catch (err) {
+      console.warn('Failed to clear cart in localStorage', err);
+    }
     showToast(
       lang === 'kz'
         ? 'Себет тазартылды'
@@ -1404,7 +1482,7 @@ export default function App() {
         {(selectedCategoryId !== 'cat-all' || selectedSymptom !== 'all' || searchQuery.trim() !== '') && (
           <div
             id="catalog-active-filter-bar"
-            className="mb-4 p-3 sm:p-3.5 rounded-xl bg-blue-50 border border-blue-200 flex flex-wrap items-center justify-between gap-2.5 shadow-2xs"
+            className="mb-5 p-3.5 sm:p-4 rounded-xl bg-[#171717] border border-[#2E2E2E] flex flex-wrap items-center justify-between gap-3 shadow-md"
           >
             <button
               type="button"
@@ -1413,7 +1491,7 @@ export default function App() {
                 setSelectedSymptom('all');
                 setSearchQuery('');
               }}
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm transition-colors cursor-pointer"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#C5A059] hover:bg-[#D4AF37] text-black font-extrabold text-xs sm:text-sm transition-colors cursor-pointer shadow-xs"
             >
               <ArrowLeft className="w-4 h-4 shrink-0" />
               <span>
@@ -1430,18 +1508,18 @@ export default function App() {
                 setSelectedSymptom('all');
                 setSearchQuery('');
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 font-semibold text-xs sm:text-sm transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#222222] hover:bg-[#2A2A2A] text-[#A3A3A3] hover:text-white border border-[#333333] font-semibold text-xs sm:text-sm transition-colors cursor-pointer"
             >
-              <X className="w-4 h-4 text-slate-500 shrink-0" />
+              <X className="w-4 h-4 text-[#8E8E8E] shrink-0" />
               <span>{lang === 'kz' ? 'Сүзгіні тазалау' : 'Сбросить фильтр'}</span>
             </button>
           </div>
         )}
 
-        {/* Title & Sorting Toolbar in Flip.kz Style */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-5 border-b border-slate-200">
+        {/* Title & Sorting Toolbar */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-5 border-b border-[#242424]">
           <div>
-            <h2 className="font-black text-xl sm:text-3xl text-slate-900 flex items-center gap-2.5 flex-wrap tracking-tight leading-tight">
+            <h2 className="font-extrabold text-xl sm:text-3xl text-white flex items-center gap-3 flex-wrap tracking-tight leading-tight">
               <span>
                 {selectedSymptom !== 'all' && SYMPTOM_GOALS.find((g) => g.id === selectedSymptom)
                   ? lang === 'kz'
@@ -1455,11 +1533,11 @@ export default function App() {
                   ? 'Барлық өнімдер'
                   : 'Каталог товаров'}
               </span>
-              <span className="text-xs sm:text-sm font-bold tabular-nums px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+              <span className="text-xs sm:text-sm font-mono font-bold tabular-nums px-2.5 py-0.5 rounded-full bg-[#1C1C1C] text-[#C5A059] border border-[#C5A059]/30">
                 {filteredProducts.length}
               </span>
             </h2>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
+            <p className="text-xs sm:text-sm text-[#A3A3A3] mt-1.5 leading-relaxed">
               {lang === 'kz'
                 ? 'Атыраудағы Бутик №24 сөрелеріндегі түпнұсқа өнімдер'
                 : 'Оригинальные сертифицированные товары в наличии в Бутике №24'}
@@ -1468,12 +1546,12 @@ export default function App() {
 
           {/* Sort selector */}
           <div className="flex items-center gap-2">
-            <SlidersHorizontal className="w-4 h-4 text-slate-400" />
+            <SlidersHorizontal className="w-4 h-4 text-[#737373]" />
             <select
               id="sort-products-select"
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="text-xs sm:text-sm font-semibold py-2 px-3 rounded-lg border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-600 cursor-pointer shadow-2xs"
+              className="text-xs sm:text-sm font-bold py-2.5 px-3.5 rounded-xl border border-[#2E2E2E] bg-[#171717] text-white focus:outline-none focus:border-[#C5A059] cursor-pointer shadow-sm"
             >
               <option value="popular">{lang === 'kz' ? 'Танымалдығы бойынша' : 'Сначала популярные'}</option>
               <option value="priceAsc">{lang === 'kz' ? 'Арзаннан қымбатқа' : 'Сначала недорогие'}</option>
@@ -1485,20 +1563,20 @@ export default function App() {
         {/* Loading Spinner during initial fetch */}
         {isLoadingProducts && products.length === 0 ? (
           <div className="py-20 text-center space-y-3">
-            <Loader2 className="w-9 h-9 text-blue-600 animate-spin mx-auto" />
-            <p className="text-slate-600 font-semibold text-sm">
+            <Loader2 className="w-9 h-9 text-[#C5A059] animate-spin mx-auto" />
+            <p className="text-[#A3A3A3] font-semibold text-sm">
               {lang === 'kz' ? 'Өнімдер жүктелуде...' : 'Загрузка каталога товаров...'}
             </p>
           </div>
         ) : filteredProducts.length === 0 ? (
-          <div id="catalog-empty-state" className="py-16 text-center space-y-3 bg-white rounded-2xl border border-slate-200 p-8 my-6">
-            <div className="w-14 h-14 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 mx-auto">
+          <div id="catalog-empty-state" className="py-16 text-center space-y-3 bg-[#171717] rounded-2xl border border-[#262626] p-8 my-6">
+            <div className="w-14 h-14 rounded-full bg-[#1F1F1F] border border-[#2E2E2E] flex items-center justify-center text-[#C5A059] mx-auto">
               <PackageSearch className="w-7 h-7" />
             </div>
-            <h3 className="text-lg sm:text-xl font-bold text-slate-900">
+            <h3 className="text-lg sm:text-xl font-bold text-white">
               {lang === 'kz' ? 'Өнімдер табылмады' : 'Товары не найдены'}
             </h3>
-            <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
+            <p className="text-xs sm:text-sm text-[#A3A3A3] max-w-md mx-auto leading-relaxed">
               {lang === 'kz'
                 ? 'Іздеу сұранысын өзгертіп көріңіз немесе басқа санатты таңдаңыз'
                 : 'Попробуйте изменить поисковый запрос или перейдите в другую категорию'}
@@ -1518,7 +1596,7 @@ export default function App() {
                   setIsLoadingProducts(false);
                 }
               }}
-              className="px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-bold shadow-sm transition-colors cursor-pointer"
+              className="px-6 py-3 rounded-xl bg-[#C5A059] hover:bg-[#D4AF37] text-black text-xs sm:text-sm font-extrabold shadow-md transition-colors cursor-pointer"
             >
               {products.length === 0
                 ? lang === 'kz'
@@ -1532,7 +1610,7 @@ export default function App() {
         ) : (
           <div
             id="products-grid"
-            className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3 sm:gap-5 mt-6"
+            className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3.5 sm:gap-6 mt-6"
           >
             {filteredProducts.slice(0, visibleLimit).map((product) => (
               <ProductCard
@@ -1580,7 +1658,7 @@ export default function App() {
       />
 
       {/* Floating Action Buttons for Desktop: WhatsApp & Phone quick call (above bottom nav) */}
-      <div id="floating-actions" className="hidden md:flex fixed bottom-22 right-5 z-40 flex-col gap-2.5">
+      <div id="floating-actions" className="hidden md:flex fixed bottom-22 right-6 z-40 flex-col gap-3">
         <a
           id="floating-whatsapp-btn"
           href={`https://wa.me/${config.whatsappNumber}?text=${encodeURIComponent(
@@ -1590,7 +1668,7 @@ export default function App() {
           )}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="w-13 h-13 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center shadow-lg hover:scale-105 transition-all"
+          className="w-13 h-13 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center shadow-xl hover:scale-105 transition-all"
           title="Написать в WhatsApp менеджеру"
         >
           <MessageCircle className="w-6 h-6" />
@@ -1599,7 +1677,7 @@ export default function App() {
         <a
           id="floating-call-btn"
           href={`tel:+${config.whatsappNumber}`}
-          className="w-13 h-13 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-lg hover:scale-105 transition-all"
+          className="w-13 h-13 rounded-full bg-[#1C1C1C] hover:bg-[#252525] border border-[#C5A059] text-[#C5A059] flex items-center justify-center shadow-xl hover:scale-105 transition-all"
           title="Позвонить в Бутик №24"
         >
           <PhoneCall className="w-6 h-6" />
@@ -1610,22 +1688,22 @@ export default function App() {
       <section
         id="seo-about-section"
         aria-label="О магазине MUSLIM SHOP в Атырау"
-        className="w-full border-t border-slate-200 bg-white text-slate-800 transition-colors"
+        className="w-full border-t border-[#222222] bg-[#0C0C0C] text-[#A3A3A3] transition-colors"
       >
         <div className="max-w-7xl mx-auto px-4 py-10 sm:py-14">
-          <div className="rounded-2xl p-6 sm:p-8 bg-slate-50 border border-slate-200 shadow-2xs">
-            <h2 className="font-bold text-xl sm:text-2xl text-slate-900 mb-4 leading-snug">
+          <div className="rounded-2xl p-6 sm:p-8 bg-[#141414] border border-[#242424] shadow-md">
+            <h2 className="font-extrabold text-xl sm:text-2xl text-white mb-4 leading-snug">
               MUSLIM SHOP — купить халяль витамины в Атырау, товары iHerb и натуральные БАДы (Бутик №24)
             </h2>
-            <div className="space-y-3.5 text-sm sm:text-base leading-relaxed text-slate-600">
+            <div className="space-y-3.5 text-sm sm:text-base leading-relaxed text-[#A3A3A3]">
               <p>
-                В <strong className="text-slate-900">MUSLIM SHOP</strong> в Атырау вы можете <strong className="text-blue-700">купить халяль витамины в Атырау</strong>, оригинальные витамины <strong className="text-blue-700">iHerb</strong>, сертифицированные <strong className="text-blue-700">БАДы</strong> для мужского и женского здоровья, натуральный мёд, масло чёрного тмина, товары для хиджамы и стойкие мусульманские ароматы. Мы находимся в удобной локации: <strong className="text-slate-900">г. Атырау, ТД «Дина Байзар», Бутик №24</strong>. Все представленные позиции проходят строгий отбор качества и соответствуют стандартам Халяль.
+                В <strong className="text-white">MUSLIM SHOP</strong> в Атырау вы можете <strong className="text-[#C5A059]">купить халяль витамины в Атырау</strong>, оригинальные витамины <strong className="text-[#C5A059]">iHerb</strong>, сертифицированные <strong className="text-[#C5A059]">БАДы</strong> для мужского и женского здоровья, натуральный мёд, масло чёрного тмина, товары для хиджамы и стойкие мусульманские ароматы. Мы находимся в удобной локации: <strong className="text-white">г. Атырау, ТД «Дина Байзар», Бутик №24</strong>. Все представленные позиции проходят строгий отбор качества и соответствуют стандартам Халяль.
               </p>
               <p>
-                В нашем ассортименте собраны проверенные комплексы мировых брендов <strong className="text-blue-700">iHerb</strong> (Now Foods, California Gold Nutrition, Solgar, Swanson, Life-flo, ChildLife), натуральные травяные пасты, средства для укрепления иммунитета, суставов, красоты кожи и волос. Все самые востребованные товары уже в наличии на полках в <strong className="text-slate-900">Бутике №24</strong>.
+                В нашем ассортименте собраны проверенные комплексы мировых брендов <strong className="text-[#C5A059]">iHerb</strong> (Now Foods, California Gold Nutrition, Solgar, Swanson, Life-flo, ChildLife), натуральные травяные пасты, средства для укрепления иммунитета, суставов, красоты кожи и волос. Все самые востребованные товары уже в наличии на полках в <strong className="text-white">Бутике №24</strong>.
               </p>
               <p>
-                Наш магазин работает для вас <strong className="text-slate-900">ежедневно с 10:00 до 19:00</strong>. Вы можете оформить заказ прямо на сайте <strong className="text-blue-700">muslimshop.kz</strong> или через WhatsApp: действует быстрая курьерская доставка по г. Атырау в день заказа, бесплатный самовывоз из <strong className="text-slate-900">Бутика №24</strong>, а также надёжная <strong className="text-blue-700">доставка по Казахстану</strong> (Казпочта, СДЭК).
+                Наш магазин работает для вас <strong className="text-white">ежедневно с 10:00 до 19:00</strong>. Вы можете оформить заказ прямо на сайте <strong className="text-[#C5A059]">muslimshop.kz</strong> или через WhatsApp: действует быстрая курьерская доставка по г. Атырау в день заказа, бесплатный самовывоз из <strong className="text-white">Бутика №24</strong>, а также надёжная <strong className="text-[#C5A059]">доставка по Казахстану</strong> (Казпочта, СДЭК).
               </p>
             </div>
           </div>
@@ -1673,6 +1751,7 @@ export default function App() {
       {/* 3. Cart Drawer with WhatsApp Order & Recommendations */}
       {isCartOpen && (
         <CartDrawer
+          isOpen={isCartOpen}
           items={cart}
           allProducts={products}
           recentlyViewed={recentlyViewed}
@@ -1900,6 +1979,7 @@ export default function App() {
         onSearchChange={setSearchQuery}
         config={config}
         lang={lang}
+        onOpenAdmin={() => setIsAdminOpen(true)}
       />
 
       {/* 7. Fixed Bottom Navigation Bar (Главная • Каталог • Корзина • Избранное • Связь) */}

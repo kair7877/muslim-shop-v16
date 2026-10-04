@@ -1,25 +1,33 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   ShoppingBag,
   Heart,
-  Clock,
-  MapPin,
-  PhoneCall,
-  Lock,
   Layers,
-  Sparkles,
-  ArrowLeftRight,
+  Search,
+  Instagram,
+  Phone,
+  MapPin,
+  Lock,
 } from 'lucide-react';
-import { AccessibilitySettings, Category, Language, Product, StoreConfig } from '../types';
-import { isStoreOpen } from '../utils/formatters';
+import { Category, Language, Product, StoreConfig } from '../types';
 import { SmartSearchBar } from './SmartSearchBar';
+
+// Minimalist TikTok icon
+const TikTokIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    aria-hidden="true"
+    className={className}
+  >
+    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.33 0 .65.06.94.16v-3.56a6.38 6.38 0 0 0-.94-.07 6.34 6.34 0 0 0-6.34 6.35 6.34 6.34 0 0 0 6.34 6.35 6.34 6.34 0 0 0 6.33-6.35V8.87a8.28 8.28 0 0 0 4.83 1.55v-3.53a4.85 4.85 0 0 1-1.06-.2z" />
+  </svg>
+);
 
 interface HeaderProps {
   config: StoreConfig;
   lang: Language;
   onLanguageChange: (lang: Language) => void;
-  accessibility: AccessibilitySettings;
-  onAccessibilityChange: (settings: AccessibilitySettings) => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
   products?: Product[];
@@ -48,182 +56,156 @@ export const Header: React.FC<HeaderProps> = ({
   products = [],
   categories = [],
   productCounts = {},
-  onSelectCategory = (_catId: string) => {},
+  onSelectCategory = () => {},
   onSelectSymptom,
   onOpenProduct = () => {},
   onAddToCart = () => {},
   cartCount,
   favoritesCount,
-  compareCount = 0,
   onOpenCart,
   onOpenFavorites,
-  onOpenCompare,
   onOpenAdmin,
   onOpenCatalog,
 }) => {
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const status = isStoreOpen(config);
   const isKz = lang === 'kz';
+
+  const instagramUrl =
+    config.instagramUrl ||
+    'https://www.instagram.com/musliim_shop06?stkn=dnAzejJ2cm5nOXNi';
+  const tiktokUrl =
+    config.tiktokUrl ||
+    'https://www.tiktok.com/@muslim_shop06?_r=1&_t=ZS-9AFgdLAOcZ2';
 
   return (
     <header
       id="main-header"
-      className="sticky top-0 z-40 w-full max-w-full overflow-visible bg-white border-b border-slate-200/90 shadow-sm transition-colors"
+      className="sticky top-0 z-40 w-full bg-[#0F0F0F] border-b border-[#242424] text-white select-none transition-colors"
     >
-      {/* 1. Flip.kz Style Top Service Microbar */}
-      <div
-        id="top-utility-bar"
-        className="py-1.5 px-3 sm:px-6 text-xs bg-slate-50 text-slate-600 border-b border-slate-200/70 w-full overflow-hidden"
-      >
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2 sm:gap-4">
-          {/* City, Location & Store Status */}
-          <div className="flex items-center gap-2.5 sm:gap-4 flex-wrap">
+      {/* 1. Subtle Utility Topbar: Boutique info + Contacts + Socials */}
+      <div className="hidden sm:block border-b border-[#1C1C1C] py-2 px-4 sm:px-6 text-xs text-[#A3A3A3] bg-[#0A0A0A]">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <span className="flex items-center gap-1.5 text-[#E5E5E5] font-medium">
+              <MapPin className="w-3.5 h-3.5 text-[#C5A059]" />
+              <span>Атырау · ТД «Дина Байзар», Бутик №24</span>
+            </span>
+            <span className="text-[#525252]">|</span>
             <a
-              id="top-address-link"
-              href={config.gis2Url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 font-medium text-slate-700 hover:text-blue-600 transition-colors whitespace-nowrap"
-              title="Открыть в 2GIS: ТД «Дина Байзар», Бутик №24"
-            >
-              <MapPin className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-              <span className="font-semibold text-slate-800">
-                г. {config.city} · {config.boutiqueNumber}
-              </span>
-              <span className="hidden md:inline text-slate-500 font-normal">
-                (ТД «Дина Байзар»)
-              </span>
-            </a>
-
-            <div id="top-hours-badge" className="flex items-center gap-1.5 text-slate-500">
-              <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0 hidden sm:inline" />
-              <span className="hidden lg:inline">
-                {isKz ? config.workingHoursKz : config.workingHoursRu}
-              </span>
-              <span
-                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap ${
-                  status.isOpen
-                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                    : 'bg-rose-50 text-rose-700 border border-rose-200'
-                }`}
-              >
-                <span
-                  className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                    status.isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'
-                  }`}
-                />
-                {isKz ? status.textKz : status.textRu}
-              </span>
-            </div>
-          </div>
-
-          {/* Right Tools: Phone, Language Switcher, Admin Button */}
-          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-            {/* Phone link */}
-            <a
-              id="top-call-phone-link"
               href={`tel:+${config.whatsappNumber}`}
-              className="hidden md:flex items-center gap-1.5 text-slate-700 hover:text-blue-600 font-semibold text-xs"
+              className="flex items-center gap-1 hover:text-[#C5A059] transition-colors"
             >
-              <PhoneCall className="w-3.5 h-3.5 text-blue-600" />
+              <Phone className="w-3 h-3 text-[#A3A3A3]" />
               <span>+7 (778) 175-42-41</span>
             </a>
+            <span className="text-[#525252]">|</span>
+            <span className="text-[#A3A3A3]">10:00 – 19:00</span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {/* Social media links */}
+            <a
+              href={instagramUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Instagram @musliim_shop06"
+              className="flex items-center gap-1.5 text-[#D4D4D4] hover:text-[#C5A059] transition-colors py-0.5 px-2 rounded hover:bg-[#1A1A1A]"
+              title="Instagram @musliim_shop06"
+            >
+              <Instagram className="w-3.5 h-3.5 text-[#C5A059]" />
+              <span className="text-[11px] font-medium">@musliim_shop06</span>
+            </a>
+
+            <a
+              href={tiktokUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="TikTok @muslim_shop06"
+              className="flex items-center gap-1.5 text-[#D4D4D4] hover:text-[#C5A059] transition-colors py-0.5 px-2 rounded hover:bg-[#1A1A1A]"
+              title="TikTok @muslim_shop06"
+            >
+              <TikTokIcon className="w-3.5 h-3.5 text-[#C5A059]" />
+              <span className="text-[11px] font-medium">@muslim_shop06</span>
+            </a>
+
+            <span className="text-[#525252]">|</span>
 
             {/* Language Switcher */}
-            <div
-              id="language-switcher"
-              className="flex items-center bg-slate-200/70 p-0.5 rounded-md text-[11px] font-bold"
-            >
+            <div className="inline-flex items-center rounded bg-[#171717] border border-[#2A2A2A] p-0.5">
               <button
-                id="lang-ru-btn"
                 type="button"
                 onClick={() => onLanguageChange('ru')}
-                className={`px-2 py-0.5 rounded transition-all cursor-pointer ${
+                className={`px-2 py-0.5 rounded text-[11px] font-bold transition-colors ${
                   lang === 'ru'
-                    ? 'bg-white text-blue-700 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-[#C5A059] text-black'
+                    : 'text-[#A3A3A3] hover:text-white'
                 }`}
               >
                 RU
               </button>
               <button
-                id="lang-kz-btn"
                 type="button"
                 onClick={() => onLanguageChange('kz')}
-                className={`px-2 py-0.5 rounded transition-all cursor-pointer ${
+                className={`px-2 py-0.5 rounded text-[11px] font-bold transition-colors ${
                   lang === 'kz'
-                    ? 'bg-white text-blue-700 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-[#C5A059] text-black'
+                    : 'text-[#A3A3A3] hover:text-white'
                 }`}
               >
                 KZ
               </button>
             </div>
 
-            {/* Admin discrete entry */}
+            {/* Admin entry */}
             <button
-              id="top-admin-access-btn"
               type="button"
               onClick={onOpenAdmin}
-              className="flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-white border border-slate-300 text-slate-700 hover:text-blue-700 hover:border-blue-400 transition-colors text-[11px] font-semibold cursor-pointer whitespace-nowrap shadow-2xs"
-              title="Панель управления Бутиком №24"
+              aria-label="Администратор"
+              className="p-1 rounded text-[#737373] hover:text-[#C5A059] transition-colors"
+              title="Вход для администратора"
             >
-              <Lock className="w-3 h-3 text-slate-500 shrink-0" />
-              <span>Бутик №24</span>
+              <Lock className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* 2. Main Navigation Bar in Flip.kz Marketplace Architecture */}
-      <div
-        id="main-nav-container"
-        className="max-w-7xl mx-auto px-3 sm:px-6 py-2.5 sm:py-3.5 flex items-center justify-between gap-3 sm:gap-5 w-full"
-      >
-        {/* Brand Logo & Title */}
-        <div id="boutique-brand" className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+      {/* 2. Main Premium Header Bar */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 sm:py-4 flex items-center justify-between gap-3 sm:gap-6">
+        {/* Left: Brand Logo & Title */}
+        <div className="flex items-center gap-3 shrink-0">
           <div
-            id="boutique-logo-icon"
             onClick={onOpenAdmin}
-            className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center font-bold text-xl shadow-sm cursor-pointer shrink-0 transition-transform active:scale-95"
-            title="MUSLIM SHOP • Атырау"
+            className="cursor-pointer group flex flex-col"
+            title="MUSLIM SHOP • Бутик №24"
           >
-            <span>M</span>
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5">
-              <span
-                id="brand-name-title"
-                className="font-black tracking-tight text-xl sm:text-2xl text-slate-900 leading-none whitespace-nowrap block"
-              >
-                MUSLIM <span className="text-blue-600">SHOP</span>
+            <div className="flex items-center gap-2">
+              <span className="font-extrabold tracking-widest text-xl sm:text-2xl text-white font-serif group-hover:text-[#C5A059] transition-colors">
+                MUSLIM <span className="text-[#C5A059]">SHOP</span>
               </span>
-              <span className="hidden sm:inline-block px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200">
-                {config.boutiqueNumber}
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#A3A3A3] border border-[#2E2E2E] bg-[#171717] px-1.5 py-0.5 rounded hidden sm:inline-block">
+                Бутик №24
               </span>
             </div>
-            <p className="text-[11px] sm:text-xs text-slate-500 font-medium leading-none mt-1">
-              {isKz ? 'Халал & iHerb маркетплейсі' : 'Халяль & iHerb маркетплейс'}
-            </p>
+            <span className="text-[11px] text-[#A3A3A3] tracking-wide mt-0.5 hidden sm:block">
+              {isKz ? 'Халал өнімдер мен витаминдер' : 'Халяль-товары и витамины в Атырау'}
+            </span>
           </div>
+
+          {/* Catalog Button */}
+          {onOpenCatalog && (
+            <button
+              type="button"
+              onClick={onOpenCatalog}
+              className="hidden md:flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#1C1C1C] hover:bg-[#252525] border border-[#2F2F2F] hover:border-[#C5A059] text-white text-sm font-semibold transition-all cursor-pointer shadow-sm ml-2"
+            >
+              <Layers className="w-4 h-4 text-[#C5A059]" />
+              <span>{isKz ? 'Каталог' : 'Каталог товаров'}</span>
+            </button>
+          )}
         </div>
 
-        {/* Flip.kz Signature: Big Blue "Каталог" Button */}
-        <button
-          id="header-catalog-btn"
-          type="button"
-          onClick={onOpenCatalog}
-          className="hidden sm:flex items-center gap-2 px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-sm shadow-sm transition-all cursor-pointer shrink-0"
-        >
-          <Layers className="w-4 h-4" />
-          <span>{isKz ? 'Каталог' : 'Каталог товаров'}</span>
-        </button>
-
-        {/* Centered Large Search Bar (Desktop) */}
-        <div
-          id="header-search-bar"
-          className="hidden md:flex flex-1 max-w-xl mx-2 lg:mx-4 relative"
-        >
+        {/* Center: Large Desktop Search Bar */}
+        <div className="hidden md:flex flex-1 max-w-xl mx-2 relative">
           <SmartSearchBar
             inputId="header-search-input"
             searchQuery={searchQuery}
@@ -239,138 +221,127 @@ export const Header: React.FC<HeaderProps> = ({
           />
         </div>
 
-        {/* Action Buttons: Compare, Favorites, Cart */}
-        <div id="header-actions" className="flex items-center gap-2 sm:gap-3 shrink-0">
-          {/* Compare Button */}
-          {onOpenCompare && (
+        {/* Right: Actions (Mobile Language Switcher + Socials + Favorites + Cart) */}
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          {/* Mobile Language Switcher */}
+          <div className="sm:hidden inline-flex items-center rounded bg-[#171717] border border-[#2A2A2A] p-0.5">
             <button
-              id="compare-drawer-btn"
               type="button"
-              onClick={onOpenCompare}
-              className="relative p-2.5 rounded-lg text-slate-600 hover:text-blue-600 hover:bg-slate-100 transition-colors hidden lg:flex items-center justify-center cursor-pointer"
-              title={isKz ? 'Салыстыру' : 'Сравнение товаров'}
+              onClick={() => onLanguageChange('ru')}
+              className={`px-2 py-1 rounded text-xs font-bold ${
+                lang === 'ru'
+                  ? 'bg-[#C5A059] text-black'
+                  : 'text-[#A3A3A3]'
+              }`}
             >
-              <ArrowLeftRight className="w-5 h-5" />
-              {compareCount > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-blue-600 text-white text-[10px] font-black flex items-center justify-center shadow-xs">
-                  {compareCount}
-                </span>
-              )}
+              RU
             </button>
-          )}
+            <button
+              type="button"
+              onClick={() => onLanguageChange('kz')}
+              className={`px-2 py-1 rounded text-xs font-bold ${
+                lang === 'kz'
+                  ? 'bg-[#C5A059] text-black'
+                  : 'text-[#A3A3A3]'
+              }`}
+            >
+              KZ
+            </button>
+          </div>
+
+          {/* Compact Socials on Mobile */}
+          <div className="flex sm:hidden items-center gap-1.5">
+            <a
+              href={instagramUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Instagram"
+              className="p-2 rounded-lg bg-[#171717] border border-[#262626] text-[#C5A059] hover:text-white"
+            >
+              <Instagram className="w-4 h-4" />
+            </a>
+            <a
+              href={tiktokUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="TikTok"
+              className="p-2 rounded-lg bg-[#171717] border border-[#262626] text-[#C5A059] hover:text-white"
+            >
+              <TikTokIcon className="w-4 h-4" />
+            </a>
+          </div>
+
+          {/* Admin Entry Button */}
+          <button
+            type="button"
+            onClick={onOpenAdmin}
+            id="header-admin-btn"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-lg bg-[#171717] hover:bg-[#222222] border border-[#2E2E2E] hover:border-[#C5A059] text-[#C5A059] hover:text-[#D4AF37] text-xs font-bold transition-all cursor-pointer shadow-xs"
+            title="Панель управления (добавление и редактирование товаров)"
+            aria-label="Админ панель"
+          >
+            <Lock className="w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0 text-[#C5A059]" />
+            <span className="font-bold">Админ</span>
+          </button>
 
           {/* Favorites Button */}
           <button
-            id="favorites-drawer-btn"
             type="button"
             onClick={onOpenFavorites}
-            className="relative p-2.5 rounded-lg text-slate-600 hover:text-rose-600 hover:bg-slate-100 transition-colors flex items-center justify-center cursor-pointer"
+            className="relative p-2.5 rounded-lg bg-[#171717] hover:bg-[#202020] border border-[#292929] hover:border-[#C5A059] text-white transition-colors cursor-pointer"
             title={isKz ? 'Таңдаулылар' : 'Избранное'}
+            aria-label="Избранное"
           >
             <Heart
-              className={`w-5 h-5 ${
-                favoritesCount > 0 ? 'fill-rose-500 text-rose-500' : ''
+              className={`w-4 h-4 sm:w-5 sm:h-5 ${
+                favoritesCount > 0 ? 'fill-[#C5A059] text-[#C5A059]' : 'text-[#D4D4D4]'
               }`}
             />
             {favoritesCount > 0 && (
-              <span
-                id="favorites-badge-count"
-                className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center shadow-xs"
-              >
+              <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#C5A059] text-black font-extrabold text-[10px] flex items-center justify-center">
                 {favoritesCount}
               </span>
             )}
           </button>
 
-          {/* Flip.kz Signature Cart Button */}
+          {/* Cart Button */}
           <button
             id="cart-drawer-btn"
             type="button"
             onClick={onOpenCart}
-            className="flex items-center gap-2.5 px-3.5 sm:px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-sm shadow-sm transition-all cursor-pointer"
+            className="flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-lg bg-[#C5A059] hover:bg-[#D4AF37] active:bg-[#B38F46] text-black font-bold text-sm transition-all cursor-pointer shadow-md"
+            aria-label="Корзина"
           >
             <div className="relative flex items-center justify-center">
               <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
               {cartCount > 0 && (
-                <span
-                  id="cart-badge-count"
-                  className="absolute -top-2.5 -right-2.5 min-w-[18px] h-[18px] px-1 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black flex items-center justify-center shadow-xs"
-                >
+                <span className="absolute -top-2.5 -right-2.5 min-w-[18px] h-[18px] px-1 rounded-full bg-black text-[#C5A059] font-extrabold text-[10px] flex items-center justify-center border border-[#C5A059]">
                   {cartCount}
                 </span>
               )}
             </div>
-            <span className="hidden sm:inline">
+            <span className="hidden sm:inline font-bold">
               {isKz ? 'Себет' : 'Корзина'}
             </span>
           </button>
         </div>
       </div>
 
-      {/* 3. Flip.kz Style Horizontal Category Quick Nav Bar (Sub-header) */}
-      <nav
-        id="sub-header-category-nav"
-        className="hidden md:block bg-white border-t border-slate-100 border-b border-slate-200/80 px-3 sm:px-6 overflow-x-auto no-scrollbar"
-      >
-        <div className="max-w-7xl mx-auto flex items-center gap-1 sm:gap-2 py-1.5 text-xs font-semibold text-slate-700">
-          <button
-            type="button"
-            onClick={() => onSelectCategory('cat-all')}
-            className="px-3 py-1.5 rounded-md hover:bg-slate-100 hover:text-blue-600 transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5 text-slate-900 font-bold"
-          >
-            <span>🏷️</span>
-            <span>{isKz ? 'Барлық өнімдер' : 'Все товары'}</span>
-          </button>
-
-          {categories.slice(0, 9).map((cat) => {
-            const catName = isKz && cat.nameKz ? cat.nameKz : cat.nameRu;
-            return (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => onSelectCategory(cat.id)}
-                className="px-3 py-1.5 rounded-md hover:bg-slate-100 hover:text-blue-600 transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5"
-              >
-                <span>{cat.icon || '•'}</span>
-                <span>{catName}</span>
-              </button>
-            );
-          })}
-        </div>
-      </nav>
-
-      {/* Mobile Search Bar & Mobile Catalog Trigger */}
-      <div
-        id="mobile-search-container"
-        className="md:hidden px-3.5 pb-2.5 pt-1.5 border-t border-slate-100 bg-white flex items-center gap-2"
-      >
-        {onOpenCatalog && (
-          <button
-            type="button"
-            onClick={onOpenCatalog}
-            className="p-2.5 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0 cursor-pointer shadow-xs"
-            title={isKz ? 'Каталог' : 'Каталог'}
-          >
-            <Layers className="w-4 h-4" />
-          </button>
-        )}
-        <div className="flex-1">
-          <SmartSearchBar
-            inputId="mobile-search-input"
-            searchQuery={searchQuery}
-            onSearchChange={onSearchChange}
-            products={products}
-            categories={categories}
-            productCounts={productCounts}
-            lang={lang}
-            onSelectCategory={onSelectCategory}
-            onSelectSymptom={onSelectSymptom}
-            onOpenProduct={onOpenProduct}
-            onAddToCart={onAddToCart}
-            autoFocus={isSearchOpen}
-            onAfterSelect={() => setIsSearchOpen(false)}
-          />
-        </div>
+      {/* 3. Mobile Search Input Row directly under Header */}
+      <div className="md:hidden px-4 pb-3">
+        <SmartSearchBar
+          inputId="mobile-header-search-input"
+          searchQuery={searchQuery}
+          onSearchChange={onSearchChange}
+          products={products}
+          categories={categories}
+          productCounts={productCounts}
+          lang={lang}
+          onSelectCategory={onSelectCategory}
+          onSelectSymptom={onSelectSymptom}
+          onOpenProduct={onOpenProduct}
+          onAddToCart={onAddToCart}
+        />
       </div>
     </header>
   );

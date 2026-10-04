@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, ShoppingBag, Check, Trash2, Eye } from 'lucide-react';
+import { Clock, ShoppingBag, Check, Trash2 } from 'lucide-react';
 import { Language, Product } from '../types';
 import { formatPrice } from '../utils/formatters';
 
@@ -30,19 +30,19 @@ export const RecentlyViewedSection: React.FC<RecentlyViewedSectionProps> = ({
     <section
       id="recently-viewed-section"
       aria-label={isKz ? 'Жақында қаралған тауарлар' : 'Вы недавно смотрели'}
-      className="w-full bg-slate-50 border-t border-slate-200/80 py-6 sm:py-8"
+      className="w-full bg-[#121212] border-t border-[#222222] py-8 sm:py-10"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {/* Header Row */}
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 shrink-0">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-[#1C1C1C] border border-[#2E2E2E] flex items-center justify-center text-[#C5A059] shrink-0">
               <Clock className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="font-bold text-base sm:text-lg text-slate-900 flex items-center gap-2 leading-none">
+              <h2 className="font-extrabold text-base sm:text-xl text-white flex items-center gap-2 leading-none">
                 <span>{isKz ? 'Сіз жақында қарадыңыз' : 'Вы недавно смотрели'}</span>
-                <span className="text-xs font-semibold text-slate-400">
+                <span className="text-xs font-mono font-bold text-[#C5A059]">
                   ({items.length})
                 </span>
               </h2>
@@ -53,15 +53,15 @@ export const RecentlyViewedSection: React.FC<RecentlyViewedSectionProps> = ({
             type="button"
             id="clear-recently-viewed-btn"
             onClick={onClearAll}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium text-slate-500 hover:text-rose-600 hover:bg-slate-200/60 transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-[#8E8E8E] hover:text-white bg-[#1A1A1A] hover:bg-[#242424] border border-[#2A2A2A] transition-colors cursor-pointer"
           >
             <Trash2 className="w-3.5 h-3.5" />
             <span>{isKz ? 'Тазалау' : 'Очистить историю'}</span>
           </button>
         </div>
 
-        {/* Horizontal Carousel in Flip.kz Style */}
-        <div className="flex items-stretch gap-3 overflow-x-auto no-scrollbar py-1">
+        {/* Horizontal Carousel */}
+        <div className="flex items-stretch gap-3.5 overflow-x-auto no-scrollbar py-1">
           {items.map((prod) => {
             const inCart = cartProductIds.has(prod.id);
             const title = isKz && prod.titleKz?.trim() ? prod.titleKz : prod.titleRu;
@@ -69,7 +69,7 @@ export const RecentlyViewedSection: React.FC<RecentlyViewedSectionProps> = ({
             return (
               <div
                 key={prod.id}
-                className="group relative w-44 sm:w-52 shrink-0 bg-white rounded-xl border border-slate-200/90 hover:border-blue-400 hover:shadow-md transition-all flex flex-col justify-between overflow-hidden p-3"
+                className="group relative w-48 sm:w-56 shrink-0 bg-[#171717] rounded-xl border border-[#262626] hover:border-[#C5A059] transition-all flex flex-col justify-between overflow-hidden p-3.5 shadow-md"
               >
                 {/* Remove single item button */}
                 <button
@@ -78,14 +78,14 @@ export const RecentlyViewedSection: React.FC<RecentlyViewedSectionProps> = ({
                     e.stopPropagation();
                     onRemoveItem(prod.id);
                   }}
-                  className="absolute top-2 right-2 z-10 w-6 h-6 rounded-full bg-white/90 text-slate-400 hover:text-rose-500 border border-slate-200 flex items-center justify-center transition-colors cursor-pointer shadow-2xs"
+                  className="absolute top-2.5 right-2.5 z-10 w-7 h-7 rounded-full bg-black/70 text-[#8E8E8E] hover:text-rose-400 border border-[#333333] flex items-center justify-center transition-colors cursor-pointer"
                   title={isKz ? 'Тізімнен өшіру' : 'Удалить из истории'}
                 >
-                  <Trash2 className="w-3 h-3" />
+                  <Trash2 className="w-3.5 h-3.5" />
                 </button>
 
                 <div onClick={() => onOpenProduct(prod)} className="cursor-pointer">
-                  <div className="aspect-square w-full rounded-lg overflow-hidden bg-white flex items-center justify-center mb-2">
+                  <div className="aspect-square w-full rounded-lg overflow-hidden bg-white p-2 flex items-center justify-center mb-3">
                     <img
                       src={prod.images[0]}
                       alt={title}
@@ -93,27 +93,27 @@ export const RecentlyViewedSection: React.FC<RecentlyViewedSectionProps> = ({
                     />
                   </div>
 
-                  <h4 className="text-xs sm:text-sm font-semibold text-slate-900 group-hover:text-blue-600 line-clamp-2 leading-snug h-8 sm:h-9">
+                  <h4 className="text-xs sm:text-sm font-bold text-white group-hover:text-[#C5A059] line-clamp-2 leading-snug h-9">
                     {title}
                   </h4>
                 </div>
 
-                <div className="pt-2 mt-2 border-t border-slate-100 flex items-center justify-between gap-1.5">
-                  <span className="text-xs sm:text-sm font-bold text-slate-900 tabular-nums">
+                <div className="pt-2.5 mt-2 border-t border-[#262626] flex items-center justify-between gap-2">
+                  <span className="text-sm sm:text-base font-extrabold text-[#C5A059] tabular-nums">
                     {formatPrice(prod.price)}
                   </span>
 
                   <button
                     type="button"
                     onClick={() => onAddToCart(prod)}
-                    className={`p-1.5 rounded-md text-xs font-semibold flex items-center justify-center transition-colors cursor-pointer ${
+                    className={`p-2 rounded-lg text-xs font-bold flex items-center justify-center transition-colors cursor-pointer ${
                       inCart
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-300'
-                        : 'bg-blue-600 hover:bg-blue-700 text-white'
+                        ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-700/60'
+                        : 'bg-[#C5A059] hover:bg-[#D4AF37] text-black shadow-xs'
                     }`}
                     title={inCart ? 'В корзине' : 'В корзину'}
                   >
-                    {inCart ? <Check className="w-3.5 h-3.5" /> : <ShoppingBag className="w-3.5 h-3.5" />}
+                    {inCart ? <Check className="w-4 h-4 stroke-[3]" /> : <ShoppingBag className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
