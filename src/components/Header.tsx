@@ -173,18 +173,27 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 sm:py-4 flex items-center justify-between gap-3 sm:gap-6">
         {/* Left: Brand Logo & Title */}
         <div className="flex items-center gap-3 shrink-0">
-          <div
-            onClick={onOpenAdmin}
-            className="cursor-pointer group flex flex-col"
-            title="MUSLIM SHOP • Бутик №24"
-          >
-            <div className="flex items-center gap-2">
-              <span className="font-extrabold tracking-widest text-xl sm:text-2xl text-white font-serif group-hover:text-[#C5A059] transition-colors">
+          <div className="flex flex-col">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="font-extrabold tracking-widest text-lg sm:text-2xl text-white font-serif whitespace-nowrap">
                 MUSLIM <span className="text-[#C5A059]">SHOP</span>
               </span>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#A3A3A3] border border-[#2E2E2E] bg-[#171717] px-1.5 py-0.5 rounded hidden sm:inline-block">
+              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[#A3A3A3] border border-[#2E2E2E] bg-[#171717] px-1.5 py-0.5 rounded inline-block whitespace-nowrap">
                 Бутик №24
               </span>
+              {/* Маленький замочек администратора */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenAdmin();
+                }}
+                className="p-1 sm:p-1.5 rounded text-[#737373] hover:text-[#C5A059] hover:bg-[#1A1A1A] active:scale-90 transition-all cursor-pointer shrink-0 ml-0.5"
+                title="Панель управления"
+                aria-label="Панель управления"
+              >
+                <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#737373] hover:text-[#C5A059]" />
+              </button>
             </div>
             <span className="text-[11px] text-[#A3A3A3] tracking-wide mt-0.5 hidden sm:block">
               {isKz ? 'Халал өнімдер мен витаминдер' : 'Халяль-товары и витамины в Атырау'}
@@ -270,19 +279,6 @@ export const Header: React.FC<HeaderProps> = ({
               <TikTokIcon className="w-4 h-4" />
             </a>
           </div>
-
-          {/* Admin Entry Button */}
-          <button
-            type="button"
-            onClick={onOpenAdmin}
-            id="header-admin-btn"
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-lg bg-[#171717] hover:bg-[#222222] border border-[#2E2E2E] hover:border-[#C5A059] text-[#C5A059] hover:text-[#D4AF37] text-xs font-bold transition-all cursor-pointer shadow-xs"
-            title="Панель управления (добавление и редактирование товаров)"
-            aria-label="Админ панель"
-          >
-            <Lock className="w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0 text-[#C5A059]" />
-            <span className="font-bold">Админ</span>
-          </button>
 
           {/* Favorites Button */}
           <button

@@ -120,7 +120,11 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   initialTab,
   onClose,
 }) => {
+  const [adminUsername, setAdminUsername] = useState('admin');
+  const [adminPassword, setAdminPassword] = useState('');
   const [pin, setPin] = useState('');
+  const [showPinInSettings, setShowPinInSettings] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => checkSessionValid());
   const [sessionRemainingMinutes, setSessionRemainingMinutes] = useState<number>(10);
   const [errorMsg, setErrorMsg] = useState('');
@@ -133,9 +137,15 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [isSyncingCloud, setIsSyncingCloud] = useState(false);
   const [cloudSyncedNotice, setCloudSyncedNotice] = useState(false);
-  const [showPinInSettings, setShowPinInSettings] = useState(false);
   const [lockoutRemainingMs, setLockoutRemainingMs] = useState<number>(() => getLockoutRemainingMs());
   const isSubmittingAddProductRef = useRef(false);
+
+  // Change password form states in Settings tab
+  const [changePassCurrent, setChangePassCurrent] = useState('');
+  const [changePassNew, setChangePassNew] = useState('');
+  const [changePassConfirm, setChangePassConfirm] = useState('');
+  const [changePassStatus, setChangePassStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [isChangingPass, setIsChangingPass] = useState(false);
 
   useEffect(() => {
     if (lockoutRemainingMs <= 0) return;
