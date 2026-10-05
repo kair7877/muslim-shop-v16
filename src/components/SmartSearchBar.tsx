@@ -169,7 +169,7 @@ export const SmartSearchBar: React.FC<SmartSearchBarProps> = ({
     <div ref={containerRef} className="relative w-full">
       {/* Search Input Box */}
       <div className="relative w-full">
-        <Search className="w-4 h-4 text-[#A3A3A3] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+        <Search className="w-5 h-5 text-[#C5A059] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
         <input
           ref={inputRef}
           id={inputId}
@@ -186,10 +186,10 @@ export const SmartSearchBar: React.FC<SmartSearchBarProps> = ({
             placeholder ||
             (isKz
               ? 'Тауарларды іздеу... 🔍'
-              : 'Поиск товара... 🔍')
+              : 'Поиск товаров в магазине... 🔍')
           }
           autoComplete="off"
-          className="w-full pl-10 pr-10 py-2.5 sm:py-3 text-sm font-medium rounded-xl border border-[#2E2E2E] bg-[#171717] text-white placeholder:text-[#8E8E8E] focus:outline-none focus:ring-1 focus:ring-[#C5A059] focus:border-[#C5A059] transition-all shadow-inner"
+          className="w-full pl-11 pr-11 py-3 sm:py-3.5 text-base sm:text-lg font-bold rounded-xl border-2 border-[#333333] bg-[#161616] text-white placeholder:text-[#8E8E8E] focus:outline-none focus:border-[#C5A059] shadow-inner"
         />
         {searchQuery && (
           <button
@@ -198,10 +198,10 @@ export const SmartSearchBar: React.FC<SmartSearchBarProps> = ({
               onSearchChange('');
               inputRef.current?.focus();
             }}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-full text-[#A3A3A3] hover:text-white hover:bg-[#262626] transition-colors cursor-pointer"
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-[#A3A3A3] hover:text-white hover:bg-[#262626] transition-colors cursor-pointer"
             title={isKz ? 'Тазалау' : 'Очистить'}
           >
-            <X className="w-4 h-4" />
+            <X className="w-5 h-5 text-[#C5A059]" />
           </button>
         )}
       </div>

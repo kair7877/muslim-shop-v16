@@ -166,33 +166,33 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
                     onSelectCategory(targetId);
                   }
                 }}
-                className={`group relative flex flex-col items-start justify-between p-4 sm:p-5 rounded-xl transition-all duration-200 cursor-pointer text-left ${
+                className={`group relative flex flex-col items-start justify-between p-5 sm:p-6 rounded-2xl cursor-pointer text-left ${
                   isActive
-                    ? 'bg-[#1C1C1C] border-2 border-[#C5A059] shadow-[0_0_20px_rgba(197,160,89,0.2)]'
-                    : 'bg-[#171717] border border-[#2E2E2E] hover:border-[#C5A059] hover:bg-[#1D1D1D]'
+                    ? 'bg-[#1E1E1E] border-2 border-[#C5A059] shadow-lg'
+                    : 'bg-[#161616] border-2 border-[#2E2E2E] hover:border-[#C5A059] hover:bg-[#1D1D1D]'
                 }`}
               >
-                <div className="flex items-center justify-between w-full mb-3">
+                <div className="flex items-center justify-between w-full mb-3.5">
                   <div
-                    className={`w-11 h-11 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center transition-colors ${
+                    className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center ${
                       isActive
                         ? 'bg-[#C5A059] text-black'
                         : 'bg-[#222222] text-[#C5A059] group-hover:bg-[#C5A059] group-hover:text-black'
                     }`}
                   >
-                    <Icon className="w-6 h-6 stroke-[2]" />
+                    <Icon className="w-7 h-7 stroke-[2]" />
                   </div>
 
                   {count > 0 && (
-                    <span className="text-[11px] font-bold font-mono px-2 py-0.5 rounded bg-[#242424] text-[#A3A3A3] border border-[#333333]">
+                    <span className="text-xs sm:text-sm font-black font-mono px-2.5 py-1 rounded-md bg-[#242424] text-[#D4AF37] border border-[#3A3A3A]">
                       {count}
                     </span>
                   )}
                 </div>
 
-                <div className="space-y-1 w-full">
+                <div className="space-y-1.5 w-full">
                   <h3
-                    className={`font-black tracking-wide text-xs sm:text-base leading-tight transition-colors ${
+                    className={`font-black tracking-wide text-sm sm:text-lg leading-tight ${
                       isActive
                         ? 'text-[#C5A059]'
                         : 'text-white group-hover:text-[#C5A059]'
@@ -200,7 +200,7 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
                   >
                     {isKz ? tile.titleKz : tile.titleRu}
                   </h3>
-                  <p className="text-[11px] sm:text-xs text-[#8E8E8E] leading-normal line-clamp-1">
+                  <p className="text-xs sm:text-sm text-[#A3A3A3] leading-normal line-clamp-1">
                     {isKz ? tile.subKz : tile.subRu}
                   </p>
                 </div>

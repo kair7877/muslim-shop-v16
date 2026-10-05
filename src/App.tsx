@@ -1317,16 +1317,16 @@ export default function App() {
   return (
     <div
       id="app-root"
-      className="min-h-screen w-full max-w-full overflow-x-hidden flex flex-col pb-20 sm:pb-[74px] transition-colors bg-[#f4f6f8] text-slate-900 text-base sm:text-[17px] leading-relaxed selection:bg-blue-600 selection:text-white"
+      className="min-h-screen w-full max-w-full overflow-x-hidden flex flex-col pb-20 sm:pb-[74px] bg-[#0F0F0F] text-white text-base sm:text-[18px] leading-relaxed selection:bg-[#C5A059] selection:text-black"
     >
       {/* Toast Notification */}
       {toastMessage && (
         <div
           id="toast-notification"
-          className="fixed bottom-20 sm:bottom-22 left-1/2 -translate-x-1/2 z-[100] bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-2xl border border-slate-700 text-sm font-semibold flex items-center gap-3 animate-bounce"
+          className="fixed bottom-20 sm:bottom-22 left-1/2 -translate-x-1/2 z-[100] bg-[#1E1E1E] text-white px-6 py-3.5 rounded-2xl shadow-2xl border-2 border-[#C5A059] text-base font-bold flex items-center gap-3"
         >
-          <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0">
-            <CheckCircle2 className="w-4 h-4 text-white" />
+          <div className="w-6 h-6 rounded-full bg-[#C5A059] text-black flex items-center justify-center shrink-0">
+            <CheckCircle2 className="w-4 h-4 text-black stroke-[3]" />
           </div>
           <span>{toastMessage}</span>
         </div>
@@ -1402,9 +1402,9 @@ export default function App() {
       {isDirectProductLoading && !selectedProductForDetail && (
         <div
           id="direct-product-loader"
-          className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] bg-white text-slate-900 px-5 py-3.5 rounded-2xl shadow-2xl border border-slate-200 text-sm font-bold flex items-center gap-3 animate-pulse"
+          className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] bg-[#1C1C1C] text-white px-6 py-3.5 rounded-2xl shadow-2xl border-2 border-[#C5A059] text-base font-bold flex items-center gap-3"
         >
-          <Loader2 className="w-5 h-5 text-blue-600 animate-spin shrink-0" />
+          <Loader2 className="w-5 h-5 text-[#C5A059] shrink-0" />
           <span>{lang === 'kz' ? 'Өнім жүктелуде...' : 'Загружаем товар по ссылке...'}</span>
         </div>
       )}
@@ -1563,20 +1563,20 @@ export default function App() {
         {/* Loading Spinner during initial fetch */}
         {isLoadingProducts && products.length === 0 ? (
           <div className="py-20 text-center space-y-3">
-            <Loader2 className="w-9 h-9 text-[#C5A059] animate-spin mx-auto" />
-            <p className="text-[#A3A3A3] font-semibold text-sm">
+            <Loader2 className="w-10 h-10 text-[#C5A059] mx-auto" />
+            <p className="text-white font-bold text-base sm:text-lg">
               {lang === 'kz' ? 'Өнімдер жүктелуде...' : 'Загрузка каталога товаров...'}
             </p>
           </div>
         ) : filteredProducts.length === 0 ? (
-          <div id="catalog-empty-state" className="py-16 text-center space-y-3 bg-[#171717] rounded-2xl border border-[#262626] p-8 my-6">
-            <div className="w-14 h-14 rounded-full bg-[#1F1F1F] border border-[#2E2E2E] flex items-center justify-center text-[#C5A059] mx-auto">
-              <PackageSearch className="w-7 h-7" />
+          <div id="catalog-empty-state" className="py-16 text-center space-y-3 bg-[#171717] rounded-2xl border-2 border-[#2E2E2E] p-8 my-6">
+            <div className="w-16 h-16 rounded-full bg-[#1F1F1F] border border-[#3E3E3E] flex items-center justify-center text-[#C5A059] mx-auto">
+              <PackageSearch className="w-8 h-8" />
             </div>
-            <h3 className="text-lg sm:text-xl font-bold text-white">
+            <h3 className="text-xl sm:text-2xl font-black text-white">
               {lang === 'kz' ? 'Өнімдер табылмады' : 'Товары не найдены'}
             </h3>
-            <p className="text-xs sm:text-sm text-[#A3A3A3] max-w-md mx-auto leading-relaxed">
+            <p className="text-sm sm:text-base text-[#D4D4D4] max-w-md mx-auto leading-relaxed">
               {lang === 'kz'
                 ? 'Іздеу сұранысын өзгертіп көріңіз немесе басқа санатты таңдаңыз'
                 : 'Попробуйте изменить поисковый запрос или перейдите в другую категорию'}
@@ -1596,7 +1596,7 @@ export default function App() {
                   setIsLoadingProducts(false);
                 }
               }}
-              className="px-6 py-3 rounded-xl bg-[#C5A059] hover:bg-[#D4AF37] text-black text-xs sm:text-sm font-extrabold shadow-md transition-colors cursor-pointer"
+              className="px-8 py-4 rounded-xl bg-[#C5A059] hover:bg-[#D4AF37] text-black text-sm sm:text-base font-black shadow-lg transition-colors cursor-pointer"
             >
               {products.length === 0
                 ? lang === 'kz'
@@ -1610,7 +1610,7 @@ export default function App() {
         ) : (
           <div
             id="products-grid"
-            className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3.5 sm:gap-6 mt-6"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 mt-8"
           >
             {filteredProducts.slice(0, visibleLimit).map((product) => (
               <ProductCard

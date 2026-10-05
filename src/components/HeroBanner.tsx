@@ -1,13 +1,11 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React from 'react';
 import {
   MapPin,
-  MessageCircle,
   ShieldCheck,
   Truck,
   ArrowRight,
-  ChevronLeft,
-  ChevronRight,
   Clock,
+  Phone,
 } from 'lucide-react';
 import { Category, Language, StoreConfig } from '../types';
 
@@ -20,238 +18,112 @@ interface HeroBannerProps {
   onSelectCategory?: (id: string) => void;
 }
 
-interface SlideItem {
-  id: string;
-  badgeRu: string;
-  badgeKz: string;
-  titleRu: string;
-  titleKz: string;
-  subtitleRu: string;
-  subtitleKz: string;
-  btnTextRu: string;
-  btnTextKz: string;
-  image: string;
-  categoryId?: string;
-}
-
-const HERO_SLIDES: SlideItem[] = [
-  {
-    id: 'slide-iherb',
-    badgeRu: 'ПРЯМЫЕ ПОСТАВКИ ИЗ США · ХАЛЯЛЬ',
-    badgeKz: 'АҚШ-ТАН ТІКЕЛЕЙ ЖЕТКІЗІЛІМ · ХАЛАЛ',
-    titleRu: 'Оригинальные витамины iHerb и БАДы в Атырау',
-    titleKz: 'Атыраудағы түпнұсқа iHerb дәрумендері мен ББҚ',
-    subtitleRu: 'Сертифицированная продукция Now Foods, California Gold, Solgar. Омега-3, Витамин D3, Магний и Цинк в наличии в Бутике №24.',
-    subtitleKz: 'Now Foods, California Gold, Solgar өнімдері. Омега-3, D3 дәрумені, Магний және Мырыш №24 Бутикте бар.',
-    btnTextRu: 'Смотреть витамины',
-    btnTextKz: 'Витаминдерді көру',
-    image: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=1200&q=80',
-    categoryId: 'cat-iherb',
-  },
-  {
-    id: 'slide-islamic',
-    badgeRu: '100% НАТУРАЛЬНОЕ КАЧЕСТВО',
-    badgeKz: '100% ТАБИҒИ САПА',
-    titleRu: 'Масло чёрного тмина, хиджама и арабский парфюм',
-    titleKz: 'Қара зере майы, хиджама және араб әтірлері',
-    subtitleRu: 'Прямые поставки из Саудовской Аравии, Египта и ОАЭ. Холодный отжим, натуральный горный мед и товары для Сунны.',
-    subtitleKz: 'Сауд Арабиясы, Мысыр және БӘӘ-ден тікелей жеткізілім. Суық сығындылы зере майы және сүннет тауарлары.',
-    btnTextRu: 'Исламские товары',
-    btnTextKz: 'Ислам тауарлары',
-    image: 'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&w=1200&q=80',
-    categoryId: 'cat-muslim',
-  },
-  {
-    id: 'slide-health',
-    badgeRu: 'КОМПЛЕКСНОЕ ОЗДОРОВЛЕНИЕ',
-    badgeKz: 'КЕШЕНДІ САУЫҚТЫРУ',
-    titleRu: 'Мужское и женское здоровье: готовые курсы',
-    titleKz: 'Ерлер мен әйелдер денсаулығы: дайын курстар',
-    subtitleRu: 'Эпимедиумные пасты, комплексы для иммунитета, суставов, энергии и очищения организма.',
-    subtitleKz: 'Эпимедиум пасталары, иммунитет, буын саулығы және қуатқа арналған табиғи кешендер.',
-    btnTextRu: 'Подобрать курс',
-    btnTextKz: 'Курсты таңдау',
-    image: 'https://images.unsplash.com/photo-1550572017-edd951aa8f72?auto=format&fit=crop&w=1200&q=80',
-    categoryId: 'cat-health',
-  },
-];
-
 export const HeroBanner: React.FC<HeroBannerProps> = ({
   config,
   lang,
   onScrollToCatalog,
-  onSelectCategory,
 }) => {
   const isKz = lang === 'kz';
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
-  const touchStartXRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (isPaused) return;
-    const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
-    }, 6000);
-    return () => clearInterval(interval);
-  }, [isPaused]);
-
-  const goToPrev = useCallback(() => {
-    setCurrentSlide((prev) => (prev === 0 ? HERO_SLIDES.length - 1 : prev - 1));
-  }, []);
-
-  const goToNext = useCallback(() => {
-    setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
-  }, []);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartXRef.current = e.touches[0].clientX;
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartXRef.current === null) return;
-    const diff = touchStartXRef.current - e.changedTouches[0].clientX;
-    if (Math.abs(diff) > 40) {
-      if (diff > 0) goToNext();
-      else goToPrev();
-    }
-    touchStartXRef.current = null;
-  };
-
-  const handleSlideAction = (slide: SlideItem) => {
-    if (slide.categoryId && onSelectCategory) {
-      onSelectCategory(slide.categoryId);
-    }
-    onScrollToCatalog();
-  };
 
   return (
     <section
       id="hero-section"
-      className="w-full bg-[#0F0F0F] border-b border-[#242424] py-4 sm:py-6"
+      className="w-full bg-[#0F0F0F] border-b-2 border-[#242424] py-6 sm:py-10 select-none"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        {/* Main Banner Card */}
-        <div
-          id="hero-carousel-container"
-          className="relative rounded-2xl overflow-hidden bg-[#141414] border border-[#262626] shadow-xl group select-none min-h-[360px] sm:min-h-[420px] flex flex-col justify-between"
-          onMouseEnter={() => setIsPaused(true)}
-          onMouseLeave={() => setIsPaused(false)}
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
-        >
-          {/* Slider Track */}
-          <div
-            className="flex transition-transform duration-500 ease-out h-full"
-            style={{ transform: `translateX(-${currentSlide * 100}%)` }}
-          >
-            {HERO_SLIDES.map((slide) => (
-              <div
-                key={slide.id}
-                className="w-full shrink-0 flex flex-col justify-between p-6 sm:p-12 relative overflow-hidden"
+        {/* Large Static Showcase Banner — No Slider, No Carousel, No Freezing */}
+        <div className="relative rounded-3xl bg-[#161616] border-2 border-[#2F2F2F] p-6 sm:p-10 lg:p-12 shadow-2xl overflow-hidden flex flex-col justify-between gap-8">
+          {/* Subtle static luxury accent */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-[#C5A059]/5 rounded-full blur-3xl pointer-events-none" />
+
+          {/* Top Headline Area */}
+          <div className="space-y-4 max-w-3xl relative z-10">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-[#202020] border border-[#3A3A3A] text-xs sm:text-sm font-black text-[#D4AF37] uppercase tracking-wider">
+              <MapPin className="w-4 h-4 text-[#C5A059]" />
+              <span>{isKz ? 'Атырау · «Дина Байзар» СҮ, №24 Бутик' : 'Атырау · ТД «Дина Байзар», Бутик №24'}</span>
+            </div>
+
+            <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white leading-tight tracking-tight">
+              {isKz ? (
+                <>
+                  MUSLIM SHOP — <span className="text-[#C5A059]">Атыраудағы халал өнімдер</span> мен дәрумендер дүкені
+                </>
+              ) : (
+                <>
+                  MUSLIM SHOP — <span className="text-[#C5A059]">Оригинальные витамины</span> и халяль-товары в Атырау
+                </>
+              )}
+            </h1>
+
+            <p className="text-base sm:text-xl text-[#D4D4D4] font-medium leading-relaxed">
+              {isKz
+                ? 'Now Foods, California Gold, Solgar түпнұсқа дәрумендері, қара зере майы, эпимедиум пасталары және сүннет тауарлары Бутик №24-те қолда бар.'
+                : 'Сертифицированная продукция Now Foods, California Gold, Solgar, масло чёрного тмина, мужские пасты и товары для здоровья в наличии в Бутике №24.'}
+            </p>
+
+            <div className="pt-2 flex flex-wrap items-center gap-4">
+              <button
+                type="button"
+                onClick={onScrollToCatalog}
+                className="py-4 px-8 rounded-2xl bg-[#C5A059] hover:bg-[#D4AF37] text-black font-black text-base sm:text-lg tracking-wide shadow-xl flex items-center justify-center gap-3 cursor-pointer"
               >
-                {/* Subtle Luxury Dark Overlay with Image */}
-                <div
-                  className="absolute inset-0 bg-cover bg-center opacity-20 pointer-events-none filter brightness-75 contrast-125"
-                  style={{ backgroundImage: `url(${slide.image})` }}
-                />
-                <div
-                  className="absolute inset-0 bg-gradient-to-r from-[#0E0E0E] via-[#0E0E0E]/90 to-transparent pointer-events-none"
-                />
+                <span>{isKz ? 'КАТАЛОГҚА ӨТУ' : 'СМОТРЕТЬ КАТАЛОГ ТОВАРОВ'}</span>
+                <ArrowRight className="w-5 h-5 stroke-[2.5]" />
+              </button>
 
-                {/* Content Box */}
-                <div className="relative z-10 max-w-2xl space-y-4">
-                  {/* Subtle Gold Badge */}
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-[#1C1C1C] border border-[#C5A059]/40 text-[#C5A059] text-xs font-black tracking-wider uppercase">
-                    <span>{isKz ? slide.badgeKz : slide.badgeRu}</span>
-                  </div>
-
-                  {/* Main Title: Large, Bold, Crisp White */}
-                  <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
-                    {isKz ? slide.titleKz : slide.titleRu}
-                  </h1>
-
-                  {/* Subtitle: Readable Gray */}
-                  <p className="text-sm sm:text-base text-[#D4D4D4] leading-relaxed max-w-xl">
-                    {isKz ? slide.subtitleKz : slide.subtitleRu}
-                  </p>
-
-                  {/* CTA Buttons */}
-                  <div className="pt-2 flex flex-wrap items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => handleSlideAction(slide)}
-                      className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-[#C5A059] hover:bg-[#D4AF37] active:bg-[#B38F46] text-black font-extrabold text-sm sm:text-base tracking-wide transition-all cursor-pointer shadow-lg active:scale-98"
-                    >
-                      <span>{isKz ? slide.btnTextKz : slide.btnTextRu}</span>
-                      <ArrowRight className="w-4 h-4 stroke-[2.5]" />
-                    </button>
-
-                    <a
-                      href={`https://wa.me/${config.whatsappNumber}?text=${encodeURIComponent(
-                        isKz
-                          ? `Сәлеметсіз бе! Мен ${slide.titleKz} бойынша кеңес алғым келеді.`
-                          : `Здравствуйте! Хочу проконсультироваться по теме: ${slide.titleRu}`
-                      )}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-5 py-3.5 rounded-xl bg-[#1C1C1C] hover:bg-[#252525] text-white border border-[#333333] hover:border-[#C5A059] font-bold text-sm sm:text-base transition-colors"
-                    >
-                      <MessageCircle className="w-4 h-4 text-[#25D366]" />
-                      <span>{isKz ? 'WhatsApp кеңес' : 'Консультация'}</span>
-                    </a>
-                  </div>
-                </div>
-
-                {/* Bottom Boutique Guarantees inside Slide */}
-                <div className="relative z-10 pt-6 mt-6 border-t border-[#262626]/80 flex flex-wrap items-center gap-4 sm:gap-8 text-xs text-[#A3A3A3]">
-                  <span className="flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-[#C5A059]" />
-                    <span>100% Түпнұсқа • Халал өнімдер</span>
-                  </span>
-                  <span className="flex items-center gap-2">
-                    <Truck className="w-4 h-4 text-[#C5A059]" />
-                    <span>Атырау бойынша бүгін жеткізу</span>
-                  </span>
-                  <span className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-[#C5A059]" />
-                    <span>ТД «Дина Байзар», Бутик №24</span>
-                  </span>
-                </div>
-              </div>
-            ))}
+              <a
+                href={`tel:+${config.whatsappNumber}`}
+                className="py-4 px-6 rounded-2xl bg-[#222222] hover:bg-[#2C2C2C] text-white border border-[#3C3C3C] font-bold text-sm sm:text-base flex items-center justify-center gap-2.5"
+              >
+                <Phone className="w-5 h-5 text-[#C5A059]" />
+                <span>+7 (778) 175-42-41</span>
+              </a>
+            </div>
           </div>
 
-          {/* Slider Nav Arrows */}
-          <button
-            type="button"
-            onClick={goToPrev}
-            aria-label="Предыдущий слайд"
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 hover:bg-black text-white/80 hover:text-white border border-white/20 flex items-center justify-center transition-all cursor-pointer opacity-80 sm:opacity-0 group-hover:opacity-100 z-20"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <button
-            type="button"
-            onClick={goToNext}
-            aria-label="Следующий слайд"
-            className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 hover:bg-black text-white/80 hover:text-white border border-white/20 flex items-center justify-center transition-all cursor-pointer opacity-80 sm:opacity-0 group-hover:opacity-100 z-20"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
+          {/* 3 Large High-Contrast Benefit Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t-2 border-[#242424] relative z-10">
+            <div className="p-4 sm:p-5 rounded-2xl bg-[#1B1B1B] border border-[#2E2E2E] flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-[#252525] border border-[#3A3A3A] flex items-center justify-center text-[#C5A059] shrink-0">
+                <ShieldCheck className="w-6 h-6 stroke-[2]" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="font-black text-white text-base sm:text-lg">
+                  {isKz ? '100% Түпнұсқа сапа' : '100% Оригинал'}
+                </h3>
+                <p className="text-xs sm:text-sm text-[#A3A3A3] leading-normal">
+                  {isKz ? 'АҚШ және БӘӘ-ден тікелей жеткізілім' : 'Прямые поставки из США и ОАЭ'}
+                </p>
+              </div>
+            </div>
 
-          {/* Dots Indicator */}
-          <div className="absolute bottom-3 right-6 z-20 flex items-center gap-1.5">
-            {HERO_SLIDES.map((_, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => setCurrentSlide(idx)}
-                className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                  currentSlide === idx ? 'w-6 bg-[#C5A059]' : 'w-2 bg-[#404040]'
-                }`}
-                aria-label={`Слайд ${idx + 1}`}
-              />
-            ))}
+            <div className="p-4 sm:p-5 rounded-2xl bg-[#1B1B1B] border border-[#2E2E2E] flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-[#252525] border border-[#3A3A3A] flex items-center justify-center text-[#C5A059] shrink-0">
+                <Clock className="w-6 h-6 stroke-[2]" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="font-black text-white text-base sm:text-lg">
+                  {isKz ? 'Күн сайын 10:00–19:00' : 'Бутик №24 в Атырау'}
+                </h3>
+                <p className="text-xs sm:text-sm text-[#A3A3A3] leading-normal">
+                  {isKz ? 'ТД «Дина Байзар», демалыссыз' : 'ТД «Дина Байзар», работаем без выходных'}
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 sm:p-5 rounded-2xl bg-[#1B1B1B] border border-[#2E2E2E] flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-[#252525] border border-[#3A3A3A] flex items-center justify-center text-[#C5A059] shrink-0">
+                <Truck className="w-6 h-6 stroke-[2]" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="font-black text-white text-base sm:text-lg">
+                  {isKz ? 'Жылдам жеткізу' : 'Быстрая доставка'}
+                </h3>
+                <p className="text-xs sm:text-sm text-[#A3A3A3] leading-normal">
+                  {isKz ? 'Атырау мен бүкіл ҚР бойынша' : 'Курьер по Атырау и почта по всему Казахстану'}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
