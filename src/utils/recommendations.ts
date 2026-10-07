@@ -309,42 +309,271 @@ export const SYMPTOM_GOALS: SymptomGoal[] = [
 ];
 
 /**
- * Checks if a product matches a specific symptom/health goal.
+ * Checks if a product matches a specific symptom/health goal with high commercial precision.
  */
 export function doesProductMatchSymptom(product: Product, symptomId: string): boolean {
   if (!symptomId || symptomId === 'all') return true;
-  const goal = SYMPTOM_GOALS.find((g) => g.id === symptomId);
-  if (!goal) return true;
 
-  // Build searchable text corpus for the product
-  const searchable = [
-    product.titleRu || '',
-    product.titleKz || '',
-    product.descriptionRu || '',
-    product.descriptionKz || '',
-    product.specsRu || '',
-    product.specsKz || '',
-    ...(product.benefitsRu || []),
-    ...(product.benefitsKz || []),
-  ]
-    .join(' ')
-    .toLowerCase();
+  const titleRu = (product.titleRu || '').toLowerCase();
+  const titleKz = (product.titleKz || '').toLowerCase();
+  const t = `${titleRu} ${titleKz}`;
+  const cid = product.categoryId || '';
+  const desc = `${product.descriptionRu || ''} ${product.descriptionKz || ''}`.toLowerCase();
 
-  // Check keyword match first (high precision)
-  const hasKeywordMatch = goal.keywords.some((kw) => searchable.includes(kw.toLowerCase()));
-  if (hasKeywordMatch) return true;
+  switch (symptomId) {
+    case 'kids': {
+      // Детям: иммунитет и рост
+      const isKidCat = cid === 'cat-kids';
+      const isKidTitle = [
+        'для детей',
+        'детск',
+        'детям',
+        'kids',
+        'child',
+        'childlife',
+        'узмакс',
+        'uzmax',
+        'для роста',
+        'балалар',
+        'балаға',
+        'сбор для детей',
+      ].some((k) => t.includes(k));
+      const isKidDesc =
+        ['детск', 'для детей', 'балаларға'].some((k) => desc.includes(k)) &&
+        !['для мужчин', 'для женщин', 'возбудитель', 'похудени', 'мастопати'].some((k) => t.includes(k));
 
-  // For specific dedicated categories (men, women, beauty, diet), also match by categoryId
-  if (
-    (symptomId === 'men' && product.categoryId === 'cat-men') ||
-    (symptomId === 'women' && product.categoryId === 'cat-women') ||
-    (symptomId === 'beauty' && product.categoryId === 'cat-beauty') ||
-    (symptomId === 'digestion' && product.categoryId === 'cat-diet')
-  ) {
-    return true;
+      if (!isKidCat && !isKidTitle && !isKidDesc) return false;
+      return !['для мужчин', 'для женщин', 'возбудитель', 'похудени', 'виагра', 'тибетский олень', 'сигареты'].some(
+        (k) => t.includes(k)
+      );
+    }
+
+    case 'men': {
+      // Мужская сила и тонус
+      const isMenCat = cid === 'cat-men';
+      const isMenTitle = [
+        'для мужчин',
+        'мужск',
+        'тибетский олень',
+        'черный муравей',
+        'король черных',
+        'снайпер',
+        'виагра',
+        'sealex',
+        'сеалекс',
+        'epimedium',
+        'эпимедиум',
+        'tribulus',
+        'трибулус',
+        'кучала',
+        'простат',
+        'потенци',
+        'муравей',
+        'vita men',
+        'black ant',
+        'eridex',
+        'со пальметто',
+        'saw palmetto',
+        'ерлерге',
+        'ерлер',
+      ].some((k) => t.includes(k));
+
+      if (!isMenCat && !isMenTitle) return false;
+      return !['зубная', 'для женщин', 'бусинки', 'мастопати', 'от кашля', 'сеннол', 'пажитник', 'тмина первого', 'влагалищ'].some(
+        (k) => t.includes(k)
+      );
+    }
+
+    case 'women': {
+      // Женское здоровье
+      const isWomenCat = cid === 'cat-women';
+      const isWomenTitle = [
+        'для женщин',
+        'женск',
+        'мастопати',
+        'бусинки',
+        'влагалищ',
+        'вагинальн',
+        'фолиев',
+        'инозитол',
+        'примул',
+        'женское здоровье',
+        'әйелдер',
+        'clinright',
+        'пажитник',
+        'хельб',
+        'чка доянь',
+        'розовая женщина',
+        'бальзама',
+        'mahrem',
+      ].some((k) => t.includes(k));
+
+      if (!isWomenCat && !isWomenTitle) return false;
+      return !['для мужчин', 'тибетский олень', 'возбудитель', 'муравей', 'снайпер', 'sealex', 'кучала', 'тмина первого', 'виагра'].some(
+        (k) => t.includes(k)
+      );
+    }
+
+    case 'joints': {
+      // Суставы, кости и спина
+      const isJointTitle = [
+        'сустав',
+        'буын',
+        'артро',
+        'artro',
+        'грыж',
+        'остеохондроз',
+        'для мышц',
+        'обезболивающий пластырь',
+        'согревающая мазь',
+        'montalin',
+        'глюкозамин',
+        'хондроитин',
+        'мсм',
+        'кальций',
+        'коллаген',
+        'collagen',
+        'disaar',
+        'сбор 13 трав при остеохондрозе',
+      ].some((k) => t.includes(k));
+
+      const isJointDesc =
+        ['для суставов', 'боли в суставах', 'хрящевой', 'буын саулығы'].some((k) => desc.includes(k)) &&
+        !['псориаз', 'экзем', 'акне', 'жиросжигатель', 'похуден', 'зубная'].some((k) => t.includes(k));
+
+      if (!isJointTitle && !isJointDesc) return false;
+      return !['псориаз', 'экзем', 'акне', 'жиросжигатель', 'похуден', 'зубная', 'тибетский олень'].some(
+        (k) => t.includes(k)
+      );
+    }
+
+    case 'beauty': {
+      // Волосы, кожа и ногти
+      const isBeautyCat = cid === 'cat-beauty' || cid === 'cat-collagen';
+      const isBeautyTitle = [
+        'для кожи',
+        'для волос',
+        'биотин',
+        'коллаген',
+        'collagen',
+        'акне',
+        'clinsol',
+        'шампунь',
+        'мыло',
+        'сыворотка',
+        'морщин',
+        'выпадени',
+        'красот',
+        'сұлулық',
+        'trioxidil',
+        'youtheory',
+        'кожи, волос',
+      ].some((k) => t.includes(k));
+
+      if (!isBeautyCat && !isBeautyTitle) return false;
+      return !['тибетский олень', 'снайпер', 'виагра', 'для суставов', 'обезболивающий'].some(
+        (k) => t.includes(k)
+      );
+    }
+
+    case 'digestion': {
+      // ЖКТ, печень и стройность
+      const isDietCat = cid === 'cat-diet';
+      const isDigestionTitle = [
+        'сеннол',
+        'паразит',
+        'желудок',
+        'жкт',
+        'кишечник',
+        'печен',
+        'детокс',
+        'detox',
+        'похуден',
+        'жиросжигатель',
+        'хлорофилл',
+        'спирулин',
+        'расторопш',
+        'очищени',
+        'lipo rush',
+        'samyun wan',
+        'паста для очищения',
+        'aqwavital',
+        'аңқа',
+        'ішек',
+        'арықтау',
+      ].some((k) => t.includes(k));
+
+      if (!isDietCat && !isDigestionTitle) return false;
+      return !['зубная', 'тибетский олень', 'снайпер', 'виагра'].some((k) => t.includes(k));
+    }
+
+    case 'immunity': {
+      // Иммунитет и простуда
+      const isTminCat = cid === 'cat-mufuo6b3';
+      const isImmunityTitle = [
+        'тмин',
+        'қара зере',
+        'кыст',
+        'қыст',
+        'кашл',
+        'простуд',
+        'лиминин',
+        'витамин c',
+        'витамин с',
+        'vitamin c',
+        'd3',
+        'д3',
+        'цинк',
+        'zinc',
+        'прополис',
+        'иммунитет',
+        'бронх',
+        'горл',
+        'бузин',
+        'эхинаце',
+        'nilrich',
+        'паста с локвой',
+        'суық тию',
+      ].some((k) => t.includes(k));
+
+      if (!isTminCat && !isImmunityTitle) return false;
+      return !['тибетский олень', 'снайпер', 'диабет', 'давлен', 'похуден', 'зубная', 'для мужчин', 'сеалекс'].some(
+        (k) => t.includes(k)
+      );
+    }
+
+    case 'energy': {
+      // Усталость, стресс и сон
+      const isEnergyTitle = [
+        'магний',
+        'magnesium',
+        'b-complex',
+        'b6',
+        'b12',
+        'мозг',
+        'памят',
+        'гинкго',
+        'стресс',
+        'сон',
+        'мелатонин',
+        'ашваганд',
+        'big energy',
+        '5-htp',
+        'глицин',
+        'теанин',
+        'нервн',
+        'ұйқы',
+      ].some((k) => t.includes(k));
+
+      if (!isEnergyTitle) return false;
+      return !['жиросжигатель', 'варикоз', 'похуден', 'псориаз', 'тибетский олень'].some(
+        (k) => t.includes(k)
+      );
+    }
+
+    default:
+      return true;
   }
-
-  return false;
 }
 
 /**

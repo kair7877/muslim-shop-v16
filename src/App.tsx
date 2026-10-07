@@ -1144,23 +1144,23 @@ export default function App() {
     const hasQuery = Boolean(searchQuery.trim());
     return products
       .filter((p) => {
-        // Category filter
+        // 1. When user enters a search query, search globally across all products
+        if (hasQuery) {
+          return scoreProductSearchMatch(p, searchQuery, categoriesMap) > 0;
+        }
+
+        // 2. Symptom / Health Direction filter
+        if (selectedSymptom !== 'all' && !doesProductMatchSymptom(p, selectedSymptom)) {
+          return false;
+        }
+
+        // 3. Category filter
         if (selectedCategoryId === 'cat-hits') {
           if (!p.isHit) return false;
         } else if (selectedCategoryId === 'cat-new') {
           if (!p.isNew) return false;
         } else if (selectedCategoryId !== 'cat-all' && p.categoryId !== selectedCategoryId) {
           return false;
-        }
-
-        // Symptom / Health Goal filter
-        if (selectedSymptom !== 'all' && !doesProductMatchSymptom(p, selectedSymptom)) {
-          return false;
-        }
-
-        // Smart Search query filter (matches titles, categories, benefits, specs, SKU & synonyms)
-        if (hasQuery) {
-          return scoreProductSearchMatch(p, searchQuery, categoriesMap) > 0;
         }
 
         return true;
@@ -1204,10 +1204,19 @@ export default function App() {
     });
   }, []);
 
+  const handleSearchChange = useCallback((query: string) => {
+    setSearchQuery(query);
+    if (query.trim()) {
+      setSelectedSymptom('all');
+      setSelectedCategoryId('cat-all');
+    }
+  }, []);
+
   const handleSelectCategoryAndScroll = useCallback(
     (catId: string) => {
       setSelectedCategoryId(catId);
       setSelectedSymptom('all');
+      setSearchQuery('');
       scrollToCatalog();
     },
     [scrollToCatalog]
@@ -1216,9 +1225,8 @@ export default function App() {
   const handleSelectSymptomAndScroll = useCallback(
     (symId: string) => {
       setSelectedSymptom(symId);
-      if (symId !== 'all') {
-        setSelectedCategoryId('cat-all');
-      }
+      setSelectedCategoryId('cat-all');
+      setSearchQuery('');
       scrollToCatalog();
     },
     [scrollToCatalog]
@@ -1274,7 +1282,7 @@ export default function App() {
         accessibility={accessibility}
         onAccessibilityChange={setAccessibility}
         searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchChange={handleSearchChange}
         products={products}
         categories={categories}
         productCounts={productCounts}
@@ -1387,7 +1395,11 @@ export default function App() {
           <div>
             <h2 className="font-sans font-black text-xl sm:text-3xl text-slate-900 flex items-center gap-2.5 flex-wrap tracking-tight leading-tight">
               <span>
-                {selectedSymptom !== 'all' && SYMPTOM_GOALS.find((g) => g.id === selectedSymptom)
+                {searchQuery.trim() !== ''
+                  ? lang === 'kz'
+                    ? `«${searchQuery}» бойынша іздеу`
+                    : `Поиск: «${searchQuery}»`
+                  : selectedSymptom !== 'all' && SYMPTOM_GOALS.find((g) => g.id === selectedSymptom)
                   ? lang === 'kz'
                     ? SYMPTOM_GOALS.find((g) => g.id === selectedSymptom)?.titleKz
                     : SYMPTOM_GOALS.find((g) => g.id === selectedSymptom)?.titleRu
@@ -1404,7 +1416,11 @@ export default function App() {
               </span>
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 mt-0.5 leading-relaxed">
-              {lang === 'kz'
+              {searchQuery.trim() !== ''
+                ? lang === 'kz'
+                  ? `Барлық каталог бойынша сәйкес келетін өнімдер (${filteredProducts.length})`
+                  : `Найденные товары по всему каталогу (${filteredProducts.length})`
+                : lang === 'kz'
                 ? 'Атыраудағы Бутик №24 сөрелеріндегі түпнұсқа өнімдер'
                 : 'Оригинальные сертифицированные товары в наличии в Бутике №24'}
             </p>
@@ -1862,7 +1878,7 @@ export default function App() {
         onAddToCart={handleAddToCart}
         productCounts={productCounts}
         searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchChange={handleSearchChange}
         config={config}
         lang={lang}
       />
@@ -1874,6 +1890,8 @@ export default function App() {
             ? 'favorites'
             : isCartOpen
             ? 'cart'
+            : searchQuery.trim() !== ''
+            ? 'search'
             : bottomDrawerMode === 'catalog' || selectedCategoryId !== 'cat-all'
             ? 'catalog'
             : 'home') as BottomNavTab
