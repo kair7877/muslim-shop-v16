@@ -1,62 +1,55 @@
 import React from 'react';
 import {
   Home,
-  Layers,
+  LayoutGrid,
   ShoppingBag,
-  Heart,
-  MessageCircle,
+  Search,
+  Shield,
 } from 'lucide-react';
 import { AccessibilitySettings, Language } from '../types';
 
-export type BottomNavTab = 'home' | 'catalog' | 'cart' | 'favorites' | 'contact';
+export type BottomNavTab = 'home' | 'catalog' | 'search' | 'cart' | 'admin';
 
 interface BottomNavProps {
-  activeTab: BottomNavTab;
+  activeTab?: string;
   lang: Language;
-  accessibility: AccessibilitySettings;
+  accessibility?: AccessibilitySettings;
   cartCount: number;
-  favoritesCount: number;
   onSelectHome: () => void;
   onOpenCatalog: () => void;
+  onOpenSearch: () => void;
   onOpenCart: () => void;
-  onOpenFavorites: () => void;
-  onOpenContact: () => void;
+  onOpenAdmin: () => void;
 }
 
 export const BottomNav: React.FC<BottomNavProps> = ({
-  activeTab,
   lang,
   cartCount,
-  favoritesCount,
   onSelectHome,
   onOpenCatalog,
+  onOpenSearch,
   onOpenCart,
-  onOpenFavorites,
-  onOpenContact,
+  onOpenAdmin,
 }) => {
   const isKz = lang === 'kz';
 
   return (
     <nav
       id="bottom-navigation-bar"
-      aria-label={isKz ? 'Төменгі навигация мәзірі' : 'Нижняя панель навигации'}
-      className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[#121212]/95 backdrop-blur-md border-t border-[#262626] text-[#A3A3A3] select-none pb-[env(safe-area-inset-bottom)] shadow-2xl"
+      aria-label={isKz ? 'Төменгі навигация' : 'Нижняя навигация'}
+      className="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 text-slate-600 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] md:hidden"
     >
-      <div className="max-w-md mx-auto px-1">
+      <div className="max-w-md mx-auto px-2">
         <div className="grid grid-cols-5 items-center h-16">
           {/* 1. Главная */}
           <button
             id="bottom-nav-home"
             type="button"
             onClick={onSelectHome}
-            className={`flex flex-col items-center justify-center gap-1 w-full h-full cursor-pointer transition-colors ${
-              activeTab === 'home'
-                ? 'text-[#C5A059] font-bold'
-                : 'text-[#8E8E8E] hover:text-white'
-            }`}
+            className="flex flex-col items-center justify-center h-full min-h-[48px] px-1 text-slate-700 hover:text-slate-900 transition-colors cursor-pointer"
           >
-            <Home className="w-5 h-5" />
-            <span className="text-[11px] font-medium leading-none">
+            <Home className="w-5 h-5 text-slate-800" />
+            <span className="text-[11px] font-bold mt-1 tracking-tight truncate max-w-full">
               {isKz ? 'Басты' : 'Главная'}
             </span>
           </button>
@@ -66,43 +59,24 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             id="bottom-nav-catalog"
             type="button"
             onClick={onOpenCatalog}
-            className={`flex flex-col items-center justify-center gap-1 w-full h-full cursor-pointer transition-colors ${
-              activeTab === 'catalog'
-                ? 'text-[#C5A059] font-bold'
-                : 'text-[#8E8E8E] hover:text-white'
-            }`}
+            className="flex flex-col items-center justify-center h-full min-h-[48px] px-1 text-slate-700 hover:text-slate-900 transition-colors cursor-pointer"
           >
-            <Layers className="w-5 h-5" />
-            <span className="text-[11px] font-medium leading-none">
+            <LayoutGrid className="w-5 h-5 text-slate-800" />
+            <span className="text-[11px] font-bold mt-1 tracking-tight truncate max-w-full">
               {isKz ? 'Каталог' : 'Каталог'}
             </span>
           </button>
 
-          {/* 3. Избранное */}
+          {/* 3. Поиск */}
           <button
-            id="bottom-nav-favorites"
+            id="bottom-nav-search"
             type="button"
-            onClick={onOpenFavorites}
-            className={`relative flex flex-col items-center justify-center gap-1 w-full h-full cursor-pointer transition-colors ${
-              activeTab === 'favorites'
-                ? 'text-[#C5A059] font-bold'
-                : 'text-[#8E8E8E] hover:text-white'
-            }`}
+            onClick={onOpenSearch}
+            className="flex flex-col items-center justify-center h-full min-h-[48px] px-1 text-slate-700 hover:text-slate-900 transition-colors cursor-pointer"
           >
-            <div className="relative">
-              <Heart
-                className={`w-5 h-5 ${
-                  favoritesCount > 0 ? 'fill-[#C5A059] text-[#C5A059]' : ''
-                }`}
-              />
-              {favoritesCount > 0 && (
-                <span className="absolute -top-1 -right-2 min-w-[16px] h-[16px] px-1 rounded-full bg-[#C5A059] text-black text-[10px] font-black flex items-center justify-center">
-                  {favoritesCount}
-                </span>
-              )}
-            </div>
-            <span className="text-[11px] font-medium leading-none">
-              {isKz ? 'Таңдаулы' : 'Избранное'}
+            <Search className="w-5 h-5 text-slate-800" />
+            <span className="text-[11px] font-bold mt-1 tracking-tight truncate max-w-full">
+              {isKz ? 'Іздеу' : 'Поиск'}
             </span>
           </button>
 
@@ -111,39 +85,31 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             id="bottom-nav-cart"
             type="button"
             onClick={onOpenCart}
-            className={`relative flex flex-col items-center justify-center gap-1 w-full h-full cursor-pointer transition-colors ${
-              activeTab === 'cart'
-                ? 'text-[#C5A059] font-bold'
-                : 'text-[#8E8E8E] hover:text-white'
-            }`}
+            className="relative flex flex-col items-center justify-center h-full min-h-[48px] px-1 text-slate-700 hover:text-slate-900 transition-colors cursor-pointer"
           >
             <div className="relative">
-              <ShoppingBag className="w-5 h-5" />
+              <ShoppingBag className="w-5 h-5 text-slate-800" />
               {cartCount > 0 && (
-                <span className="absolute -top-1.5 -right-2.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#C5A059] text-black text-[10px] font-black flex items-center justify-center shadow-md">
-                  {cartCount}
+                <span className="absolute -top-1.5 -right-2.5 w-4.5 h-4.5 rounded-full bg-rose-600 text-white font-mono font-extrabold text-[10px] flex items-center justify-center shadow-xs">
+                  {cartCount > 99 ? '99+' : cartCount}
                 </span>
               )}
             </div>
-            <span className="text-[11px] font-medium leading-none">
+            <span className="text-[11px] font-bold mt-1 tracking-tight truncate max-w-full">
               {isKz ? 'Себет' : 'Корзина'}
             </span>
           </button>
 
-          {/* 5. Бутик 24 / WhatsApp */}
+          {/* 5. Админ */}
           <button
-            id="bottom-nav-contact"
+            id="bottom-nav-admin"
             type="button"
-            onClick={onOpenContact}
-            className={`flex flex-col items-center justify-center gap-1 w-full h-full cursor-pointer transition-colors ${
-              activeTab === 'contact'
-                ? 'text-[#C5A059] font-bold'
-                : 'text-[#8E8E8E] hover:text-white'
-            }`}
+            onClick={onOpenAdmin}
+            className="flex flex-col items-center justify-center h-full min-h-[48px] px-1 text-amber-950 font-bold transition-colors cursor-pointer bg-amber-50/80 rounded-xl my-1"
           >
-            <MessageCircle className="w-5 h-5 text-emerald-400" />
-            <span className="text-[11px] font-medium leading-none">
-              {isKz ? 'Бутик №24' : 'Бутик №24'}
+            <Shield className="w-5 h-5 text-[#C5A059]" />
+            <span className="text-[11px] font-black text-amber-950 mt-1 tracking-tight truncate max-w-full">
+              {isKz ? 'Админ' : 'Админ'}
             </span>
           </button>
         </div>

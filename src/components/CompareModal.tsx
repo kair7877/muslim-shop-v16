@@ -60,15 +60,15 @@ export const CompareBar: React.FC<CompareBarProps> = ({
             ? `Салыстыру терезесін ашу (${compareList.length}/3)`
             : `Открыть сравнение товаров (${compareList.length} из 3)`
         }
-        className="relative w-13 h-13 sm:w-auto sm:h-12 sm:px-4 rounded-full bg-[#0A78D6] hover:bg-[#0866b8] text-white border-2 border-white shadow-[0_10px_28px_rgba(10,120,214,0.35)] flex items-center justify-center gap-2 transition-transform active:scale-95 cursor-pointer"
+        className="relative w-13 h-13 sm:w-auto sm:h-12 sm:px-4 rounded-full bg-emerald-950 hover:bg-emerald-900 text-white border-2 border-amber-400 shadow-[0_10px_28px_rgba(0,0,0,0.45)] flex items-center justify-center gap-2 transition-transform active:scale-95 cursor-pointer"
       >
-        <ArrowLeftRight className="w-5 h-5 text-white shrink-0" />
-        <span className="hidden sm:inline text-xs font-bold tracking-tight whitespace-nowrap">
+        <ArrowLeftRight className="w-5 h-5 text-amber-300 shrink-0" />
+        <span className="hidden sm:inline text-xs font-extrabold tracking-tight whitespace-nowrap">
           {isKz ? 'Салыстыру' : 'Сравнение'}
         </span>
 
         {/* Floating Counter Circle Badge */}
-        <span className="absolute -top-1.5 -right-1.5 min-w-6 h-6 px-1.5 rounded-full bg-[#FFBD00] text-slate-950 font-bold text-xs tabular-nums flex items-center justify-center border-2 border-white shadow-xs">
+        <span className="absolute -top-1.5 -right-1.5 min-w-6 h-6 px-1.5 rounded-full bg-amber-400 text-stone-950 font-mono font-extrabold text-xs tabular-nums flex items-center justify-center border-2 border-emerald-950 shadow-xs">
           {compareList.length}
         </span>
       </button>
@@ -78,7 +78,7 @@ export const CompareBar: React.FC<CompareBarProps> = ({
         type="button"
         onClick={onClearCompare}
         title={isKz ? 'Салыстыруды тазалау' : 'Очистить список сравнения'}
-        className="hidden sm:flex w-8 h-8 rounded-full bg-slate-100 hover:bg-rose-500 text-slate-600 hover:text-white border border-slate-200 items-center justify-center shadow-md transition-colors cursor-pointer"
+        className="hidden sm:flex w-8 h-8 rounded-full bg-stone-900/90 hover:bg-rose-600 text-stone-300 hover:text-white border border-stone-700 items-center justify-center shadow-md transition-colors cursor-pointer"
       >
         <X className="w-3.5 h-3.5" />
       </button>
@@ -193,7 +193,7 @@ export const CompareModal: React.FC<CompareModalProps> = ({
 
   // Sticky left column classes so characteristic labels remain pinned during horizontal scroll
   const stickyLeftHeaderClass =
-    'sticky left-0 z-20 w-[116px] min-w-[116px] max-w-[116px] sm:w-[175px] sm:min-w-[175px] sm:max-w-[175px] bg-slate-50 border-r border-slate-200 p-3 sm:p-4 text-xs sm:text-sm font-bold text-slate-800 align-top shadow-[2px_0_6px_rgba(0,0,0,0.06)]';
+    'sticky left-0 z-20 w-[116px] min-w-[116px] max-w-[116px] sm:w-[175px] sm:min-w-[175px] sm:max-w-[175px] bg-slate-100 border-r border-slate-300 p-3 sm:p-4 text-xs sm:text-sm font-bold text-slate-800 align-top shadow-[4px_0_12px_rgba(0,0,0,0.08)]';
 
   const productColClass =
     'w-[186px] min-w-[186px] max-w-[186px] sm:w-[250px] sm:min-w-[250px] sm:max-w-[250px] p-3 sm:p-4 align-top border-r border-slate-200 last:border-r-0 bg-white';
@@ -204,7 +204,7 @@ export const CompareModal: React.FC<CompareModalProps> = ({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-      className="CompareModal fixed inset-0 z-[120] bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-hidden"
+      className="CompareModal fixed inset-0 z-[120] bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-hidden"
       onClick={onClose}
     >
       <motion.div
@@ -213,25 +213,25 @@ export const CompareModal: React.FC<CompareModalProps> = ({
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-full max-h-[92vh] sm:max-h-[90vh] sm:max-w-4xl rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col bg-white text-slate-900 border border-slate-200"
+        className="w-full max-w-full max-h-[92vh] sm:max-h-[90vh] sm:max-w-4xl rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col bg-white text-slate-800 border border-slate-200"
       >
         {/* Top Modal Header */}
-        <div className="bg-white text-slate-900 px-3.5 sm:px-6 py-3.5 flex items-center justify-between gap-2 border-b border-slate-200 shrink-0">
+        <div className="bg-[#9dd0ff] text-slate-900 px-3.5 sm:px-6 py-3 flex items-center justify-between gap-2 border-b border-[#83bfea] shrink-0">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <button
               type="button"
               onClick={onClose}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm transition-colors cursor-pointer shrink-0"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs sm:text-sm transition-colors cursor-pointer shrink-0 shadow-xs"
               title={isKz ? 'Артқа оралу' : 'Назад в каталог'}
             >
-              <ArrowLeft className="w-4 h-4 text-slate-600 shrink-0" />
+              <ArrowLeft className="w-4 h-4 text-[#0567BA] shrink-0" />
               <span>{isKz ? 'Артқа' : 'Назад'}</span>
             </button>
             <div className="min-w-0">
               <h2 className="font-sans font-bold text-base sm:text-xl text-slate-900 truncate">
                 {isKz ? 'Тауарларды салыстыру' : 'Сравнение товаров'}
               </h2>
-              <p className="text-xs text-slate-500 truncate mt-0.5 hidden sm:block">
+              <p className="text-xs text-slate-600 truncate mt-0.5 hidden sm:block">
                 {isKz
                   ? 'Сипаттамалар сол жақта бекітілген • Оңға сырғытыңыз →'
                   : 'Заголовки слева закреплены • Листайте таблицу вбок →'}
@@ -246,20 +246,21 @@ export const CompareModal: React.FC<CompareModalProps> = ({
                 onClearAll();
                 onClose();
               }}
-              className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
+              className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-rose-950/90 hover:bg-rose-600 text-rose-200 hover:text-white border border-rose-500/40 text-xs sm:text-sm font-extrabold flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
               title={isKz ? 'Тізімді тазалау' : 'Очистить сравнение'}
             >
-              <Trash2 className="w-4 h-4 text-rose-600 shrink-0" />
+              <Trash2 className="w-4 h-4 text-rose-300 shrink-0" />
               <span>{isKz ? 'Тазалау' : 'Очистить'}</span>
             </button>
 
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs sm:text-sm transition-colors cursor-pointer"
+              className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl bg-[#0B261C] hover:bg-rose-700 text-white border border-amber-500/30 font-extrabold text-xs sm:text-sm transition-colors cursor-pointer"
               title={isKz ? 'Жабу' : 'Закрыть'}
             >
-              <X className="w-4 h-4" />
+              <X className="w-4 h-4 text-amber-300" />
+              <span>{isKz ? 'Жабу' : 'Закрыть'}</span>
             </button>
           </div>
         </div>
@@ -267,9 +268,9 @@ export const CompareModal: React.FC<CompareModalProps> = ({
         {/* Modal Body */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden p-3.5 sm:p-5 space-y-3.5">
           {/* Selected Items Flex-Wrap Summary & Quick Add Bar */}
-          <div className="p-3 sm:p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3 shadow-xs">
+          <div className="p-3 sm:p-4 rounded-2xl bg-[#091E17] border border-amber-500/25 space-y-3 shadow-md">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-xs sm:text-sm font-bold text-slate-800">
+              <span className="text-xs sm:text-sm font-bold text-amber-300">
                 {isKz
                   ? `Таңдалған тауарлар (${products.length}/3):`
                   : `Выбрано для сравнения (${products.length} из 3):`}
@@ -278,7 +279,7 @@ export const CompareModal: React.FC<CompareModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="text-xs sm:text-sm font-bold text-[#0A78D6] hover:underline cursor-pointer"
+                className="text-xs sm:text-sm font-bold text-emerald-300 hover:text-amber-300 underline cursor-pointer"
               >
                 {isKz ? '+ Каталогтан тағы таңдау' : '+ Выбрать ещё в каталоге'}
               </button>
@@ -292,10 +293,10 @@ export const CompareModal: React.FC<CompareModalProps> = ({
                 return (
                   <div
                     key={prod.id}
-                    className={`inline-flex items-center gap-2 pl-2 pr-2.5 py-1.5 rounded-lg text-xs font-semibold border max-w-full ${
+                    className={`inline-flex items-center gap-2 pl-2 pr-2.5 py-1.5 rounded-xl text-xs font-semibold border max-w-full ${
                       isAuto
-                        ? 'bg-amber-50 text-amber-800 border-amber-300'
-                        : 'bg-white text-slate-800 border-slate-200 shadow-xs'
+                        ? 'bg-amber-400/15 text-amber-200 border-amber-400/40'
+                        : 'bg-[#0D2B20] text-stone-100 border-amber-500/25'
                     }`}
                   >
                     <img
@@ -311,10 +312,10 @@ export const CompareModal: React.FC<CompareModalProps> = ({
                       <button
                         type="button"
                         onClick={() => onRemoveProduct(prod.id)}
-                        className="ml-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[11px] cursor-pointer shrink-0 transition-colors"
+                        className="ml-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-rose-950/90 hover:bg-rose-600 text-rose-200 hover:text-white border border-rose-500/40 font-bold text-[11px] cursor-pointer shrink-0 transition-colors"
                         title={isKz ? 'Өшіру' : 'Удалить'}
                       >
-                        <Trash2 className="w-3 h-3 text-rose-500" />
+                        <Trash2 className="w-3 h-3 text-rose-300" />
                         <span>{isKz ? 'Өшіру' : 'Удалить'}</span>
                       </button>
                     )}
@@ -325,8 +326,8 @@ export const CompareModal: React.FC<CompareModalProps> = ({
 
             {/* Horizontal quick-add strip if < 3 products selected */}
             {products.length < 3 && candidatePool.length > 0 && onAddProductToCompare && (
-              <div className="pt-2.5 border-t border-slate-200 space-y-2">
-                <div className="text-xs font-semibold text-slate-600">
+              <div className="pt-2.5 border-t border-amber-500/15 space-y-2">
+                <div className="text-xs font-semibold text-emerald-200/80">
                   {isKz
                     ? 'Осы санаттағы ұқсас тауарды салыстыруға қосу:'
                     : 'Быстро добавить к сравнению похожий товар:'}
@@ -340,21 +341,21 @@ export const CompareModal: React.FC<CompareModalProps> = ({
                         key={cand.id}
                         type="button"
                         onClick={() => onAddProductToCompare(cand)}
-                        className="flex items-center gap-2 p-1.5 pr-3 rounded-lg bg-white hover:bg-blue-50 text-slate-800 border border-slate-200 hover:border-[#0A78D6] shrink-0 transition-colors cursor-pointer max-w-[210px] shadow-xs"
+                        className="flex items-center gap-2 p-1.5 pr-3 rounded-xl bg-[#0D2B20] hover:bg-[#133A2C] text-stone-100 hover:text-white border border-amber-500/25 hover:border-amber-400/60 shrink-0 transition-colors cursor-pointer max-w-[210px]"
                       >
                         <img
                           src={cand.images[0]}
                           alt={candTitle}
                           referrerPolicy="no-referrer"
-                          className="w-8 h-9 rounded-md object-cover bg-slate-100 shrink-0"
+                          className="w-8 h-9 rounded-lg object-cover bg-stone-900 shrink-0"
                         />
                         <div className="text-left min-w-0 flex-1">
-                          <div className="text-xs font-medium truncate">{candTitle}</div>
-                          <div className="text-xs font-bold text-slate-900">
+                          <div className="text-xs font-bold truncate">{candTitle}</div>
+                          <div className="text-xs font-mono font-bold text-amber-300">
                             {formatPrice(cand.price)}
                           </div>
                         </div>
-                        <Plus className="w-4 h-4 text-[#0A78D6] shrink-0" />
+                        <Plus className="w-4 h-4 text-amber-400 shrink-0" />
                       </button>
                     );
                   })}
@@ -372,11 +373,11 @@ export const CompareModal: React.FC<CompareModalProps> = ({
               <thead>
                 <tr className="border-b border-slate-200">
                   {/* Top-Left Sticky Corner Cell */}
-                  <th className="sticky left-0 z-30 w-[116px] min-w-[116px] max-w-[116px] sm:w-[175px] sm:min-w-[175px] sm:max-w-[175px] bg-slate-50 text-slate-900 p-3 sm:p-4 align-middle border-r border-slate-200 shadow-[2px_0_6px_rgba(0,0,0,0.06)]">
+                  <th className="sticky left-0 z-30 w-[116px] min-w-[116px] max-w-[116px] sm:w-[175px] sm:min-w-[175px] sm:max-w-[175px] bg-slate-100 text-slate-900 p-3 sm:p-4 align-middle border-r border-slate-300 shadow-[4px_0_12px_rgba(0,0,0,0.08)]">
                     <div className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-800">
                       {isKz ? 'Параметрлер' : 'Параметры'}
                     </div>
-                    <div className="text-[11px] text-slate-500 font-normal mt-1 leading-snug">
+                    <div className="text-[11px] text-emerald-200/80 font-normal mt-1 leading-snug">
                       {isKz
                         ? 'Тауарларды оңға-солға сырғытыңыз ↔'
                         : 'Листайте товары вправо-влево ↔'}
@@ -392,11 +393,11 @@ export const CompareModal: React.FC<CompareModalProps> = ({
                     return (
                       <th
                         key={prod.id}
-                        className={`${productColClass} bg-white font-normal`}
+                        className={`${productColClass} bg-[#091F17] font-normal`}
                       >
                         <div className="flex flex-col justify-between h-full space-y-2.5">
                           <div className="flex items-center justify-between gap-1">
-                            <span className="text-[11px] font-mono font-medium text-slate-500 truncate">
+                            <span className="text-[11px] font-mono font-bold text-emerald-200/75 truncate">
                               {isAutoSuggested
                                 ? isKz
                                   ? 'Ұқсас аналог'
@@ -408,10 +409,10 @@ export const CompareModal: React.FC<CompareModalProps> = ({
                               <button
                                 type="button"
                                 onClick={() => onRemoveProduct(prod.id)}
-                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[11px] transition-colors cursor-pointer shrink-0"
+                                className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-rose-950/90 hover:bg-rose-600 text-rose-200 hover:text-white border border-rose-500/40 font-bold text-[11px] transition-colors cursor-pointer shrink-0"
                                 title={isKz ? 'Салыстырудан өшіру' : 'Удалить из сравнения'}
                               >
-                                <Trash2 className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                                <Trash2 className="w-3.5 h-3.5 text-rose-300 shrink-0" />
                                 <span>{isKz ? 'Өшіру' : 'Удалить'}</span>
                               </button>
                             )}
@@ -428,10 +429,10 @@ export const CompareModal: React.FC<CompareModalProps> = ({
                               src={prod.images[0]}
                               alt={title}
                               referrerPolicy="no-referrer"
-                              className="w-14 h-18 sm:w-16 sm:h-20 rounded-lg object-cover bg-slate-50 border border-slate-200 shrink-0 group-hover:scale-105 transition-transform"
+                              className="w-14 h-18 sm:w-16 sm:h-20 rounded-xl object-cover bg-stone-900 border border-amber-500/25 shrink-0 group-hover:scale-105 transition-transform"
                             />
                             <div className="min-w-0 flex-1">
-                              <div className="font-semibold text-xs sm:text-sm text-slate-900 group-hover:text-[#0A78D6] line-clamp-3 leading-snug break-words">
+                              <div className="font-bold text-xs sm:text-sm text-white group-hover:text-amber-300 line-clamp-3 leading-snug break-words">
                                 {title}
                               </div>
                             </div>
@@ -442,13 +443,13 @@ export const CompareModal: React.FC<CompareModalProps> = ({
                               <button
                                 type="button"
                                 onClick={() => onAddToCart(prod)}
-                                className="flex-1 py-2 px-2.5 rounded-lg bg-[#0A78D6] hover:bg-[#0866b8] text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shadow-xs"
+                                className="flex-1 py-2 px-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-stone-950 font-extrabold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shadow-sm"
                               >
-                                <ShoppingBag className="w-3.5 h-3.5 text-white shrink-0" />
+                                <ShoppingBag className="w-3.5 h-3.5 text-stone-950 shrink-0" />
                                 <span>{isKz ? 'Себетке' : 'В корзину'}</span>
                               </button>
                             ) : (
-                              <span className="flex-1 py-2 px-2.5 rounded-lg bg-slate-100 text-slate-500 font-semibold text-xs flex items-center justify-center gap-1 whitespace-nowrap">
+                              <span className="flex-1 py-2 px-2.5 rounded-xl bg-rose-950/80 text-rose-200 border border-rose-500/30 font-bold text-xs flex items-center justify-center gap-1 whitespace-nowrap">
                                 <Clock className="w-3.5 h-3.5 shrink-0" />
                                 <span>{isKz ? 'Жақында' : 'Под заказ'}</span>
                               </span>
@@ -460,7 +461,7 @@ export const CompareModal: React.FC<CompareModalProps> = ({
                                 onClose();
                                 onOpenDetail(prod);
                               }}
-                              className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer shrink-0"
+                              className="p-2 rounded-xl bg-[#0D2B20] hover:bg-[#143B2D] text-amber-300 border border-amber-500/25 transition-colors cursor-pointer shrink-0"
                               title={isKz ? 'Толық ашу' : 'Открыть карточку'}
                             >
                               <Eye className="w-4 h-4" />
@@ -473,7 +474,7 @@ export const CompareModal: React.FC<CompareModalProps> = ({
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-slate-200 text-xs sm:text-sm">
+              <tbody className="divide-y divide-amber-500/15 text-xs sm:text-sm">
                 {/* ROW 1: PRICE */}
                 <tr>
                   <th className={stickyLeftHeaderClass}>
@@ -483,16 +484,16 @@ export const CompareModal: React.FC<CompareModalProps> = ({
                     const isBestPrice = lowestPrice !== null && prod.price === lowestPrice;
                     return (
                       <td key={prod.id} className={productColClass}>
-                        <div className="font-bold text-base sm:text-lg text-slate-900 tabular-nums">
+                        <div className="font-mono font-extrabold text-base sm:text-lg text-amber-300 tabular-nums">
                           {formatPrice(prod.price)}
                         </div>
                         {prod.oldPrice && prod.oldPrice > prod.price && (
-                          <div className="text-xs text-slate-400 line-through tabular-nums">
+                          <div className="text-xs text-stone-400 line-through font-mono tabular-nums">
                             {formatPrice(prod.oldPrice)}
                           </div>
                         )}
                         {isBestPrice && (
-                          <div className="mt-1 inline-block text-xs font-bold text-emerald-600">
+                          <div className="mt-1 inline-block text-xs font-bold text-emerald-400">
                             ✓ {isKz ? 'Ең тиімді баға' : 'Выгодная цена'}
                           </div>
                         )}
@@ -509,14 +510,12 @@ export const CompareModal: React.FC<CompareModalProps> = ({
                   {effectiveProducts.map((prod) => (
                     <td key={prod.id} className={productColClass}>
                       {prod.inStock ? (
-                        <span className="text-emerald-700 font-medium text-xs sm:text-sm flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                          {isKz ? 'Қолда бар (Бутик №24)' : 'В наличии (Бутик №24)'}
+                        <span className="text-emerald-400 font-bold text-xs sm:text-sm">
+                          ● {isKz ? 'Қолда бар (Бутик №24)' : 'В наличии (Бутик №24)'}
                         </span>
                       ) : (
-                        <span className="text-slate-500 font-medium text-xs sm:text-sm flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-slate-400 shrink-0" />
-                          {isKz ? 'Жақында түседі' : 'Скоро в наличии'}
+                        <span className="text-rose-400 font-bold text-xs sm:text-sm">
+                          ○ {isKz ? 'Жақында түседі' : 'Скоро в наличии'}
                         </span>
                       )}
                     </td>
@@ -531,7 +530,7 @@ export const CompareModal: React.FC<CompareModalProps> = ({
                   {effectiveProducts.map((prod) => (
                     <td
                       key={prod.id}
-                      className={`${productColClass} font-medium text-slate-700 break-words`}
+                      className={`${productColClass} font-semibold text-stone-100 break-words`}
                     >
                       {getCategoryName(prod.categoryId)}
                     </td>
@@ -545,11 +544,11 @@ export const CompareModal: React.FC<CompareModalProps> = ({
                   </th>
                   {effectiveProducts.map((prod) => (
                     <td key={prod.id} className={`${productColClass} space-y-1 break-words`}>
-                      <div className="text-slate-900 font-medium">
+                      <div className="text-stone-100 font-medium">
                         {prod.volumeOrWeight ||
                           (isKz ? 'Стандартты қаптама' : 'Оригинальная упаковка')}
                       </div>
-                      <div className="text-xs text-slate-500 font-medium">
+                      <div className="text-xs text-amber-300/90 font-semibold">
                         {prod.country || 'Халяль • Бутик №24'}
                       </div>
                     </td>
@@ -560,7 +559,7 @@ export const CompareModal: React.FC<CompareModalProps> = ({
                 <tr>
                   <th className={stickyLeftHeaderClass}>
                     <div className="flex items-center gap-1.5">
-                      <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+                      <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
                       <span>{isKz ? 'Пайдасы' : 'Полезные свойства'}</span>
                     </div>
                   </th>
@@ -577,19 +576,19 @@ export const CompareModal: React.FC<CompareModalProps> = ({
                     return (
                       <td key={prod.id} className={`${productColClass} break-words`}>
                         {benefits.length > 0 ? (
-                          <ul className="space-y-1.5">
+                          <ul className="space-y-2">
                             {benefits.slice(0, 4).map((b, i) => (
                               <li
                                 key={i}
-                                className="flex items-start gap-1.5 text-xs sm:text-sm text-slate-700 leading-relaxed"
+                                className="flex items-start gap-1.5 text-xs sm:text-sm text-stone-100 leading-relaxed"
                               >
-                                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                                 <span className="break-words">{b}</span>
                               </li>
                             ))}
                           </ul>
                         ) : (
-                          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed line-clamp-6 break-words">
+                          <p className="text-xs sm:text-sm text-emerald-100/85 leading-relaxed line-clamp-6 break-words">
                             {desc || '—'}
                           </p>
                         )}
@@ -615,7 +614,7 @@ export const CompareModal: React.FC<CompareModalProps> = ({
                     return (
                       <td
                         key={prod.id}
-                        className={`${productColClass} text-xs sm:text-sm text-slate-600 leading-relaxed whitespace-pre-line break-words`}
+                        className={`${productColClass} text-xs sm:text-sm text-emerald-100/85 leading-relaxed whitespace-pre-line break-words`}
                       >
                         <div className="line-clamp-6">{specs}</div>
                       </td>
@@ -639,7 +638,7 @@ export const CompareModal: React.FC<CompareModalProps> = ({
                     return (
                       <td
                         key={prod.id}
-                        className={`${productColClass} text-xs sm:text-sm text-slate-600 leading-relaxed whitespace-pre-line break-words`}
+                        className={`${productColClass} text-xs sm:text-sm text-emerald-100/85 leading-relaxed whitespace-pre-line break-words`}
                       >
                         <div className="line-clamp-4">{howToUse}</div>
                       </td>
@@ -652,21 +651,21 @@ export const CompareModal: React.FC<CompareModalProps> = ({
         </div>
 
         {/* Sticky Bottom Back & Close Bar */}
-        <div className="p-3.5 sm:px-6 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-3 shrink-0">
+        <div className="p-3.5 sm:px-6 bg-[#030E0A] border-t border-amber-500/25 flex items-center justify-between gap-3 shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 sm:flex-none px-5 py-2.5 rounded-lg bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+            className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-[#0B261C] hover:bg-[#113628] text-amber-300 border border-amber-500/30 font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
           >
-            <ArrowLeft className="w-4 h-4 text-slate-600 shrink-0" />
+            <ArrowLeft className="w-4 h-4 text-amber-400 shrink-0" />
             <span>{isKz ? 'Каталогқа оралу' : 'Назад в каталог'}</span>
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 sm:flex-none px-5 py-2.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+            className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-[#0B261C] hover:bg-rose-800/80 text-stone-100 hover:text-white border border-amber-500/30 font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
           >
-            <X className="w-4 h-4 text-slate-600" />
+            <X className="w-4 h-4 text-amber-300 shrink-0" />
             <span>{isKz ? 'Салыстыруды жабу' : 'Закрыть сравнение'}</span>
           </button>
         </div>

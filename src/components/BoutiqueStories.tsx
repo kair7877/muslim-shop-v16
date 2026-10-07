@@ -10,9 +10,13 @@ import {
   MapPin,
   ShieldCheck,
   Truck,
+  MessageCircle,
+  ExternalLink,
+  CheckCircle2,
+  Clock,
+  HeartHandshake,
   Eye,
   ArrowLeft,
-  ArrowRight,
 } from 'lucide-react';
 import { Language, Product, StoreConfig } from '../types';
 import { formatPrice } from '../utils/formatters';
@@ -70,6 +74,8 @@ export const BoutiqueStories: React.FC<BoutiqueStoriesProps> = ({
   const isKz = lang === 'kz';
   const [activeGroupIndex, setActiveGroupIndex] = useState<number | null>(null);
   const [activeSlideIndex, setActiveSlideIndex] = useState<number>(0);
+  const [progress, setProgress] = useState<number>(0);
+  const [isPaused, setIsPaused] = useState<boolean>(false);
   const [shuffleSeed] = useState<number>(() => Math.floor(Math.random() * 10000));
   const [seenIds, setSeenIds] = useState<string[]>(() => {
     try {
@@ -84,6 +90,7 @@ export const BoutiqueStories: React.FC<BoutiqueStoriesProps> = ({
   const storyGroups: StoryGroup[] = useMemo(() => {
     const inStockProducts = products.filter((p) => p.inStock && p.images && p.images[0]);
 
+    // Deterministic rotation based on shuffleSeed so every refresh or click on "Обновить" shows fresh products
     const rotateList = (list: Product[], count: number, offset: number): Product[] => {
       if (list.length <= count) return list;
       const rotated = [...list].sort((a, b) => {
@@ -111,245 +118,324 @@ export const BoutiqueStories: React.FC<BoutiqueStoriesProps> = ({
     const newSlides: StorySlide[] =
       effectiveNew.length > 0
         ? effectiveNew.map((prod) => ({
-            id: `story-new-${prod.id}`,
+            id: `new-${prod.id}`,
             type: 'product',
             product: prod,
-            badgeRu: 'НОВИНКА НЕДЕЛИ',
-            badgeKz: 'АПТА ЖАҢАЛЫҒЫ',
+            badgeRu: 'Свежее поступление • В наличии',
+            badgeKz: 'Жаңа түсілім • Қолда бар',
             titleRu: prod.titleRu,
             titleKz: prod.titleKz || prod.titleRu,
-            subtitleRu: prod.descriptionRu || 'Сертифицированная продукция высшего качества в наличии.',
-            subtitleKz: prod.descriptionKz || prod.descriptionRu || 'Жоғары сапалы сертификатталған өнім қолда бар.',
-            bgGradient: 'from-stone-950 via-stone-900 to-amber-950/40',
+            subtitleRu:
+              prod.descriptionRu?.slice(0, 120) + (prod.descriptionRu && prod.descriptionRu.length > 120 ? '...' : ''),
+            subtitleKz:
+              (prod.descriptionKz || prod.descriptionRu || '').slice(0, 120) + '...',
+            bgGradient: 'from-[#041E16] via-[#062c21] to-stone-950',
           }))
-        : [];
+        : [
+            {
+              id: 'new-fallback',
+              type: 'info',
+              badgeRu: 'Новое поступление',
+              badgeKz: 'Жаңа түсілім',
+              titleRu: 'Свежая поставка витаминов iHerb и Халяль продукции в Бутике №24',
+              titleKz: '№24 Бутикте iHerb дәрумендері мен Халал өнімдердің жаңа түсілімі',
+              subtitleRu: 'Все самые востребованные позиции уже на полках нашего бутика в Атырау.',
+              subtitleKz: 'Ең сұранысқа ие өнімдер Атыраудағы бутигіміздің сөрелерінде тұр.',
+              ctaLabelRu: 'Смотреть новинки',
+              ctaLabelKz: 'Жаңа өнімдерді көру',
+              ctaCategory: 'cat-new',
+              bgGradient: 'from-[#041E16] via-emerald-950 to-stone-950',
+            },
+          ];
 
     // 2. Хиты продаж
     const hitSlides: StorySlide[] =
       effectiveHits.length > 0
         ? effectiveHits.map((prod) => ({
-            id: `story-hit-${prod.id}`,
+            id: `hit-${prod.id}`,
             type: 'product',
             product: prod,
-            badgeRu: 'ХИТ ПРОДАЖ',
-            badgeKz: 'ХИТ ТАУАР',
+            badgeRu: 'Хит продаж Бутика №24',
+            badgeKz: '№24 Бутиктің нағыз хиті',
             titleRu: prod.titleRu,
             titleKz: prod.titleKz || prod.titleRu,
-            subtitleRu: prod.descriptionRu || 'Лидер доверия сотен покупателей Бутика №24.',
-            subtitleKz: prod.descriptionKz || prod.descriptionRu || '№24 Бутик сатып алушыларының таңдауы.',
-            bgGradient: 'from-stone-950 via-stone-900 to-amber-950/40',
+            subtitleRu:
+              prod.descriptionRu?.slice(0, 120) + (prod.descriptionRu && prod.descriptionRu.length > 120 ? '...' : ''),
+            subtitleKz:
+              (prod.descriptionKz || prod.descriptionRu || '').slice(0, 120) + '...',
+            bgGradient: 'from-stone-950 via-[#1f1605] to-[#041E16]',
           }))
-        : [];
+        : [
+            {
+              id: 'hits-fallback',
+              type: 'info',
+              badgeRu: 'Выбор покупателей',
+              badgeKz: 'Сатып алушылар таңдауы',
+              titleRu: 'Топ-товары, которые чаще всего заказывают в Атырау',
+              titleKz: 'Атырауда ең жиі тапсырыс берілетін ТОП өнімдер',
+              subtitleRu: 'Проверенные комплексы для всей семьи с реальными отзывами.',
+              subtitleKz: 'Бүкіл отбасыға арналған тексерілген кешендер.',
+              ctaLabelRu: 'Перейти к хитам',
+              ctaLabelKz: 'Хит өнімдерді көру',
+              ctaCategory: 'cat-hits',
+              bgGradient: 'from-stone-950 via-amber-950 to-emerald-950',
+            },
+          ];
 
-    // 3. Информация о бутике в Атырау
+    // 3. Как нас найти в Дине
     const locationSlides: StorySlide[] = [
       {
-        id: 'story-loc-1',
+        id: 'loc-1',
         type: 'info',
-        badgeRu: 'АТЫРАУ · ТД «ДИНА БАЙЗАР»',
-        badgeKz: 'АТЫРАУ · «ДИНА БАЙЗАР» СҮ',
-        titleRu: 'Бутик №24 — ваш надёжный халяль-магазин',
-        titleKz: '№24 Бутик — сіздің сенімді халал дүкеніңіз',
-        subtitleRu: 'Приходите за оригинальными витаминами, маслами и БАДами каждый день без перерывов.',
-        subtitleKz: 'Күн сайын түпнұсқа дәрумендер, майлар мен ББҚ алуға келіңіз.',
+        badgeRu: 'Бутик №24 • Атырау',
+        badgeKz: '№24 Бутик • Атырау',
+        titleRu: 'Ждём вас в ТД «Дина Байзар», Бутик №24',
+        titleKz: 'Сіздерді «Дина Байзар» СҮ, №24 бутикте күтеміз',
+        subtitleRu:
+          'Приходите лично выбрать витамины, натуральный мёд, масла и восточные миски с профессиональной консультацией.',
+        subtitleKz:
+          'Дәрумендерді, табиғи балды, майларды және шығыс хош иістерін кеңесші көмегімен таңдауға келіңіз.',
         bulletsRu: [
-          '📍 Адрес: ТД «Дина Байзар», Бутик №24',
-          '🕙 Время работы: 10:00 – 19:00',
-          '📞 Телефон: +7 (778) 175-42-41',
-          '💳 Оплата: Kaspi QR, Kaspi Pay, наличные',
+          `📍 Адрес: ${config.address}`,
+          `🕙 График: ${config.workingHoursRu}`,
+          '🅿️ Удобный вход и быстрая выдача онлайн-заказов без очереди',
+          '💳 Оплата Kaspi QR / Kaspi Gold / Наличными',
         ],
         bulletsKz: [
-          '📍 Мекенжайы: «Дина Байзар» СҮ, №24 Бутик',
-          '🕙 Жұмыс уақыты: 10:00 – 19:00',
-          '📞 Телефон: +7 (778) 175-42-41',
-          '💳 Төлем: Kaspi QR, Kaspi Pay, қолма-қол',
+          `📍 Мекенжай: ${config.address}`,
+          `🕙 Жұмыс уақыты: ${config.workingHoursKz}`,
+          '🅿️ Ыңғайлы кіру және онлайн тапсырыстарды кезексіз алу',
+          '💳 Kaspi QR / Kaspi Gold / Қолма-қол төлем',
         ],
-        ctaLabelRu: 'Маршрут в 2GIS',
-        ctaLabelKz: '2GIS маршруты',
-        ctaUrl: config.gis2Url || 'https://2gis.kz/atyrau',
-        bgGradient: 'from-stone-950 via-stone-900 to-emerald-950/50',
+        ctaLabelRu: 'Открыть маршрут в 2ГИС',
+        ctaLabelKz: '2ГИС арқылы маршрут ашу',
+        ctaUrl: config.gis2Url,
+        bgGradient: 'from-[#041E16] via-emerald-900 to-stone-950',
       },
     ];
 
-    // 4. Подлинность и халяль 100%
+    // 4. 100% Оригинал & Халяль
     const authenticSlides: StorySlide[] = [
       {
-        id: 'story-auth-1',
+        id: 'auth-1',
         type: 'info',
-        badgeRu: '100% ОРИГИНАЛ ИЗ США И ОАЭ',
-        badgeKz: '100% ТҮПНҰСҚА АҚШ ЖӘНЕ БӘӘ-ДЕН',
-        titleRu: 'Строгий контроль каждой партии',
-        titleKz: 'Әрбір партияны қатаң тексеру',
-        subtitleRu: 'Мы закупаем продукцию только у официальных дистрибьюторов брендов Now Foods, Solgar, California Gold Nutrition.',
-        subtitleKz: 'Біз өнімдерді тек Now Foods, Solgar, California Gold Nutrition ресми өкілдерінен аламыз.',
+        badgeRu: 'Гарантия качества',
+        badgeKz: 'Сапа кепілдігі',
+        titleRu: '100% Оригинал iHerb и строгий стандарт Халяль',
+        titleKz: '100% Түпнұсқа iHerb және қатаң Халал стандарты',
+        subtitleRu:
+          'Мы дорожим доверием каждой семьи в Атырау и отбираем только проверенные добавки и натуральные средства.',
+        subtitleKz:
+          'Біз Атыраудағы әрбір отбасының сенімін бағалаймыз және тек тексерілген табиғи өнімдерді ұсынамыз.',
         bulletsRu: [
-          '🌿 Халяль-стандарты и чистота состава',
-          '🔍 Заводские пломбы и QR-проверка',
-          '❄️ Соблюдение температурного режима хранения',
-          '🤝 Гарантия возврата при несоответствии',
+          '✅ Прямые поставки оригинальных брендов США (Now Foods, Solgar, California Gold, ChildLife)',
+          '✅ Чистый состав без запрещённого желатина и сомнительных добавок',
+          '✅ Строгий контроль сроков годности и правильное хранение в бутике',
+          '✅ Поможем подобрать дозировку для взрослых и детей',
         ],
         bulletsKz: [
-          '🌿 Халал стандарттары мен таза құрам',
-          '🔍 Зауыттық пломбалар мен QR-тексеру',
-          '❄️ Сақтау температурасының талаптары',
-          '🤝 Сәйкессіздік болған жағдайда қайтару',
+          '✅ АҚШ-тың түпнұсқа брендтерінен тікелей жеткізу (Now Foods, Solgar, California Gold)',
+          '✅ Құрамында тыйым салынған желатин мен күмәнді қоспалар жоқ',
+          '✅ Жарамдылық мерзімін қатаң бақылау және дұрыс сақтау',
+          '✅ Ересектер мен балаларға мөлшерін таңдауға көмектесеміз',
         ],
-        ctaLabelRu: 'Смотреть витамины',
-        ctaLabelKz: 'Витаминдерді көру',
+        ctaLabelRu: 'Смотреть витамины iHerb',
+        ctaLabelKz: 'iHerb дәрумендерін көру',
         ctaCategory: 'cat-iherb',
-        bgGradient: 'from-stone-950 via-stone-900 to-amber-950/50',
+        bgGradient: 'from-stone-950 via-emerald-950 to-[#041E16]',
       },
     ];
 
-    // 5. Доставка и самовывоз
+    // 5. Быстрая доставка
     const deliverySlides: StorySlide[] = [
       {
-        id: 'story-del-1',
+        id: 'deliv-1',
         type: 'info',
-        badgeRu: 'ДОСТАВКА В ДЕНЬ ЗАКАЗА',
-        badgeKz: 'ТАПСЫРЫС БЕРГЕН КҮНІ ЖЕТКІЗУ',
-        titleRu: 'Быстро доставим до вашей двери',
-        titleKz: 'Есігіңізге дейін жылдам жеткіземіз',
-        subtitleRu: 'Отправляем курьером по Атырау в течение 1–2 часов. Также отправляем во все города Казахстана.',
-        subtitleKz: 'Атырау бойынша курьермен 1–2 сағатта жеткіземіз. Сондай-ақ Қазақстанның барлық қалаларына жібереміз.',
+        badgeRu: 'Доставка в день заказа',
+        badgeKz: 'Тапсырыс күні жеткізу',
+        titleRu: 'Быстрая доставка по Атырау и отправка по всему Казахстану',
+        titleKz: 'Атырау қаласы бойынша жылдам жеткізу және Қазақстанға жөнелту',
+        subtitleRu:
+          'Не нужно ждать посылку из-за рубежа 3 недели — всё уже в наличии в Бутике №24!',
+        subtitleKz:
+          'Шетелден 3 апта күтудің қажеті жоқ — барлық тауар №24 Бутикте дайын тұр!',
         bulletsRu: [
-          '⚡ Курьер по Атырау (день в день)',
-          '🏬 Бесплатный самовывоз из Бутика №24',
-          '📦 Отправка по Казахстану через Казпочту / Indriver',
-          '📲 Заказ через сайт или WhatsApp',
+          '🚀 Курьер по г. Атырау — отправим сразу после подтверждения заказа',
+          '🛍️ Самовывоз из Бутика №24 — соберём ваш пакет заранее к вашему приезду',
+          '📦 Отправка по РК — Казпочта, СДЭК, Индрайвер в любой город и район',
+          '💬 Заказ в 1 клик через сайт или напрямую в WhatsApp',
         ],
         bulletsKz: [
-          '⚡ Атырау бойынша курьер (сол күні)',
-          '🏬 №24 Бутиктен тегін алып кету',
-          '📦 Қазақстан бойынша Қазпошта / Indriver арқылы',
-          '📲 Сайт немесе WhatsApp арқылы тапсырыс',
+          '🚀 Атырау бойынша курьер — тапсырыс расталған соң бірден жібереміз',
+          '🛍️ №24 Бутиктен алып кету — келуіңізге тапсырысты алдын ала дайындап қоямыз',
+          '📦 ҚР бойынша жеткізу — Қазпошта, СДЭК, Индрайвер барлық өңірге',
+          '💬 Сайттан 1 басу арқылы немесе WhatsApp-та оңай рәсімдеу',
         ],
-        ctaLabelRu: 'Написать на WhatsApp',
+        ctaLabelRu: 'Написать менеджеру в WhatsApp',
         ctaLabelKz: 'WhatsApp-қа жазу',
-        ctaUrl: `https://wa.me/${config.whatsappNumber}?text=${encodeURIComponent('Ассаляму алейкум! Хочу оформить доставку из Muslim Shop.')}`,
-        bgGradient: 'from-stone-950 via-stone-900 to-emerald-950/50',
+        ctaUrl: `https://wa.me/${config.whatsappNumber}?text=${encodeURIComponent(
+          isKz
+            ? 'Сәлеметсіз бе! Жеткізу бойынша тапсырыс бергім келеді.'
+            : 'Здравствуйте! Хочу оформить заказ с доставкой из Бутика №24.'
+        )}`,
+        bgGradient: 'from-[#041E16] via-[#0c3b2c] to-stone-950',
       },
     ];
 
-    const groups: StoryGroup[] = [];
-
-    if (newSlides.length > 0) {
-      groups.push({
-        id: 'grp-new',
-        titleRu: 'Новые поступления',
-        titleKz: 'Жаңа өнімдер',
-        tagRu: 'НОВИНКИ',
+    return [
+      {
+        id: 'story-new',
+        titleRu: 'Новинки',
+        titleKz: 'Жаңалықтар',
+        tagRu: 'НОВОЕ',
         tagKz: 'ЖАҢА',
-        ringGradient: 'from-amber-400 via-yellow-500 to-amber-600',
+        ringGradient: 'from-amber-400 via-emerald-500 to-amber-500',
         coverImage: effectiveNew[0]?.images?.[0],
         iconType: 'new',
         slides: newSlides,
-      });
-    }
-
-    if (hitSlides.length > 0) {
-      groups.push({
-        id: 'grp-hits',
-        titleRu: 'Хиты продаж',
-        titleKz: 'Хит тауарлар',
-        tagRu: 'ХИТЫ',
-        tagKz: 'ХИТ',
-        ringGradient: 'from-amber-500 via-orange-500 to-amber-600',
+      },
+      {
+        id: 'story-hits',
+        titleRu: 'Хиты №24',
+        titleKz: 'Хиттер №24',
+        tagRu: 'ТОП',
+        tagKz: 'ТОП',
+        ringGradient: 'from-amber-500 via-orange-500 to-amber-300',
         coverImage: effectiveHits[0]?.images?.[0],
         iconType: 'hits',
         slides: hitSlides,
-      });
-    }
-
-    groups.push({
-      id: 'grp-loc',
-      titleRu: 'О Бутике №24',
-      titleKz: '№24 Бутик туралы',
-      tagRu: 'АТЫРАУ',
-      tagKz: 'АТЫРАУ',
-      ringGradient: 'from-emerald-400 via-teal-500 to-emerald-600',
-      iconType: 'location',
-      slides: locationSlides,
-    });
-
-    groups.push({
-      id: 'grp-auth',
-      titleRu: '100% Оригинал',
-      titleKz: '100% Түпнұсқа',
-      tagRu: 'ОРИГИНАЛ',
-      tagKz: 'САПА',
-      ringGradient: 'from-amber-400 via-yellow-500 to-amber-600',
-      iconType: 'authentic',
-      slides: authenticSlides,
-    });
-
-    groups.push({
-      id: 'grp-del',
-      titleRu: 'Доставка по РК',
-      titleKz: 'Жеткізу қызметі',
-      tagRu: 'ДОСТАВКА',
-      tagKz: 'ЖЕТКІЗУ',
-      ringGradient: 'from-emerald-400 via-teal-500 to-emerald-600',
-      iconType: 'delivery',
-      slides: deliverySlides,
-    });
-
-    return groups;
-  }, [products, config, shuffleSeed]);
-
-  const activeGroup = activeGroupIndex !== null ? storyGroups[activeGroupIndex] : null;
-  const activeSlide = activeGroup ? activeGroup.slides[activeSlideIndex] : null;
+      },
+      {
+        id: 'story-location',
+        titleRu: 'Как найти нас',
+        titleKz: 'Мекенжай',
+        tagRu: 'ДИНА №24',
+        tagKz: 'ДИНА №24',
+        ringGradient: 'from-emerald-400 via-teal-500 to-amber-400',
+        iconType: 'location',
+        slides: locationSlides,
+      },
+      {
+        id: 'story-authentic',
+        titleRu: '100% Оригинал',
+        titleKz: '100% Түпнұсқа',
+        tagRu: 'ХАЛЯЛЬ',
+        tagKz: 'ХАЛАЛ',
+        ringGradient: 'from-amber-300 via-emerald-500 to-teal-600',
+        iconType: 'authentic',
+        slides: authenticSlides,
+      },
+      {
+        id: 'story-delivery',
+        titleRu: 'Доставка',
+        titleKz: 'Жеткізу',
+        tagRu: 'БЫСТРО',
+        tagKz: 'ЖЫЛДАМ',
+        ringGradient: 'from-emerald-500 via-amber-400 to-emerald-600',
+        iconType: 'delivery',
+        slides: deliverySlides,
+      },
+    ];
+  }, [products, config, isKz, shuffleSeed]);
 
   const markGroupSeen = (groupId: string) => {
-    if (!seenIds.includes(groupId)) {
-      const next = [...seenIds, groupId];
-      setSeenIds(next);
+    setSeenIds((prev) => {
+      if (prev.includes(groupId)) return prev;
+      const next = [...prev, groupId];
       try {
         localStorage.setItem(SEEN_STORIES_STORAGE_KEY, JSON.stringify(next));
       } catch {}
-    }
+      return next;
+    });
   };
 
-  const openStoryGroup = (groupIndex: number) => {
-    setActiveGroupIndex(groupIndex);
+  const openStoryGroup = (idx: number) => {
+    setActiveGroupIndex(idx);
     setActiveSlideIndex(0);
-    const grp = storyGroups[groupIndex];
-    if (grp) markGroupSeen(grp.id);
+    setProgress(0);
+    markGroupSeen(storyGroups[idx].id);
+    try {
+      window.history.pushState({ storyViewerOpen: true }, '');
+    } catch {}
   };
 
   const closeStories = () => {
     setActiveGroupIndex(null);
     setActiveSlideIndex(0);
+    setProgress(0);
   };
 
+  const handleStoryBackBtn = () => {
+    if (activeSlideIndex > 0) {
+      setActiveSlideIndex((prev) => prev - 1);
+      setProgress(0);
+    } else if (activeGroupIndex !== null && activeGroupIndex > 0) {
+      const prevGroupIdx = activeGroupIndex - 1;
+      const prevGroup = storyGroups[prevGroupIdx];
+      setActiveGroupIndex(prevGroupIdx);
+      setActiveSlideIndex(prevGroup.slides.length - 1);
+      setProgress(0);
+    } else {
+      closeStories();
+    }
+  };
+
+  const activeGroup = activeGroupIndex !== null ? storyGroups[activeGroupIndex] : null;
+  const activeSlide = activeGroup ? activeGroup.slides[activeSlideIndex] || activeGroup.slides[0] : null;
+
   const goNextSlide = () => {
-    if (!activeGroup) return;
+    if (activeGroupIndex === null || !activeGroup) return;
     if (activeSlideIndex < activeGroup.slides.length - 1) {
       setActiveSlideIndex((prev) => prev + 1);
-    } else if (activeGroupIndex !== null && activeGroupIndex < storyGroups.length - 1) {
+      setProgress(0);
+    } else if (activeGroupIndex < storyGroups.length - 1) {
       const nextGroupIdx = activeGroupIndex + 1;
-      const nextGrp = storyGroups[nextGroupIdx];
       setActiveGroupIndex(nextGroupIdx);
       setActiveSlideIndex(0);
-      if (nextGrp) markGroupSeen(nextGrp.id);
+      setProgress(0);
+      markGroupSeen(storyGroups[nextGroupIdx].id);
     } else {
       closeStories();
     }
   };
 
   const goPrevSlide = () => {
-    if (!activeGroup) return;
+    if (activeGroupIndex === null || !activeGroup) return;
     if (activeSlideIndex > 0) {
       setActiveSlideIndex((prev) => prev - 1);
-    } else if (activeGroupIndex !== null && activeGroupIndex > 0) {
+      setProgress(0);
+    } else if (activeGroupIndex > 0) {
       const prevGroupIdx = activeGroupIndex - 1;
       const prevGroup = storyGroups[prevGroupIdx];
       setActiveGroupIndex(prevGroupIdx);
       setActiveSlideIndex(prevGroup.slides.length - 1);
+      setProgress(0);
+    } else {
+      setProgress(0);
     }
   };
 
-  // Keyboard navigation
+  // Auto-advance timer for active story slide (6 seconds per slide)
+  useEffect(() => {
+    if (activeGroupIndex === null || isPaused) return;
+    const interval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) {
+          return 100;
+        }
+        return prev + 2;
+      });
+    }, 120);
+    return () => clearInterval(interval);
+  }, [activeGroupIndex, activeSlideIndex, isPaused]);
+
+  useEffect(() => {
+    if (progress >= 100 && activeGroupIndex !== null) {
+      goNextSlide();
+    }
+  }, [progress, activeGroupIndex]);
+
+  // Escape key, mobile Back button (popstate), & scroll lock when story modal is open
   useEffect(() => {
     if (activeGroupIndex === null) return;
     const prevOverflow = document.body.style.overflow;
@@ -359,52 +445,56 @@ export const BoutiqueStories: React.FC<BoutiqueStoriesProps> = ({
       if (e.key === 'ArrowRight') goNextSlide();
       if (e.key === 'ArrowLeft') goPrevSlide();
     };
+    const handlePopState = (e: PopStateEvent) => {
+      e.stopImmediatePropagation();
+      closeStories();
+    };
     window.addEventListener('keydown', handleKey);
+    window.addEventListener('popstate', handlePopState, true);
     return () => {
       document.body.style.overflow = prevOverflow;
       window.removeEventListener('keydown', handleKey);
+      window.removeEventListener('popstate', handlePopState, true);
     };
   }, [activeGroupIndex, activeSlideIndex]);
 
   const renderGroupIcon = (type: StoryGroup['iconType']) => {
-    const cls = 'w-8 h-8 text-[#D4AF37]';
     switch (type) {
       case 'new':
-        return <Sparkles className={cls} />;
+        return <Sparkles className="w-6 h-6 sm:w-7 sm:h-7 text-amber-300" />;
       case 'hits':
-        return <Flame className={cls} />;
+        return <Flame className="w-6 h-6 sm:w-7 sm:h-7 text-amber-400" />;
       case 'location':
-        return <MapPin className={cls} />;
+        return <MapPin className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-300" />;
       case 'authentic':
-        return <ShieldCheck className={cls} />;
+        return <ShieldCheck className="w-6 h-6 sm:w-7 sm:h-7 text-amber-300" />;
       case 'delivery':
-        return <Truck className={cls} />;
+        return <Truck className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-300" />;
     }
   };
 
   return (
     <>
-      {/* Large Status & Stories Section for Visually Impaired Shoppers */}
+      {/* Horizontal Boutique Stories Bar */}
       <section
         id="boutique-stories-bar"
-        aria-label={isKz ? 'Бутик мәртебелері мен стористері' : 'Статусы и сторис бутика'}
-        className="w-full bg-[#111111] border-b-2 border-[#242424] py-6 sm:py-8"
+        aria-label={isKz ? 'Бутик стористері' : 'Сторис бутика'}
+        className="w-full bg-white border-b border-slate-200 py-3 sm:py-4"
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
-            <div className="flex items-center gap-3">
-              <span className="w-1.5 h-6 bg-[#C5A059] rounded-full" />
-              <h2 className="text-lg sm:text-2xl font-black text-white tracking-tight">
-                {isKz ? 'БУТИК СТАТУСЫ МЕН СТОРИСТЕРІ' : 'СТАТУС И СТОРИС БУТИКА №24'}
-              </h2>
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#C5A059]" />
+              <span className="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight">
+                {isKz ? 'Бутик №24 сторисі • Жылдам шолу' : 'Сторис Бутика №24 • Быстрый обзор'}
+              </span>
             </div>
-            <span className="text-xs sm:text-sm font-bold text-[#A3A3A3]">
-              {isKz ? 'Толық көру үшін карточканы басыңыз' : 'Нажмите на карточку для просмотра'}
+            <span className="text-xs font-bold text-slate-500 hidden sm:inline">
+              {isKz ? 'Түртіп ашыңыз' : 'Нажмите для просмотра'}
             </span>
           </div>
 
-          {/* Large Status Cards Grid / Horizontal Scroll */}
-          <div className="flex items-stretch gap-4 sm:gap-6 overflow-x-auto pb-3 pt-1">
+          <div className="flex items-center gap-4 sm:gap-7 overflow-x-auto no-scrollbar py-1">
             {storyGroups.map((group, idx) => {
               const isSeen = seenIds.includes(group.id);
               return (
@@ -413,49 +503,51 @@ export const BoutiqueStories: React.FC<BoutiqueStoriesProps> = ({
                   id={`story-trigger-${group.id}`}
                   type="button"
                   onClick={() => openStoryGroup(idx)}
-                  className={`group relative flex flex-col justify-between w-48 sm:w-60 h-64 sm:h-72 rounded-2xl p-4 shrink-0 text-left bg-[#181818] border-2 transition-colors cursor-pointer shadow-lg ${
-                    isSeen
-                      ? 'border-[#2E2E2E] opacity-90'
-                      : 'border-[#C5A059] hover:bg-[#202020]'
-                  }`}
+                  className="group flex flex-col items-center gap-1.5 shrink-0 cursor-pointer focus:outline-none"
                 >
-                  {/* Top Area: Badge & Icon / Photo */}
-                  <div>
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-black uppercase tracking-wider bg-[#C5A059] text-black">
-                        {isKz ? group.tagKz : group.tagRu}
-                      </span>
-                      <span className="text-xs font-mono font-bold text-[#8E8E8E]">
-                        {group.slides.length} {isKz ? 'бет' : 'фото'}
-                      </span>
+                  <div className="relative">
+                    {/* Story ring */}
+                    <div
+                      className={`w-[76px] h-[76px] sm:w-[88px] sm:h-[88px] rounded-full p-[3px] transition-transform duration-200 group-hover:scale-105 ${
+                        isSeen
+                          ? 'bg-slate-300'
+                          : `bg-gradient-to-tr ${group.ringGradient} shadow-xs`
+                      }`}
+                    >
+                      <div className="w-full h-full rounded-full bg-white border-2 border-white overflow-hidden flex items-center justify-center relative shadow-inner">
+                        {group.coverImage ? (
+                          <>
+                            <img
+                              src={group.coverImage}
+                              alt={isKz ? group.titleKz : group.titleRu}
+                              referrerPolicy="no-referrer"
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                          </>
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-blue-50 to-amber-50 flex items-center justify-center">
+                            {renderGroupIcon(group.iconType)}
+                          </div>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="w-full h-28 sm:h-32 rounded-xl bg-[#222222] border border-[#333333] overflow-hidden flex items-center justify-center relative mb-3">
-                      {group.coverImage ? (
-                        <img
-                          src={group.coverImage}
-                          alt={isKz ? group.titleKz : group.titleRu}
-                          referrerPolicy="no-referrer"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex items-center justify-center p-4">
-                          {renderGroupIcon(group.iconType)}
-                        </div>
-                      )}
-                    </div>
+                    {/* Bottom micro tag */}
+                    <span
+                      className={`absolute -bottom-1 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-md text-[10px] font-black tracking-wider whitespace-nowrap shadow-xs border ${
+                        isSeen
+                          ? 'bg-slate-100 text-slate-600 border-slate-300'
+                          : 'bg-[#ffbd00] text-slate-900 border-[#e5aa00]'
+                      }`}
+                    >
+                      {isKz ? group.tagKz : group.tagRu}
+                    </span>
                   </div>
 
-                  {/* Bottom Area: Large Title & View Action */}
-                  <div className="space-y-2">
-                    <h3 className="font-black text-white text-sm sm:text-base leading-snug line-clamp-2">
-                      {isKz ? group.titleKz : group.titleRu}
-                    </h3>
-                    <div className="flex items-center justify-between text-xs sm:text-sm font-bold text-[#D4AF37] pt-1 border-t border-[#2A2A2A]">
-                      <span>{isKz ? 'Қарап шығу' : 'Смотреть'}</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </div>
-                  </div>
+                  <span className="text-xs sm:text-[13px] font-bold text-slate-800 group-hover:text-[#0567BA] transition-colors max-w-[88px] sm:max-w-[104px] truncate mt-1">
+                    {isKz ? group.titleKz : group.titleRu}
+                  </span>
                 </button>
               );
             })}
@@ -463,79 +555,174 @@ export const BoutiqueStories: React.FC<BoutiqueStoriesProps> = ({
         </div>
       </section>
 
-      {/* Manual, Big, High-Contrast Story Viewer Modal (No Auto-timer, No Freezing) */}
+      {/* Fullscreen Vertical Story Viewer Modal */}
       {activeGroup &&
         activeSlide &&
         createPortal(
           <div
             id="story-viewer-backdrop"
-            className="fixed inset-0 z-[130] bg-black/90 flex items-center justify-center p-2 sm:p-4 select-none"
+            className="fixed inset-0 z-[130] bg-stone-950/90 backdrop-blur-md flex items-center justify-center p-0 sm:p-4 select-none"
             onClick={closeStories}
           >
             <div
               id="story-viewer-card"
               onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-lg h-[92vh] sm:h-[86vh] rounded-3xl overflow-hidden shadow-2xl border-2 border-[#C5A059] flex flex-col justify-between bg-[#141414] text-white"
+              onMouseEnter={() => setIsPaused(true)}
+              onMouseLeave={() => setIsPaused(false)}
+              onTouchStart={() => setIsPaused(true)}
+              onTouchEnd={() => setIsPaused(false)}
+              className={`relative w-full h-full sm:h-[88vh] sm:max-h-[760px] sm:max-w-[420px] sm:rounded-3xl overflow-hidden shadow-2xl border border-amber-400/30 flex flex-col justify-between bg-gradient-to-b ${activeSlide.bgGradient} text-white`}
             >
-              {/* Header: Slide Count & Controls */}
-              <div className="p-4 sm:p-5 bg-[#1B1B1B] border-b border-[#2C2C2C] flex items-center justify-between gap-3 z-20">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs sm:text-sm font-black px-2.5 py-1 rounded-md bg-[#C5A059] text-black">
-                    {activeSlideIndex + 1} / {activeGroup.slides.length}
-                  </span>
-                  <span className="text-sm sm:text-base font-bold text-white truncate max-w-[200px]">
-                    {isKz ? activeGroup.titleKz : activeGroup.titleRu}
-                  </span>
+              {/* Background product photo with dark scrim if product slide */}
+              {activeSlide.type === 'product' && activeSlide.product?.images?.[0] && (
+                <div className="absolute inset-0 z-0">
+                  <img
+                    src={activeSlide.product.images[0]}
+                    alt={isKz ? activeSlide.titleKz : activeSlide.titleRu}
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover object-center opacity-45 scale-105 blur-[2px]"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/75 to-stone-950/60" />
+                </div>
+              )}
+
+              {/* Top Section: Progress Bars & Header */}
+              <div className="relative z-20 p-4 pt-5 space-y-3 bg-gradient-to-b from-black/70 to-transparent">
+                {/* Multi-slide progress segments */}
+                <div className="flex items-center gap-1.5">
+                  {activeGroup.slides.map((s, idx) => {
+                    const fillWidth =
+                      idx < activeSlideIndex
+                        ? 100
+                        : idx === activeSlideIndex
+                        ? progress
+                        : 0;
+                    return (
+                      <div
+                        key={s.id}
+                        className="flex-1 h-1 rounded-full bg-white/25 overflow-hidden"
+                      >
+                        <div
+                          className="h-full bg-amber-400 transition-all duration-100 ease-linear"
+                          style={{ width: `${fillWidth}%` }}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
 
-                <button
-                  type="button"
-                  onClick={closeStories}
-                  className="px-4 py-2 rounded-xl bg-[#2A2A2A] hover:bg-[#3A3A3A] text-white font-black text-sm flex items-center gap-1.5 border border-[#444444] cursor-pointer"
-                  aria-label="Закрыть"
-                >
-                  <X className="w-5 h-5 text-[#C5A059]" />
-                  <span>{isKz ? 'Жабу' : 'Закрыть'}</span>
-                </button>
+                {/* Story Header with Back & Close Buttons */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <button
+                      type="button"
+                      onClick={handleStoryBackBtn}
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-black/50 hover:bg-black/80 text-amber-300 border border-amber-400/40 font-extrabold text-xs transition-colors cursor-pointer shrink-0"
+                      aria-label="Назад"
+                    >
+                      <ArrowLeft className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span>{isKz ? 'Артқа' : 'Назад'}</span>
+                    </button>
+
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold text-white truncate">
+                          {isKz ? activeGroup.titleKz : activeGroup.titleRu}
+                        </span>
+                        <span className="text-[10px] text-amber-300 font-semibold shrink-0">
+                          • {config.boutiqueNumber}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-stone-300 truncate">
+                        {isKz ? activeSlide.badgeKz : activeSlide.badgeRu}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={closeStories}
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-black/50 hover:bg-rose-700 text-white border border-amber-400/30 font-extrabold text-xs transition-colors cursor-pointer shrink-0"
+                    aria-label="Закрыть сторис"
+                  >
+                    <X className="w-4 h-4 text-amber-300" />
+                    <span>{isKz ? 'Жабу' : 'Закрыть'}</span>
+                  </button>
+                </div>
               </div>
 
-              {/* Main Slide Content Area */}
-              <div className="flex-1 overflow-y-auto p-4 sm:p-6 flex flex-col justify-center space-y-4">
+              {/* Invisible Left/Right Tap Navigation Zones */}
+              <div className="absolute inset-y-20 inset-x-0 z-10 flex">
+                <div
+                  onClick={goPrevSlide}
+                  className="w-1/3 h-full cursor-pointer"
+                  title={isKz ? 'Алдыңғы' : 'Назад'}
+                />
+                <div
+                  onClick={goNextSlide}
+                  className="w-2/3 h-full cursor-pointer"
+                  title={isKz ? 'Келесі' : 'Далее'}
+                />
+              </div>
+
+              {/* Desktop Left/Right Arrow Controls */}
+              <button
+                type="button"
+                onClick={goPrevSlide}
+                className="hidden sm:flex absolute left-2 top-1/2 -translate-y-1/2 z-30 w-9 h-9 rounded-full bg-black/45 hover:bg-black/75 text-white items-center justify-center transition-colors cursor-pointer"
+                aria-label="Предыдущий слайд"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <button
+                type="button"
+                onClick={goNextSlide}
+                className="hidden sm:flex absolute right-2 top-1/2 -translate-y-1/2 z-30 w-9 h-9 rounded-full bg-black/45 hover:bg-black/75 text-white items-center justify-center transition-colors cursor-pointer"
+                aria-label="Следующий слайд"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+
+              {/* Center & Bottom Content */}
+              <div className="relative z-20 p-5 pb-6 flex-1 flex flex-col justify-end space-y-4">
                 {activeSlide.type === 'product' && activeSlide.product ? (
                   <div className="space-y-4">
+                    {/* Crisp Product Showcase Frame */}
                     <div
                       onClick={() => {
                         const prod = activeSlide.product!;
                         closeStories();
                         onOpenProduct(prod);
                       }}
-                      className="mx-auto w-56 h-64 sm:w-64 sm:h-72 rounded-2xl overflow-hidden border-2 border-[#C5A059] bg-white p-3 flex items-center justify-center cursor-pointer shadow-lg"
+                      className="mx-auto w-48 h-60 sm:w-52 sm:h-64 rounded-2xl overflow-hidden border-2 border-amber-400/60 shadow-2xl bg-stone-900 relative cursor-pointer group"
                     >
                       <img
                         src={activeSlide.product.images[0]}
                         alt={isKz ? activeSlide.titleKz : activeSlide.titleRu}
                         referrerPolicy="no-referrer"
-                        className="w-full h-full object-contain"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
+                      <div className="absolute bottom-2 right-2 px-2.5 py-1 rounded-lg bg-stone-950/85 backdrop-blur-xs text-amber-300 font-extrabold text-sm border border-amber-400/30">
+                        {formatPrice(activeSlide.product.price)}
+                      </div>
                     </div>
 
-                    <div className="bg-[#1C1C1C] border border-[#333333] rounded-2xl p-4 sm:p-5 space-y-3">
-                      <div className="flex items-center justify-between text-xs sm:text-sm font-black text-[#D4AF37]">
+                    {/* Product Info & Direct Actions */}
+                    <div className="bg-stone-950/85 backdrop-blur-md border border-white/15 rounded-2xl p-4 space-y-3">
+                      <div className="flex items-center justify-between gap-2 text-[11px] text-amber-300 font-semibold">
                         <span>{isKz ? activeSlide.badgeKz : activeSlide.badgeRu}</span>
-                        <span className="text-2xl font-black text-[#D4AF37]">
-                          {formatPrice(activeSlide.product.price)}
-                        </span>
+                        <span>Арт: {activeSlide.product.sku}</span>
                       </div>
 
-                      <h3 className="font-black text-lg sm:text-xl text-white leading-snug">
+                      <h3 className="font-serif font-bold text-lg sm:text-xl text-white leading-snug line-clamp-2">
                         {isKz ? activeSlide.titleKz : activeSlide.titleRu}
                       </h3>
 
-                      <p className="text-sm text-[#CCCCCC] leading-relaxed">
+                      <p className="text-xs text-stone-300 line-clamp-2 leading-relaxed">
                         {isKz ? activeSlide.subtitleKz : activeSlide.subtitleRu}
                       </p>
 
-                      <div className="grid grid-cols-2 gap-3 pt-2">
+                      <div className="grid grid-cols-2 gap-2.5 pt-1">
                         <button
                           type="button"
                           onClick={() => {
@@ -543,9 +730,9 @@ export const BoutiqueStories: React.FC<BoutiqueStoriesProps> = ({
                             closeStories();
                             onOpenProduct(prod);
                           }}
-                          className="py-3 px-3 rounded-xl bg-[#2A2A2A] hover:bg-[#383838] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 border border-[#444444] cursor-pointer"
+                          className="py-2.5 px-3 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                         >
-                          <Eye className="w-4 h-4 text-[#C5A059]" />
+                          <Eye className="w-4 h-4 text-amber-300" />
                           <span>{isKz ? 'Толығырақ' : 'Подробнее'}</span>
                         </button>
 
@@ -554,92 +741,70 @@ export const BoutiqueStories: React.FC<BoutiqueStoriesProps> = ({
                           onClick={() => {
                             onAddToCart(activeSlide.product!);
                           }}
-                          className="py-3 px-3 rounded-xl bg-[#C5A059] hover:bg-[#D4AF37] text-black font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md cursor-pointer"
+                          className="py-2.5 px-3 rounded-xl bg-amber-400 hover:bg-amber-500 text-stone-950 font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md transition-colors cursor-pointer"
                         >
-                          <ShoppingBag className="w-4 h-4 stroke-[2.5]" />
-                          <span>{isKz ? 'Себетке' : 'В корзину'}</span>
+                          <ShoppingBag className="w-4 h-4 text-stone-950" />
+                          <span>{isKz ? 'Себетке қосу' : 'В корзину'}</span>
                         </button>
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-[#1C1C1C] border border-[#333333] rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl">
-                    <span className="inline-block text-xs sm:text-sm font-black text-[#D4AF37] tracking-wide">
+                  /* Informational Slide (Address, Originality, Delivery) */
+                  <div className="bg-stone-950/80 backdrop-blur-md border border-amber-400/30 rounded-3xl p-5 space-y-4 shadow-xl">
+                    <span className="inline-block text-xs font-bold text-amber-300 tracking-wide">
                       {isKz ? activeSlide.badgeKz : activeSlide.badgeRu}
                     </span>
 
-                    <h3 className="font-black text-xl sm:text-2xl text-white leading-tight">
+                    <h3 className="font-serif font-extrabold text-xl sm:text-2xl text-white leading-tight">
                       {isKz ? activeSlide.titleKz : activeSlide.titleRu}
                     </h3>
 
-                    <p className="text-sm sm:text-base text-[#D4D4D4] leading-relaxed">
+                    <p className="text-xs sm:text-sm text-stone-200 leading-relaxed">
                       {isKz ? activeSlide.subtitleKz : activeSlide.subtitleRu}
                     </p>
 
-                    {((isKz ? activeSlide.bulletsKz : activeSlide.bulletsRu) || []).length > 0 && (
-                      <div className="space-y-2.5 pt-2 border-t border-[#2C2C2C]">
-                        {(isKz ? activeSlide.bulletsKz : activeSlide.bulletsRu)!.map((bullet, bIdx) => (
-                          <div
-                            key={bIdx}
-                            className="p-3 rounded-xl bg-[#252525] border border-[#333333] text-xs sm:text-sm text-white font-semibold flex items-center gap-2.5"
+                    {(isKz ? activeSlide.bulletsKz : activeSlide.bulletsRu) && (
+                      <ul className="space-y-2 pt-1">
+                        {(isKz ? activeSlide.bulletsKz : activeSlide.bulletsRu)!.map((item, i) => (
+                          <li
+                            key={i}
+                            className="text-xs sm:text-sm text-emerald-100 bg-white/5 rounded-xl px-3 py-2 border border-white/10"
                           >
-                            <span>{bullet}</span>
-                          </div>
+                            {item}
+                          </li>
                         ))}
-                      </div>
+                      </ul>
                     )}
 
-                    {activeSlide.ctaLabelRu && (
-                      <div className="pt-2">
-                        {activeSlide.ctaCategory ? (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              closeStories();
-                              onSelectCategory(activeSlide.ctaCategory!);
-                            }}
-                            className="w-full py-3.5 px-4 rounded-xl bg-[#C5A059] hover:bg-[#D4AF37] text-black font-black text-sm flex items-center justify-center gap-2 shadow-md cursor-pointer"
-                          >
-                            <span>{isKz ? activeSlide.ctaLabelKz : activeSlide.ctaLabelRu}</span>
-                            <ArrowRight className="w-4 h-4" />
-                          </button>
-                        ) : activeSlide.ctaUrl ? (
-                          <a
-                            href={activeSlide.ctaUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="w-full py-3.5 px-4 rounded-xl bg-[#C5A059] hover:bg-[#D4AF37] text-black font-black text-sm flex items-center justify-center gap-2 shadow-md text-center"
-                          >
-                            <span>{isKz ? activeSlide.ctaLabelKz : activeSlide.ctaLabelRu}</span>
-                            <ArrowRight className="w-4 h-4" />
-                          </a>
-                        ) : null}
-                      </div>
+                    {activeSlide.ctaUrl && (
+                      <a
+                        href={activeSlide.ctaUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full py-3 px-4 rounded-xl bg-amber-400 hover:bg-amber-500 text-stone-950 font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg transition-colors"
+                      >
+                        <span>{isKz ? activeSlide.ctaLabelKz : activeSlide.ctaLabelRu}</span>
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    )}
+
+                    {activeSlide.ctaCategory && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onSelectCategory(activeSlide.ctaCategory!);
+                          closeStories();
+                          const el = document.getElementById('catalog-section');
+                          if (el) el.scrollIntoView({ behavior: 'smooth' });
+                        }}
+                        className="w-full py-3 px-4 rounded-xl bg-amber-400 hover:bg-amber-500 text-stone-950 font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg transition-colors cursor-pointer"
+                      >
+                        <span>{isKz ? activeSlide.ctaLabelKz : activeSlide.ctaLabelRu}</span>
+                      </button>
                     )}
                   </div>
                 )}
-              </div>
-
-              {/* Bottom Manual Navigation Buttons */}
-              <div className="p-4 bg-[#1B1B1B] border-t border-[#2C2C2C] flex items-center justify-between gap-3 z-20">
-                <button
-                  type="button"
-                  onClick={goPrevSlide}
-                  disabled={activeSlideIndex === 0 && activeGroupIndex === 0}
-                  className="flex-1 py-3 px-4 rounded-xl bg-[#262626] hover:bg-[#333333] disabled:opacity-40 text-white font-black text-sm flex items-center justify-center gap-2 border border-[#444444] cursor-pointer"
-                >
-                  <ChevronLeft className="w-5 h-5 text-[#C5A059]" />
-                  <span>{isKz ? 'Алдыңғы' : 'Назад'}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={goNextSlide}
-                  className="flex-1 py-3 px-4 rounded-xl bg-[#C5A059] hover:bg-[#D4AF37] text-black font-black text-sm flex items-center justify-center gap-2 shadow-md cursor-pointer"
-                >
-                  <span>{isKz ? 'Келесі' : 'Вперёд'}</span>
-                  <ChevronRight className="w-5 h-5" />
-                </button>
               </div>
             </div>
           </div>,

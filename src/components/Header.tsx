@@ -1,143 +1,100 @@
 import React from 'react';
 import {
   ShoppingBag,
-  Heart,
+  Shield,
   Layers,
-  Search,
-  Instagram,
   Phone,
+  Clock,
   MapPin,
-  Lock,
+  Sparkles,
 } from 'lucide-react';
-import { Category, Language, Product, StoreConfig } from '../types';
+import {
+  AccessibilitySettings,
+  Category,
+  Language,
+  Product,
+  StoreConfig,
+} from '../types';
 import { SmartSearchBar } from './SmartSearchBar';
-
-// Minimalist TikTok icon
-const TikTokIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    aria-hidden="true"
-    className={className}
-  >
-    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.33 0 .65.06.94.16v-3.56a6.38 6.38 0 0 0-.94-.07 6.34 6.34 0 0 0-6.34 6.35 6.34 6.34 0 0 0 6.34 6.35 6.34 6.34 0 0 0 6.33-6.35V8.87a8.28 8.28 0 0 0 4.83 1.55v-3.53a4.85 4.85 0 0 1-1.06-.2z" />
-  </svg>
-);
+import { SyncStatusWidget } from './SyncStatusWidget';
 
 interface HeaderProps {
   config: StoreConfig;
-  lang: Language;
-  onLanguageChange: (lang: Language) => void;
+  cartCount: number;
+  favoritesCount?: number;
+  products: Product[];
+  categories: Category[];
+  productCounts: Record<string, number>;
   searchQuery: string;
   onSearchChange: (q: string) => void;
-  products?: Product[];
-  categories?: Category[];
-  productCounts?: Record<string, number>;
-  onSelectCategory?: (categoryId: string) => void;
-  onSelectSymptom?: (symptomId: string) => void;
-  onOpenProduct?: (product: Product) => void;
-  onAddToCart?: (product: Product) => void;
-  cartCount: number;
-  favoritesCount: number;
-  compareCount?: number;
+  lang: Language;
+  onLanguageChange: (lang: Language) => void;
+  accessibility?: AccessibilitySettings;
+  onAccessibilityChange?: (settings: AccessibilitySettings) => void;
   onOpenCart: () => void;
-  onOpenFavorites: () => void;
-  onOpenCompare?: () => void;
+  onOpenFavorites?: () => void;
   onOpenAdmin: () => void;
   onOpenCatalog?: () => void;
+  onSelectCategory?: (id: string) => void;
+  onSelectSymptom?: (symptomId: string) => void;
+  onOpenProduct: (product: Product) => void;
+  onAddToCart: (product: Product) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   config,
-  lang,
-  onLanguageChange,
+  cartCount,
+  products,
+  categories,
+  productCounts,
   searchQuery,
   onSearchChange,
-  products = [],
-  categories = [],
-  productCounts = {},
-  onSelectCategory = () => {},
-  onSelectSymptom,
-  onOpenProduct = () => {},
-  onAddToCart = () => {},
-  cartCount,
-  favoritesCount,
+  lang,
+  onLanguageChange,
   onOpenCart,
-  onOpenFavorites,
   onOpenAdmin,
   onOpenCatalog,
+  onSelectCategory,
+  onSelectSymptom,
+  onOpenProduct,
+  onAddToCart,
 }) => {
   const isKz = lang === 'kz';
 
-  const instagramUrl =
-    config.instagramUrl ||
-    'https://www.instagram.com/musliim_shop06?stkn=dnAzejJ2cm5nOXNi';
-  const tiktokUrl =
-    config.tiktokUrl ||
-    'https://www.tiktok.com/@muslim_shop06?_r=1&_t=ZS-9AFgdLAOcZ2';
-
   return (
-    <header
-      id="main-header"
-      className="sticky top-0 z-40 w-full bg-[#0F0F0F] border-b border-[#242424] text-white select-none transition-colors"
-    >
-      {/* 1. Subtle Utility Topbar: Boutique info + Contacts + Socials */}
-      <div className="hidden sm:block border-b border-[#1C1C1C] py-2 px-4 sm:px-6 text-xs text-[#A3A3A3] bg-[#0A0A0A]">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1.5 text-[#E5E5E5] font-medium">
+    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/90 shadow-xs">
+      {/* 1. Top Ribbon: Location, Hours, Phone, Language */}
+      <div className="bg-slate-900 text-white text-[11px] sm:text-xs py-1.5 px-3 sm:px-6 border-b border-slate-800">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 sm:gap-4 truncate">
+            <span className="flex items-center gap-1.5 text-slate-300 shrink-0">
               <MapPin className="w-3.5 h-3.5 text-[#C5A059]" />
-              <span>Атырау · ТД «Дина Байзар», Бутик №24</span>
+              <span className="font-semibold">{config.city}, ТД «Дина Байзар», Бутик №24</span>
             </span>
-            <span className="text-[#525252]">|</span>
-            <a
-              href={`tel:+${config.whatsappNumber}`}
-              className="flex items-center gap-1 hover:text-[#C5A059] transition-colors"
-            >
-              <Phone className="w-3 h-3 text-[#A3A3A3]" />
-              <span>+7 (778) 175-42-41</span>
-            </a>
-            <span className="text-[#525252]">|</span>
-            <span className="text-[#A3A3A3]">10:00 – 19:00</span>
+            <span className="hidden md:flex items-center gap-1.5 text-slate-400">
+              <Clock className="w-3 h-3 text-[#C5A059]" />
+              <span>{isKz ? config.workingHoursKz : config.workingHoursRu}</span>
+            </span>
           </div>
 
-          <div className="flex items-center gap-3">
-            {/* Social media links */}
+          <div className="flex items-center gap-3 sm:gap-4 shrink-0">
             <a
-              href={instagramUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Instagram @musliim_shop06"
-              className="flex items-center gap-1.5 text-[#D4D4D4] hover:text-[#C5A059] transition-colors py-0.5 px-2 rounded hover:bg-[#1A1A1A]"
-              title="Instagram @musliim_shop06"
+              href={`tel:+${config.whatsappNumber || '77781754241'}`}
+              className="flex items-center gap-1 text-slate-200 hover:text-white font-bold transition-colors"
             >
-              <Instagram className="w-3.5 h-3.5 text-[#C5A059]" />
-              <span className="text-[11px] font-medium">@musliim_shop06</span>
+              <Phone className="w-3 h-3 text-[#C5A059]" />
+              <span className="font-mono">+{config.whatsappNumber || '7 778 175 42 41'}</span>
             </a>
-
-            <a
-              href={tiktokUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="TikTok @muslim_shop06"
-              className="flex items-center gap-1.5 text-[#D4D4D4] hover:text-[#C5A059] transition-colors py-0.5 px-2 rounded hover:bg-[#1A1A1A]"
-              title="TikTok @muslim_shop06"
-            >
-              <TikTokIcon className="w-3.5 h-3.5 text-[#C5A059]" />
-              <span className="text-[11px] font-medium">@muslim_shop06</span>
-            </a>
-
-            <span className="text-[#525252]">|</span>
 
             {/* Language Switcher */}
-            <div className="inline-flex items-center rounded bg-[#171717] border border-[#2A2A2A] p-0.5">
+            <div className="flex items-center bg-slate-800 rounded-lg p-0.5 border border-slate-700 text-[10px] font-bold">
               <button
                 type="button"
                 onClick={() => onLanguageChange('ru')}
-                className={`px-2 py-0.5 rounded text-[11px] font-bold transition-colors ${
-                  lang === 'ru'
-                    ? 'bg-[#C5A059] text-black'
-                    : 'text-[#A3A3A3] hover:text-white'
+                className={`px-2 py-0.5 rounded-md transition-colors cursor-pointer ${
+                  !isKz
+                    ? 'bg-[#C5A059] text-slate-950 font-black'
+                    : 'text-slate-300 hover:text-white'
                 }`}
               >
                 RU
@@ -145,199 +102,153 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 type="button"
                 onClick={() => onLanguageChange('kz')}
-                className={`px-2 py-0.5 rounded text-[11px] font-bold transition-colors ${
-                  lang === 'kz'
-                    ? 'bg-[#C5A059] text-black'
-                    : 'text-[#A3A3A3] hover:text-white'
+                className={`px-2 py-0.5 rounded-md transition-colors cursor-pointer ${
+                  isKz
+                    ? 'bg-[#C5A059] text-slate-950 font-black'
+                    : 'text-slate-300 hover:text-white'
                 }`}
               >
                 KZ
               </button>
             </div>
-
-            {/* Admin entry */}
-            <button
-              type="button"
-              onClick={onOpenAdmin}
-              aria-label="Администратор"
-              className="p-1 rounded text-[#737373] hover:text-[#C5A059] transition-colors"
-              title="Вход для администратора"
-            >
-              <Lock className="w-3.5 h-3.5" />
-            </button>
           </div>
         </div>
       </div>
 
-      {/* 2. Main Premium Header Bar */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 sm:py-4 flex items-center justify-between gap-3 sm:gap-6">
-        {/* Left: Brand Logo & Title */}
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="flex flex-col">
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className="font-extrabold tracking-widest text-lg sm:text-2xl text-white font-serif whitespace-nowrap">
-                MUSLIM <span className="text-[#C5A059]">SHOP</span>
+      {/* 2. Main Store Header: Modern Responsive 2-Row / 1-Row layout */}
+      <div className="px-3 sm:px-6 py-2.5 sm:py-3">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-2.5 md:gap-5">
+          {/* Row 1 on Mobile / Left Column on Desktop: Brand + Catalog + Mobile Actions */}
+          <div className="flex items-center justify-between gap-3 w-full md:w-auto shrink-0">
+            {/* Brand Mark */}
+            <div
+              onClick={() => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="flex flex-col cursor-pointer select-none group"
+              title="MUSLIM SHOP Атырау"
+            >
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-slate-900 group-hover:text-black transition-colors font-sans">
+                  MUSLIM SHOP
+                </span>
+                <span className="w-2.5 h-2.5 rounded-full bg-[#C5A059]" />
+              </div>
+              <span className="text-[10px] sm:text-xs font-black tracking-widest text-slate-500 uppercase mt-0.5">
+                АТЫРАУ • БУТИК 24
               </span>
-              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[#A3A3A3] border border-[#2E2E2E] bg-[#171717] px-1.5 py-0.5 rounded inline-block whitespace-nowrap">
-                Бутик №24
-              </span>
-              {/* Маленький замочек администратора */}
+            </div>
+
+            {/* Quick Catalog Button (Desktop & Tablet) */}
+            {onOpenCatalog && (
               <button
                 type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onOpenAdmin();
-                }}
-                className="p-1 sm:p-1.5 rounded text-[#737373] hover:text-[#C5A059] hover:bg-[#1A1A1A] active:scale-90 transition-all cursor-pointer shrink-0 ml-0.5"
-                title="Панель управления"
-                aria-label="Панель управления"
+                onClick={onOpenCatalog}
+                className="hidden md:flex items-center gap-2 px-3.5 sm:px-4 h-12 rounded-xl sm:rounded-2xl bg-slate-900 hover:bg-black text-white text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer shrink-0"
               >
-                <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#737373] hover:text-[#C5A059]" />
+                <Layers className="w-4 h-4 text-[#C5A059]" />
+                <span>{isKz ? 'Каталог' : 'Каталог'}</span>
+              </button>
+            )}
+
+            {/* Right Buttons on Mobile: Catalog + Admin + Cart */}
+            <div className="flex items-center gap-1.5 sm:gap-2 md:hidden">
+              {onOpenCatalog && (
+                <button
+                  type="button"
+                  onClick={onOpenCatalog}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs"
+                  title="Каталог товаров"
+                >
+                  <Layers className="w-3.5 h-3.5 text-[#C5A059]" />
+                  <span>{isKz ? 'Каталог' : 'Каталог'}</span>
+                </button>
+              )}
+
+              <SyncStatusWidget lang={lang} variant="header" products={products} />
+
+              <button
+                type="button"
+                id="header-admin-btn-mobile"
+                onClick={onOpenAdmin}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-950 border border-amber-300 font-bold text-xs shadow-2xs"
+                title="Панель администратора"
+              >
+                <Shield className="w-3.5 h-3.5 text-[#C5A059]" />
+                <span className="font-extrabold">{isKz ? 'Админ' : 'Админ'}</span>
+              </button>
+
+              <button
+                type="button"
+                id="header-cart-btn-mobile"
+                onClick={onOpenCart}
+                className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-slate-900 text-white shadow-xs"
+                title="Корзина"
+              >
+                <ShoppingBag className="w-5 h-5 text-[#C5A059]" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-rose-600 text-white font-mono font-extrabold text-[10px] flex items-center justify-center shadow-xs">
+                    {cartCount > 99 ? '99+' : cartCount}
+                  </span>
+                )}
               </button>
             </div>
-            <span className="text-[11px] text-[#A3A3A3] tracking-wide mt-0.5 hidden sm:block">
-              {isKz ? 'Халал өнімдер мен витаминдер' : 'Халяль-товары и витамины в Атырау'}
-            </span>
           </div>
 
-          {/* Catalog Button */}
-          {onOpenCatalog && (
-            <button
-              type="button"
-              onClick={onOpenCatalog}
-              className="hidden md:flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#1C1C1C] hover:bg-[#252525] border border-[#2F2F2F] hover:border-[#C5A059] text-white text-sm font-semibold transition-all cursor-pointer shadow-sm ml-2"
-            >
-              <Layers className="w-4 h-4 text-[#C5A059]" />
-              <span>{isKz ? 'Каталог' : 'Каталог товаров'}</span>
-            </button>
-          )}
-        </div>
-
-        {/* Center: Large Desktop Search Bar */}
-        <div className="hidden md:flex flex-1 max-w-xl mx-2 relative">
-          <SmartSearchBar
-            inputId="header-search-input"
-            searchQuery={searchQuery}
-            onSearchChange={onSearchChange}
-            products={products}
-            categories={categories}
-            productCounts={productCounts}
-            lang={lang}
-            onSelectCategory={onSelectCategory}
-            onSelectSymptom={onSelectSymptom}
-            onOpenProduct={onOpenProduct}
-            onAddToCart={onAddToCart}
-          />
-        </div>
-
-        {/* Right: Actions (Mobile Language Switcher + Socials + Favorites + Cart) */}
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          {/* Mobile Language Switcher */}
-          <div className="sm:hidden inline-flex items-center rounded bg-[#171717] border border-[#2A2A2A] p-0.5">
-            <button
-              type="button"
-              onClick={() => onLanguageChange('ru')}
-              className={`px-2 py-1 rounded text-xs font-bold ${
-                lang === 'ru'
-                  ? 'bg-[#C5A059] text-black'
-                  : 'text-[#A3A3A3]'
-              }`}
-            >
-              RU
-            </button>
-            <button
-              type="button"
-              onClick={() => onLanguageChange('kz')}
-              className={`px-2 py-1 rounded text-xs font-bold ${
-                lang === 'kz'
-                  ? 'bg-[#C5A059] text-black'
-                  : 'text-[#A3A3A3]'
-              }`}
-            >
-              KZ
-            </button>
-          </div>
-
-          {/* Compact Socials on Mobile */}
-          <div className="flex sm:hidden items-center gap-1.5">
-            <a
-              href={instagramUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Instagram"
-              className="p-2 rounded-lg bg-[#171717] border border-[#262626] text-[#C5A059] hover:text-white"
-            >
-              <Instagram className="w-4 h-4" />
-            </a>
-            <a
-              href={tiktokUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="TikTok"
-              className="p-2 rounded-lg bg-[#171717] border border-[#262626] text-[#C5A059] hover:text-white"
-            >
-              <TikTokIcon className="w-4 h-4" />
-            </a>
-          </div>
-
-          {/* Favorites Button */}
-          <button
-            type="button"
-            onClick={onOpenFavorites}
-            className="relative p-2.5 rounded-lg bg-[#171717] hover:bg-[#202020] border border-[#292929] hover:border-[#C5A059] text-white transition-colors cursor-pointer"
-            title={isKz ? 'Таңдаулылар' : 'Избранное'}
-            aria-label="Избранное"
-          >
-            <Heart
-              className={`w-4 h-4 sm:w-5 sm:h-5 ${
-                favoritesCount > 0 ? 'fill-[#C5A059] text-[#C5A059]' : 'text-[#D4D4D4]'
-              }`}
+          {/* Full-Width Search Bar on Mobile / Centered Search on Desktop */}
+          <div className="w-full md:flex-1 md:max-w-2xl md:mx-4 relative">
+            <SmartSearchBar
+              inputId="header-search-input"
+              searchQuery={searchQuery}
+              onSearchChange={onSearchChange}
+              products={products}
+              categories={categories}
+              productCounts={productCounts}
+              lang={lang}
+              onSelectCategory={onSelectCategory}
+              onSelectSymptom={onSelectSymptom}
+              onOpenProduct={onOpenProduct}
+              onAddToCart={onAddToCart}
+              placeholder={isKz ? 'Өнімдерді, дәрумендерді іздеу...' : 'Поиск товаров по названию или категории...'}
             />
-            {favoritesCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#C5A059] text-black font-extrabold text-[10px] flex items-center justify-center">
-                {favoritesCount}
+          </div>
+
+          {/* Desktop Right Actions: Sync Status + Admin + Cart */}
+          <div className="hidden md:flex items-center gap-2.5 sm:gap-3 shrink-0">
+            <SyncStatusWidget lang={lang} variant="header" products={products} />
+
+            <button
+              type="button"
+              id="header-admin-btn-desktop"
+              onClick={onOpenAdmin}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-950 border border-amber-300/80 font-bold text-xs sm:text-sm shadow-2xs transition-colors cursor-pointer"
+              title="Панель администратора магазина"
+            >
+              <Shield className="w-4 h-4 text-[#C5A059] shrink-0" />
+              <span className="font-extrabold">{isKz ? 'Админ' : 'Админ'}</span>
+            </button>
+
+            <button
+              type="button"
+              id="header-cart-btn-desktop"
+              onClick={onOpenCart}
+              className="relative flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-slate-900 hover:bg-black text-white text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer shrink-0"
+              title={isKz ? 'Себетті ашу' : 'Открыть корзину'}
+            >
+              <div className="relative">
+                <ShoppingBag className="w-5 h-5 text-[#C5A059]" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-rose-600 text-white font-mono font-extrabold text-[11px] flex items-center justify-center shadow-xs">
+                    {cartCount > 99 ? '99+' : cartCount}
+                  </span>
+                )}
+              </div>
+              <span className="font-bold">
+                {isKz ? 'Себет' : 'Корзина'}
               </span>
-            )}
-          </button>
-
-          {/* Cart Button */}
-          <button
-            id="cart-drawer-btn"
-            type="button"
-            onClick={onOpenCart}
-            className="flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-lg bg-[#C5A059] hover:bg-[#D4AF37] active:bg-[#B38F46] text-black font-bold text-sm transition-all cursor-pointer shadow-md"
-            aria-label="Корзина"
-          >
-            <div className="relative flex items-center justify-center">
-              <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
-              {cartCount > 0 && (
-                <span className="absolute -top-2.5 -right-2.5 min-w-[18px] h-[18px] px-1 rounded-full bg-black text-[#C5A059] font-extrabold text-[10px] flex items-center justify-center border border-[#C5A059]">
-                  {cartCount}
-                </span>
-              )}
-            </div>
-            <span className="hidden sm:inline font-bold">
-              {isKz ? 'Себет' : 'Корзина'}
-            </span>
-          </button>
+            </button>
+          </div>
         </div>
-      </div>
-
-      {/* 3. Mobile Search Input Row directly under Header */}
-      <div className="md:hidden px-4 pb-3">
-        <SmartSearchBar
-          inputId="mobile-header-search-input"
-          searchQuery={searchQuery}
-          onSearchChange={onSearchChange}
-          products={products}
-          categories={categories}
-          productCounts={productCounts}
-          lang={lang}
-          onSelectCategory={onSelectCategory}
-          onSelectSymptom={onSelectSymptom}
-          onOpenProduct={onOpenProduct}
-          onAddToCart={onAddToCart}
-        />
       </div>
     </header>
   );

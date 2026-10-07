@@ -2,7 +2,6 @@ import express from 'express';
 import fs from 'fs';
 import path from 'path';
 import zlib from 'zlib';
-import crypto from 'crypto';
 import { createServer as createViteServer } from 'vite';
 import dotenv from 'dotenv';
 import { GoogleGenAI } from '@google/genai';
@@ -121,19 +120,18 @@ function rebuildCatalogBuffers(payload: CatalogPayload, saveToDisk: boolean = fa
   catalogCache = payload;
   const rawJson = JSON.stringify(payload);
   catalogJsonBuffer = Buffer.from(rawJson, 'utf-8');
-  try {
-    catalogGzipBuffer = zlib.gzipSync(catalogJsonBuffer, { level: 6 });
-  } catch {
-    catalogGzipBuffer = null;
-  }
+
+  // Fast level 1 gzip in background without blocking event loop
+  zlib.gzip(catalogJsonBuffer, { level: 1 }, (err, result) => {
+    if (!err && result) {
+      catalogGzipBuffer = result;
+    }
+  });
 
   if (saveToDisk) {
-    try {
-      fs.mkdirSync(path.dirname(SNAPSHOT_FILE_PATH), { recursive: true });
-      fs.writeFileSync(SNAPSHOT_FILE_PATH, rawJson);
-    } catch (e) {
+    fs.promises.writeFile(SNAPSHOT_FILE_PATH, rawJson).catch((e) => {
       console.warn('Could not persist catalog snapshot to disk:', e);
-    }
+    });
   }
 }
 
@@ -908,9 +906,9 @@ app.post('/api/analytics/event', (req, res) => {
         .sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''))
         .slice(0, 35);
 
-      const sumVisits = Object.values(days).reduce((acc: number, d: any) => acc + (Number(d.totalVisits) || 0), 0);
-      const sumUniques = Object.values(days).reduce((acc: number, d: any) => acc + (Number(d.uniqueVisitors) || 0), 0);
-      const sumViews = Object.values(days).reduce((acc: number, d: any) => acc + (Number(d.pageViews) || 0), 0);
+      const sumVisits: number = (Object.values(days) as any[]).reduce((acc: number, d: any) => acc + (Number(d.totalVisits) || 0), 0);
+      const sumUniques: number = (Object.values(days) as any[]).reduce((acc: number, d: any) => acc + (Number(d.uniqueVisitors) || 0), 0);
+      const sumViews: number = (Object.values(days) as any[]).reduce((acc: number, d: any) => acc + (Number(d.pageViews) || 0), 0);
 
       serverAnalyticsState = {
         overview: {
@@ -1145,134 +1143,6 @@ app.post('/api/translate', async (req, res) => {
   } catch (err: any) {
     console.error('Translation endpoint error:', err);
     res.status(500).json({ error: err.message || 'Translation failed' });
-  }
-});
-
-// ================= SECURE SERVER-SIDE ADMIN AUTHENTICATION =================
-const ADMIN_AUTH_FILE = path.join(process.cwd(), 'data', 'admin-auth.json');
-const activeAdminTokens = new Map<string, number>();
-
-function hashPassword(pass: string, salt: string): string {
-  return crypto.createHash('sha256').update(salt + pass).digest('hex');
-}
-
-let serverAdminConfig = {
-  username: 'admin',
-  salt: 'ms_salt_2026',
-  passwordHash: '',
-};
-
-try {
-  if (fs.existsSync(ADMIN_AUTH_FILE)) {
-    const raw = fs.readFileSync(ADMIN_AUTH_FILE, 'utf-8');
-    const parsed = JSON.parse(raw);
-    if (parsed && parsed.passwordHash) {
-      serverAdminConfig.username = parsed.username || 'admin';
-      serverAdminConfig.salt = parsed.salt || 'ms_salt_2026';
-      serverAdminConfig.passwordHash = parsed.passwordHash;
-    }
-  }
-} catch (e) {
-  console.warn('Error reading admin-auth.json:', e);
-}
-
-if (!serverAdminConfig.passwordHash) {
-  // Default password: admin2026
-  serverAdminConfig.passwordHash = hashPassword('admin2026', serverAdminConfig.salt);
-  try {
-    fs.writeFileSync(ADMIN_AUTH_FILE, JSON.stringify({
-      username: serverAdminConfig.username,
-      salt: serverAdminConfig.salt,
-      passwordHash: serverAdminConfig.passwordHash,
-      updatedAt: new Date().toISOString(),
-    }, null, 2));
-  } catch {}
-}
-
-app.post('/api/admin/login', (req, res) => {
-  try {
-    const { username, password } = req.body || {};
-    if (!username || !password) {
-      return res.status(400).json({ success: false, error: 'Введите логин и пароль' });
-    }
-
-    const cleanUser = String(username).trim();
-    const cleanPass = String(password).trim();
-
-    const expectedHash = serverAdminConfig.passwordHash;
-    const computedHash = hashPassword(cleanPass, serverAdminConfig.salt);
-
-    const isUserValid = cleanUser.toLowerCase() === serverAdminConfig.username.toLowerCase();
-    const isPassValid = computedHash === expectedHash;
-
-    if (!isUserValid || !isPassValid) {
-      return res.status(401).json({ success: false, error: 'Неверный логин или пароль администратора' });
-    }
-
-    // Generate secure session token (valid for 12 hours)
-    const token = crypto.randomBytes(32).toString('hex');
-    const expiresAt = Date.now() + 12 * 60 * 60 * 1000;
-    activeAdminTokens.set(token, expiresAt);
-
-    return res.json({
-      success: true,
-      token,
-      expiresAt,
-      username: serverAdminConfig.username,
-    });
-  } catch (err: any) {
-    return res.status(500).json({ success: false, error: err.message || 'Ошибка сервера при авторизации' });
-  }
-});
-
-app.post('/api/admin/verify', (req, res) => {
-  const token = req.body?.token || (req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim();
-  if (!token) {
-    return res.status(401).json({ success: false, error: 'Токен отсутствует' });
-  }
-  const expiresAt = activeAdminTokens.get(token);
-  if (!expiresAt || Date.now() > expiresAt) {
-    activeAdminTokens.delete(token);
-    return res.status(401).json({ success: false, error: 'Сессия истекла' });
-  }
-  return res.json({ success: true, username: serverAdminConfig.username });
-});
-
-app.post('/api/admin/change-password', (req, res) => {
-  try {
-    const { token, currentPassword, newPassword } = req.body || {};
-    const authToken = token || (req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim();
-
-    const expiresAt = activeAdminTokens.get(authToken);
-    if (!expiresAt || Date.now() > expiresAt) {
-      return res.status(401).json({ success: false, error: 'Сессия истекла. Войдите заново.' });
-    }
-
-    if (!currentPassword || !newPassword || String(newPassword).length < 6) {
-      return res.status(400).json({ success: false, error: 'Новый пароль должен содержать минимум 6 символов' });
-    }
-
-    const currentComputed = hashPassword(String(currentPassword).trim(), serverAdminConfig.salt);
-    if (currentComputed !== serverAdminConfig.passwordHash) {
-      return res.status(400).json({ success: false, error: 'Текущий пароль указан неверно' });
-    }
-
-    const newSalt = crypto.randomBytes(16).toString('hex');
-    const newHash = hashPassword(String(newPassword).trim(), newSalt);
-
-    serverAdminConfig.salt = newSalt;
-    serverAdminConfig.passwordHash = newHash;
-
-    fs.writeFileSync(ADMIN_AUTH_FILE, JSON.stringify({
-      username: serverAdminConfig.username,
-      salt: serverAdminConfig.salt,
-      passwordHash: serverAdminConfig.passwordHash,
-      updatedAt: new Date().toISOString(),
-    }, null, 2));
-
-    return res.json({ success: true, message: 'Пароль администратора успешно изменён' });
-  } catch (err: any) {
-    return res.status(500).json({ success: false, error: err.message || 'Ошибка смены пароля' });
   }
 });
 

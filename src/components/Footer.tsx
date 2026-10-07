@@ -1,27 +1,6 @@
 import React from 'react';
-import {
-  MapPin,
-  Phone,
-  MessageCircle,
-  Clock,
-  Instagram,
-  ShieldCheck,
-  Truck,
-  CreditCard,
-  Lock,
-} from 'lucide-react';
+import { MapPin, Phone, MessageCircle, Clock, Instagram, ShieldCheck } from 'lucide-react';
 import { Language, StoreConfig } from '../types';
-
-const TikTokIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    aria-hidden="true"
-    className={className}
-  >
-    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.33 0 .65.06.94.16v-3.56a6.38 6.38 0 0 0-.94-.07 6.34 6.34 0 0 0-6.34 6.35 6.34 6.34 0 0 0 6.34 6.35 6.34 6.34 0 0 0 6.33-6.35V8.87a8.28 8.28 0 0 0 4.83 1.55v-3.53a4.85 4.85 0 0 1-1.06-.2z" />
-  </svg>
-);
 
 interface FooterProps {
   config: StoreConfig;
@@ -29,163 +8,142 @@ interface FooterProps {
   onOpenAdmin?: () => void;
 }
 
-export const Footer: React.FC<FooterProps> = ({ config, lang, onOpenAdmin }) => {
-  const isKz = lang === 'kz';
-
-  const instagramUrl =
-    config.instagramUrl ||
-    'https://www.instagram.com/musliim_shop06?stkn=dnAzejJ2cm5nOXNi';
-  const tiktokUrl =
-    config.tiktokUrl ||
-    'https://www.tiktok.com/@muslim_shop06?_r=1&_t=ZS-9AFgdLAOcZ2';
-
+export const Footer: React.FC<FooterProps> = ({ config, lang }) => {
   return (
-    <footer
-      id="main-footer"
-      className="w-full max-w-full overflow-x-hidden bg-[#0A0A0A] text-[#A3A3A3] pt-12 pb-24 md:pb-12 border-t border-[#222222] mt-16"
-    >
+    <footer id="main-footer" className="w-full max-w-full overflow-x-hidden bg-slate-100 text-slate-700 pt-10 pb-8 border-t border-slate-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
-          {/* Col 1: Brand & Philosophy */}
-          <div className="space-y-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-7 sm:gap-8 mb-8">
+          {/* Col 1: Brand & Tagline */}
+          <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <span className="font-extrabold text-2xl text-white tracking-widest font-serif">
-                MUSLIM <span className="text-[#C5A059]">SHOP</span>
+              <span className="font-sans font-black text-2xl text-[#0567BA] tracking-tight">
+                {config.storeName}
               </span>
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[#1A1A1A] text-[#C5A059] border border-[#C5A059]/30">
-                {config.boutiqueNumber || 'Бутик №24'}
+              <span className="px-2 py-0.5 rounded text-[11px] font-black uppercase tracking-wider bg-[#ffbd00] text-slate-900">
+                {config.boutiqueNumber}
               </span>
             </div>
-            <p className="text-sm text-[#A3A3A3] leading-relaxed">
-              {isKz ? config.subtitleKz : config.subtitleRu}
+            <p className="text-slate-800 font-medium text-sm leading-relaxed">
+              {lang === 'kz' ? config.taglineKz : config.taglineRu}
             </p>
-            <div className="flex items-center gap-2 text-xs text-[#E5E5E5] font-semibold pt-1">
-              <ShieldCheck className="w-4 h-4 text-[#C5A059] shrink-0" />
-              <span>100% Оригинальная продукция Halal & GMP</span>
+            <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
+              {lang === 'kz' ? config.subtitleKz : config.subtitleRu}
+            </p>
+            <div className="pt-1 flex items-center gap-2 text-xs sm:text-sm text-[#2db972] font-semibold">
+              <ShieldCheck className="w-4 h-4 shrink-0 text-[#2db972]" />
+              <span>100% Халяль & Сертификаты качества</span>
             </div>
           </div>
 
           {/* Col 2: Contacts & Address */}
           <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-white pb-1.5 border-b border-[#222222]">
-              {isKz ? 'Мекенжай және байланыс' : 'Адрес и контакты'}
+            <h4 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-900 font-sans pb-1 border-b border-slate-200">
+              {lang === 'kz' ? 'Мекенжай және байланыс' : 'Адрес и контакты'}
             </h4>
-            <ul className="space-y-2.5 text-xs sm:text-sm text-[#D4D4D4]">
-              <li className="flex items-start gap-2.5">
-                <MapPin className="w-4 h-4 text-[#C5A059] shrink-0 mt-0.5" />
+            <ul className="space-y-2.5 text-xs sm:text-sm leading-relaxed text-slate-600">
+              <li className="flex items-start gap-2">
+                <MapPin className="w-4 h-4 text-[#0567BA] shrink-0 mt-0.5" />
                 <span>
-                  {config.address} ({config.city}, {config.boutiqueNumber || 'Бутик №24'})
+                  {config.address} ({config.city}, {config.boutiqueNumber})
                 </span>
               </li>
-              <li className="flex items-center gap-2.5">
-                <Clock className="w-4 h-4 text-[#737373] shrink-0" />
-                <span>{isKz ? config.workingHoursKz : config.workingHoursRu}</span>
+              <li className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-slate-400 shrink-0" />
+                <span>{lang === 'kz' ? config.workingHoursKz : config.workingHoursRu}</span>
               </li>
-              <li className="flex items-center gap-2.5">
-                <Phone className="w-4 h-4 text-[#737373] shrink-0" />
-                <a
-                  href={`tel:+${config.whatsappNumber}`}
-                  className="hover:text-[#C5A059] font-bold text-white transition-colors"
-                >
-                  +7 (778) 175-42-41
+              <li className="flex items-center gap-2">
+                <Phone className="w-4 h-4 text-[#0567BA] shrink-0" />
+                <a href={`tel:+${config.whatsappNumber}`} className="hover:text-[#0567BA] font-semibold transition-colors">
+                  +7 778 175 42 41
                 </a>
               </li>
-              <li className="flex items-center gap-2.5">
-                <MessageCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+              <li className="flex items-center gap-2">
+                <MessageCircle className="w-4 h-4 text-[#25D366] shrink-0" />
                 <a
                   href={`https://wa.me/${config.whatsappNumber}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-emerald-300 font-bold text-emerald-400 transition-colors"
+                  className="hover:text-emerald-700 text-[#25D366] font-bold transition-colors"
                 >
-                  WhatsApp: +7 (778) 175-42-41
+                  WhatsApp: +7 778 175 42 41
                 </a>
               </li>
             </ul>
           </div>
 
-          {/* Col 3: Delivery & Payment terms */}
+          {/* Col 3: Quick Navigation & 2GIS */}
           <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-white pb-1.5 border-b border-[#222222]">
-              {isKz ? 'Жеткізу және төлем' : 'Доставка и оплата'}
-            </h4>
-            <ul className="space-y-2.5 text-xs sm:text-sm text-[#D4D4D4]">
-              <li className="flex items-start gap-2.5">
-                <Truck className="w-4 h-4 text-[#C5A059] shrink-0 mt-0.5" />
-                <span>Быстрая курьерская доставка по г. Атырау в день заказа</span>
-              </li>
-              <li className="flex items-start gap-2.5">
-                <CreditCard className="w-4 h-4 text-[#C5A059] shrink-0 mt-0.5" />
-                <span>Оплата: Kaspi Pay, Kaspi QR, наличными при получении</span>
-              </li>
-              {config.gis2Url && (
-                <li className="pt-1">
-                  <a
-                    href={config.gis2Url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#171717] hover:bg-[#222222] border border-[#2F2F2F] text-white text-xs font-semibold transition-colors"
-                  >
-                    <MapPin className="w-3.5 h-3.5 text-[#C5A059]" />
-                    <span>Посмотреть на карте 2GIS</span>
-                  </a>
-                </li>
-              )}
-            </ul>
-          </div>
-
-          {/* Col 4: Socials & Admin */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-white pb-1.5 border-b border-[#222222]">
-              {isKz ? 'Әлеуметтік желілер' : 'Мы в соцсетях'}
+            <h4 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-900 font-sans pb-1 border-b border-slate-200">
+              {lang === 'kz' ? 'Навигация & Карта' : 'Навигация и карты'}
             </h4>
             <div className="space-y-2.5 text-xs sm:text-sm">
               <a
-                href={instagramUrl}
+                href={config.gis2Url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 text-[#D4D4D4] hover:text-[#C5A059] transition-colors"
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-white hover:bg-slate-50 text-slate-800 font-bold border border-slate-300 transition-colors shadow-xs"
               >
-                <Instagram className="w-4 h-4 text-[#C5A059] shrink-0" />
-                <span>Instagram: @musliim_shop06</span>
+                <MapPin className="w-4 h-4 text-[#0567BA]" />
+                <span>{lang === 'kz' ? '2GIS картасынан ашу' : 'Открыть Бутик №24 в 2GIS'}</span>
               </a>
 
-              <a
-                href={tiktokUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 text-[#D4D4D4] hover:text-[#C5A059] transition-colors"
-              >
-                <TikTokIcon className="w-4 h-4 text-[#C5A059] shrink-0" />
-                <span>TikTok: @muslim_shop06</span>
-              </a>
-
-              {onOpenAdmin && (
-                <div className="pt-3">
-                  <button
-                    type="button"
-                    onClick={onOpenAdmin}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#141414] hover:bg-[#1E1E1E] text-[#8E8E8E] hover:text-white border border-[#262626] text-xs font-medium transition-colors cursor-pointer"
+              <div className="pt-1 flex flex-col gap-2">
+                {config.instagram && (
+                  <a
+                    href={`https://instagram.com/${config.instagram.replace(/^@/, '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-xs sm:text-sm text-slate-600 hover:text-pink-600 transition-colors"
                   >
-                    <Lock className="w-3.5 h-3.5" />
-                    <span>Панель управления</span>
-                  </button>
-                </div>
-              )}
+                    <Instagram className="w-4 h-4 text-pink-500 shrink-0" />
+                    <span>Instagram: @{config.instagram.replace(/^@/, '')}</span>
+                  </a>
+                )}
+
+                <a
+                  id="footer-tiktok-link"
+                  href="https://www.tiktok.com/@muslim_shop06?_r=1&_t=ZS-9A4oN3D5OFB"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-xs sm:text-sm text-slate-600 hover:text-slate-900 transition-colors"
+                >
+                  <svg
+                    className="w-4 h-4 text-slate-700 shrink-0 fill-current"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" />
+                  </svg>
+                  <span>TikTok: @muslim_shop06</span>
+                </a>
+              </div>
+            </div>
+            <p className="text-[11px] sm:text-xs text-slate-500 leading-relaxed pt-1">
+              {lang === 'kz' ? config.pickupInfoKz : config.pickupInfoRu}
+            </p>
+          </div>
+
+          {/* Col 4: Delivery in Atyrau & Kazakhstan */}
+          <div className="space-y-3">
+            <h4 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-900 font-sans pb-1 border-b border-slate-200">
+              {lang === 'kz' ? 'Жеткізу шарттары' : 'Доставка и оплата'}
+            </h4>
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              {lang === 'kz' ? config.deliveryInfoKz : config.deliveryInfoRu}
+            </p>
+            <div className="p-3 rounded-xl bg-white border border-slate-200 text-xs sm:text-sm text-slate-700 leading-relaxed shadow-xs">
+              <p className="font-bold text-slate-900 mb-0.5">Оплата Kaspi</p>
+              <p className="text-slate-500 text-xs leading-relaxed">
+                Перевод на Kaspi Gold, Kaspi QR или наличными при получении в Бутике №24.
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Bottom copyright line */}
-        <div className="pt-6 border-t border-[#1C1C1C] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#737373]">
-          <p>© {new Date().getFullYear()} MUSLIM SHOP · Бутик №24, г. Атырау. Все права защищены.</p>
-          <div className="flex items-center gap-4 text-[11px]">
-            <span>Халяль продукция</span>
-            <span>•</span>
-            <span>Только оригинал</span>
-            <span>•</span>
-            <span>Kaspi QR</span>
-          </div>
+        {/* Bottom Bar: Copyright (Flip.kz style clean text) */}
+        <div className="pt-5 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+          <p>© {new Date().getFullYear()} {config.storeName} — г. Атырау, Бутик №24 (ТД «Дина Байзар»). Все права защищены.</p>
+          <p className="text-slate-400">Халяль продукция • Доставка по всему Казахстану</p>
         </div>
       </div>
     </footer>
