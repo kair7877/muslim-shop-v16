@@ -39,7 +39,6 @@ import { Category, Language, Product, StoreConfig } from '../types';
 import { AnalyticsTab } from './AnalyticsTab';
 import { StoriesGeneratorModal } from './StoriesGeneratorModal';
 import { BulkPriceEditorTab } from './BulkPriceEditorTab';
-import { SyncStatusWidget } from './SyncStatusWidget';
 import {
   saveProductToFirestore,
   deleteProductFromFirestore,
@@ -882,23 +881,6 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                   ? `Блокировка (${Math.ceil(lockoutRemainingMs / 1000)}с)`
                   : 'Войти в панель'}
               </button>
-
-              {lockoutRemainingMs > 0 && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    try {
-                      localStorage.removeItem(ADMIN_ATTEMPTS_KEY);
-                      localStorage.removeItem(ADMIN_LOCKOUT_KEY);
-                    } catch {}
-                    setLockoutRemainingMs(0);
-                    setErrorMsg('');
-                  }}
-                  className="text-xs text-rose-600 hover:text-rose-800 underline font-semibold block mx-auto pt-1"
-                >
-                  Сбросить блокировку попыток
-                </button>
-              )}
             </form>
 
             <div className="p-3 rounded-xl bg-stone-50 border border-stone-200 text-[11px] text-stone-500 text-left space-y-1">
@@ -1081,9 +1063,6 @@ export const AdminModal: React.FC<AdminModalProps> = ({
 
             {/* Tab content */}
             <div className="flex-1 overflow-y-auto p-4 sm:p-5">
-              {/* Sync Status Banner */}
-              <SyncStatusWidget lang={lang} variant="admin" products={products} />
-
               {/* EDIT PRODUCT SUB-VIEW */}
               {editingProduct ? (
                 <form onSubmit={handleSaveEditedProduct} className="space-y-4 max-w-xl mx-auto">

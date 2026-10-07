@@ -1867,11 +1867,11 @@ export default function App() {
         lang={lang}
       />
 
-      {/* 7. Fixed Bottom Navigation Bar (Главная • Каталог • Поиск • Корзина • Админ) */}
+      {/* 7. Fixed Bottom Navigation Bar (Главная • Каталог • Поиск • Избранное • Корзина) */}
       <BottomNav
         activeTab={
-          (isAdminOpen
-            ? 'admin'
+          (isFavoritesOpen
+            ? 'favorites'
             : isCartOpen
             ? 'cart'
             : bottomDrawerMode === 'catalog' || selectedCategoryId !== 'cat-all'
@@ -1881,6 +1881,7 @@ export default function App() {
         lang={lang}
         accessibility={accessibility}
         cartCount={cart.reduce((sum, item) => sum + item.quantity, 0)}
+        favoritesCount={favorites.length}
         onSelectHome={() => {
           setBottomDrawerMode(null);
           setIsCartOpen(false);
@@ -1907,17 +1908,17 @@ export default function App() {
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }
         }}
+        onOpenFavorites={() => {
+          setBottomDrawerMode(null);
+          setIsCartOpen(false);
+          setIsAdminOpen(false);
+          setIsFavoritesOpen((prev) => !prev);
+        }}
         onOpenCart={() => {
           setBottomDrawerMode(null);
           setIsFavoritesOpen(false);
           setIsAdminOpen(false);
           setIsCartOpen((prev) => !prev);
-        }}
-        onOpenAdmin={() => {
-          setBottomDrawerMode(null);
-          setIsCartOpen(false);
-          setIsFavoritesOpen(false);
-          setIsAdminOpen(true);
         }}
       />
     </div>

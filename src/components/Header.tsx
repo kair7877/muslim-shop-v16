@@ -1,12 +1,11 @@
 import React from 'react';
 import {
   ShoppingBag,
-  Shield,
   Layers,
   Phone,
   Clock,
   MapPin,
-  Sparkles,
+  Lock,
 } from 'lucide-react';
 import {
   AccessibilitySettings,
@@ -16,7 +15,6 @@ import {
   StoreConfig,
 } from '../types';
 import { SmartSearchBar } from './SmartSearchBar';
-import { SyncStatusWidget } from './SyncStatusWidget';
 
 interface HeaderProps {
   config: StoreConfig;
@@ -111,6 +109,18 @@ export const Header: React.FC<HeaderProps> = ({
                 KZ
               </button>
             </div>
+
+            {/* Inconspicuous Admin Lock Button in Top Bar */}
+            <button
+              type="button"
+              id="header-admin-lock-btn"
+              onClick={onOpenAdmin}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
+              title="Вход"
+              aria-label="Вход"
+            >
+              <Lock className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
       </div>
@@ -151,13 +161,13 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             )}
 
-            {/* Right Buttons on Mobile: Catalog + Admin + Cart */}
+            {/* Right Buttons on Mobile: Catalog + Cart */}
             <div className="flex items-center gap-1.5 sm:gap-2 md:hidden">
               {onOpenCatalog && (
                 <button
                   type="button"
                   onClick={onOpenCatalog}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs"
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs cursor-pointer"
                   title="Каталог товаров"
                 >
                   <Layers className="w-3.5 h-3.5 text-[#C5A059]" />
@@ -165,24 +175,11 @@ export const Header: React.FC<HeaderProps> = ({
                 </button>
               )}
 
-              <SyncStatusWidget lang={lang} variant="header" products={products} />
-
-              <button
-                type="button"
-                id="header-admin-btn-mobile"
-                onClick={onOpenAdmin}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-950 border border-amber-300 font-bold text-xs shadow-2xs"
-                title="Панель администратора"
-              >
-                <Shield className="w-3.5 h-3.5 text-[#C5A059]" />
-                <span className="font-extrabold">{isKz ? 'Админ' : 'Админ'}</span>
-              </button>
-
               <button
                 type="button"
                 id="header-cart-btn-mobile"
                 onClick={onOpenCart}
-                className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-slate-900 text-white shadow-xs"
+                className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-slate-900 text-white shadow-xs cursor-pointer"
                 title="Корзина"
               >
                 <ShoppingBag className="w-5 h-5 text-[#C5A059]" />
@@ -213,21 +210,8 @@ export const Header: React.FC<HeaderProps> = ({
             />
           </div>
 
-          {/* Desktop Right Actions: Sync Status + Admin + Cart */}
+          {/* Desktop Right Actions: Cart */}
           <div className="hidden md:flex items-center gap-2.5 sm:gap-3 shrink-0">
-            <SyncStatusWidget lang={lang} variant="header" products={products} />
-
-            <button
-              type="button"
-              id="header-admin-btn-desktop"
-              onClick={onOpenAdmin}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-950 border border-amber-300/80 font-bold text-xs sm:text-sm shadow-2xs transition-colors cursor-pointer"
-              title="Панель администратора магазина"
-            >
-              <Shield className="w-4 h-4 text-[#C5A059] shrink-0" />
-              <span className="font-extrabold">{isKz ? 'Админ' : 'Админ'}</span>
-            </button>
-
             <button
               type="button"
               id="header-cart-btn-desktop"

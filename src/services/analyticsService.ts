@@ -1274,6 +1274,34 @@ export async function trackProductView(productId: string, productTitle: string):
 }
 
 /**
+ * Tracks add to cart action
+ */
+export async function trackAddToCart(productId: string, productTitle?: string): Promise<void> {
+  if (isIgnoreAdminVisits()) return;
+  const today = getTodayDateString();
+  await pushAnalyticsEventToServer({
+    type: 'addToCart',
+    date: today,
+    productId,
+    productTitle: productTitle || '',
+  }).catch(() => {});
+}
+
+/**
+ * Tracks order placement (e.g. WhatsApp checkout)
+ */
+export async function trackOrder(source: string, totalAmount: number): Promise<void> {
+  if (isIgnoreAdminVisits()) return;
+  const today = getTodayDateString();
+  await pushAnalyticsEventToServer({
+    type: 'order',
+    date: today,
+    source,
+    totalAmount,
+  }).catch(() => {});
+}
+
+/**
  * Generates an instant test visit so the store owner can verify tracking in real-time.
  */
 export async function recordTestVisit(): Promise<{ success: boolean; ignored: boolean }> {

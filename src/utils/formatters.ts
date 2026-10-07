@@ -186,6 +186,33 @@ export function generateWhatsAppOrderUrl(
   return `https://wa.me/${config.whatsappNumber}?text=${encoded}`;
 }
 
+export function generateWhatsAppCartUrl(
+  config: StoreConfig,
+  items: CartItem[],
+  customerOrName: string | { name: string; phone: string; address: string; deliveryMethod: DeliveryMethod; notes?: string },
+  customerPhone?: string,
+  customerAddress?: string,
+  deliveryMethod?: DeliveryMethod,
+  lang?: Language,
+  _discountAmount?: number
+): string {
+  if (typeof customerOrName === 'object' && customerOrName !== null) {
+    return generateWhatsAppOrderUrl(config, items, customerOrName, (customerPhone as Language) || 'ru');
+  }
+  const customerNameStr = typeof customerOrName === 'string' ? customerOrName : '';
+  return generateWhatsAppOrderUrl(
+    config,
+    items,
+    {
+      name: customerNameStr,
+      phone: customerPhone || '',
+      address: customerAddress || '',
+      deliveryMethod: deliveryMethod || 'delivery',
+    },
+    lang || 'ru'
+  );
+}
+
 export function generateQuickOrderUrl(
   config: StoreConfig,
   productTitle: string,

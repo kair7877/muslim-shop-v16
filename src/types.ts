@@ -87,6 +87,7 @@ export interface DailyAnalytics {
   ruVisits: number;
   kzVisits: number;
   productViews?: Record<string, { title: string; count: number }>;
+  cartAdds?: number;
   updatedAt: string;
 }
 
