@@ -41,7 +41,7 @@ export const SymptomSelector: React.FC<SymptomSelectorProps> = ({
 
   const getIcon = (id: string, isActive: boolean) => {
     const cls = `w-4 h-4 shrink-0 transition-transform duration-200 ${
-      isActive ? 'text-black' : 'text-[#C5A059]'
+      isActive ? 'text-white' : 'text-emerald-700'
     }`;
     switch (id) {
       case 'immunity':
@@ -71,27 +71,15 @@ export const SymptomSelector: React.FC<SymptomSelectorProps> = ({
     <section
       id="symptom-selector-section"
       aria-label={isKz ? 'Мақсат бойынша таңдау' : 'Подбор товаров по задаче'}
-      className="w-full bg-[#121212] border-b border-[#222222] transition-colors"
+      className="w-full bg-white border-b border-slate-200/90 py-3 sm:py-3.5 transition-colors select-none"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5 sm:py-6">
-        {/* Header Row */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#1C1C1C] border border-[#2E2E2E] text-[#C5A059] flex items-center justify-center shrink-0">
-              <Target className="w-4 h-4" />
-            </div>
-            <div>
-              <h2 className="font-extrabold text-base sm:text-lg text-white leading-tight">
-                {isKz
-                  ? 'Мақсат бойынша жылдам таңдау'
-                  : 'Подбор товаров по направлению'}
-              </h2>
-              <p className="text-xs text-[#A3A3A3] mt-0.5">
-                {isKz
-                  ? 'Қажетті бағытты басыңыз — лайықты өнімдер шығады'
-                  : 'Выберите направление здоровья — покажем подходящие средства'}
-              </p>
-            </div>
+      <div className="max-w-7xl mx-auto px-3 sm:px-6">
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <div className="flex items-center gap-2">
+            <Target className="w-4 h-4 text-emerald-700 shrink-0" />
+            <h2 className="font-extrabold text-xs sm:text-sm text-slate-900 tracking-tight">
+              {isKz ? 'Мақсат бойынша таңдау' : 'Подбор по направлению здоровья'}
+            </h2>
           </div>
 
           {selectedSymptom !== 'all' && (
@@ -99,16 +87,16 @@ export const SymptomSelector: React.FC<SymptomSelectorProps> = ({
               type="button"
               id="reset-symptom-btn"
               onClick={() => onSelectSymptom('all')}
-              className="self-start sm:self-auto px-3 py-1.5 rounded-lg bg-[#1C1C1C] hover:bg-[#252525] text-[#C5A059] border border-[#333] font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
+              className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>{isKz ? 'Барлығын көрсету' : 'Сбросить'}</span>
+              <RotateCcw className="w-3 h-3 text-slate-500" />
+              <span>{isKz ? 'Барлығы' : 'Сбросить'}</span>
             </button>
           )}
         </div>
 
-        {/* Interactive Goal Cards Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 sm:gap-2.5">
+        {/* Horizontal scrollable pills */}
+        <div className="flex items-center overflow-x-auto no-scrollbar scroll-smooth gap-2 pb-1">
           {SYMPTOM_GOALS.map((goal) => {
             const isActive = selectedSymptom === goal.id;
             const count = symptomCounts[goal.id] || 0;
@@ -125,67 +113,25 @@ export const SymptomSelector: React.FC<SymptomSelectorProps> = ({
                     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                   }
                 }}
-                className={`group text-left p-3 rounded-xl border transition-all duration-150 flex flex-col justify-between gap-2 cursor-pointer shadow-xs ${
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shrink-0 border whitespace-nowrap min-h-[38px] ${
                   isActive
-                    ? 'bg-[#C5A059] text-black border-[#C5A059] font-bold shadow-md'
-                    : 'bg-[#171717] hover:bg-[#1E1E1E] text-white border-[#262626] hover:border-[#383838]'
+                    ? 'bg-emerald-700 text-white border-emerald-700 shadow-xs'
+                    : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200/90'
                 }`}
               >
-                <div className="flex items-center justify-between gap-1 w-full">
-                  {getIcon(goal.id, isActive)}
-                  <span
-                    className={`text-[10px] font-mono tabular-nums font-bold px-1.5 py-0.5 rounded-md ${
-                      isActive
-                        ? 'bg-black/20 text-black'
-                        : 'bg-[#222222] text-[#A3A3A3]'
-                    }`}
-                  >
-                    {count}
-                  </span>
-                </div>
-
-                <div>
-                  <div
-                    className={`font-bold text-xs sm:text-sm leading-tight line-clamp-2 ${
-                      isActive ? 'text-black' : 'text-white group-hover:text-[#C5A059]'
-                    }`}
-                  >
-                    {isKz ? goal.titleKz : goal.titleRu}
-                  </div>
-                  <p
-                    className={`text-[11px] mt-0.5 line-clamp-1 ${
-                      isActive ? 'text-black/80' : 'text-[#8E8E8E]'
-                    }`}
-                  >
-                    {isKz ? goal.badgeKz : goal.badgeRu}
-                  </p>
-                </div>
+                {getIcon(goal.id, isActive)}
+                <span>{isKz ? goal.titleKz : goal.titleRu}</span>
+                <span
+                  className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                    isActive ? 'bg-white/20 text-white' : 'bg-slate-200/80 text-slate-600'
+                  }`}
+                >
+                  {count}
+                </span>
               </button>
             );
           })}
         </div>
-
-        {/* Active Goal Explanation Bar */}
-        {activeGoal && (
-          <div className="mt-3 p-3 rounded-xl bg-[#1A1A1A] text-white border border-[#2E2E2E] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#C5A059] animate-pulse shrink-0" />
-              <div>
-                <span className="font-bold text-[#C5A059]">
-                  {isKz ? activeGoal.titleKz : activeGoal.titleRu}:
-                </span>{' '}
-                <span className="text-[#D4D4D4]">
-                  {isKz ? activeGoal.subtitleKz : activeGoal.subtitleRu}
-                </span>
-              </div>
-            </div>
-            <span className="font-mono tabular-nums font-bold text-[#C5A059] shrink-0">
-              {isKz
-                ? `Табылды: ${symptomCounts[activeGoal.id] || 0} өнім`
-                : `Подходит товаров: ${symptomCounts[activeGoal.id] || 0}`}
-            </span>
-          </div>
-        )}
       </div>
     </section>
   );

@@ -21,6 +21,7 @@ import {
   Filter,
   Activity,
   Zap,
+  ArrowLeft,
 } from 'lucide-react';
 import { DailyAnalytics, AnalyticsOverview, VisitLogItem, Product } from '../types';
 import {
@@ -36,12 +37,13 @@ import {
 interface AnalyticsTabProps {
   products: Product[];
   currency: string;
+  onBack?: () => void;
 }
 
 type PeriodRange = 'today' | 'yesterday' | '7' | '14' | '30' | 'all';
 type VisitFilterType = 'all' | 'mobile' | 'new' | 'cart';
 
-export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ products, currency }) => {
+export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ products, currency, onBack }) => {
   const [dailyData, setDailyData] = useState<DailyAnalytics[]>([]);
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
   const [recentVisits, setRecentVisits] = useState<VisitLogItem[]>([]);
@@ -539,6 +541,17 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ products, currency }
       <div className="bg-white rounded-3xl p-5 sm:p-6 border border-stone-200 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-5">
         <div>
           <div className="flex items-center gap-2.5 flex-wrap">
+            {onBack && (
+              <button
+                type="button"
+                onClick={onBack}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs sm:text-sm font-extrabold transition-all cursor-pointer shadow-xs min-h-[38px] mr-1"
+                title="Вернуться к списку товаров"
+              >
+                <ArrowLeft className="w-4 h-4 text-emerald-700 shrink-0" />
+                <span>Назад к товарам</span>
+              </button>
+            )}
             <span className="relative flex h-3.5 w-3.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-600"></span>

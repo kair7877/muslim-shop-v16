@@ -174,14 +174,29 @@ async function refreshCatalogFromFirestore(): Promise<boolean> {
     categories.sort((a, b) => (Number(a.order) || 99) - (Number(b.order) || 99));
     const generalSettings = settingsList.find((s) => s.id === 'general') || catalogCache.settings;
 
-    if (products.length > 0) {
+    if (products.length > 0 || catalogCache.products.length > 0) {
+      const mergedMap = new Map<string, any>();
+      // Keep existing products first
+      for (const p of catalogCache.products) {
+        if (p && p.id) mergedMap.set(p.id, p);
+      }
+      // Overlay Firestore products
+      for (const p of products) {
+        if (p && p.id) {
+          const existing = mergedMap.get(p.id);
+          mergedMap.set(p.id, existing ? { ...existing, ...p } : p);
+        }
+      }
+      const finalProducts = Array.from(mergedMap.values());
+      const finalCategories = categories.length > 0 ? categories : catalogCache.categories;
+
       rebuildCatalogBuffers(
         {
           updatedAt: new Date().toISOString(),
-          productsCount: products.length,
-          categoriesCount: categories.length,
-          products,
-          categories: categories.length > 0 ? categories : catalogCache.categories,
+          productsCount: finalProducts.length,
+          categoriesCount: finalCategories.length,
+          products: finalProducts,
+          categories: finalCategories,
           settings: generalSettings || catalogCache.settings,
         },
         true

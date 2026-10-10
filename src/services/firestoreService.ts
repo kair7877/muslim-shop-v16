@@ -1538,11 +1538,9 @@ export async function pushDeltaToFirestore(
       (b.createdAt || b.id).localeCompare(a.createdAt || a.id)
     );
 
-    // Full un-truncated map for Cloud Relay (bytebin.lucko.me) & Server (/api/catalog/sync)
-    const fullCloudUpsertedProducts: Record<string, any> = {};
-    // 700KB-capped map strictly for Firestore's 1MB document limit
-    const firestoreInlineProducts: Record<string, any> = {};
-    let approxBytes = 0;
+    // Safe lightweight payload strictly for Firestore's 1MB document limit
+    const firestoreSafeInlineProducts: Record<string, any> = {};
+    let approxFirestoreBytes = 0;
 
     for (const p of allUpsertedList) {
       const baseProd =
@@ -1559,13 +1557,23 @@ export async function pushDeltaToFirestore(
         if (v !== undefined) cleanProd[k] = v;
       }
 
-      // Always add 100% of products to fullCloudUpsertedProducts (no 700KB limit!)
+      // Always add 100% of products to fullCloudUpsertedProducts (no limit for Cloud Relay & server cache!)
       fullCloudUpsertedProducts[p.id] = cleanProd;
 
-      const size = JSON.stringify(cleanProd).length;
-      if (approxBytes + size < 700000) {
-        firestoreInlineProducts[p.id] = cleanProd;
-        approxBytes += size;
+      // Keep safe compact representation for Firestore settings/catalog_delta (under 300KB)
+      // Strip large data URLs to avoid blowing the 1MB Firestore limit
+      const compactProd = { ...cleanProd };
+      if (Array.isArray(compactProd.images) && compactProd.images.length > 0) {
+        compactProd.images = compactProd.images.map((img: string) =>
+          typeof img === 'string' && img.startsWith('data:image/') && img.length > 2000
+            ? img.slice(0, 100) + '...[truncated]'
+            : img
+        );
+      }
+      const size = JSON.stringify(compactProd).length;
+      if (approxFirestoreBytes + size < 300000) {
+        firestoreSafeInlineProducts[p.id] = compactProd;
+        approxFirestoreBytes += size;
       }
     }
 
@@ -1589,19 +1597,34 @@ export async function pushDeltaToFirestore(
     };
 
     const firestorePayload = {
-      ...fullCloudPayload,
-      upsertedProducts: firestoreInlineProducts,
+      upsertedProductIds: allUpsertedList.map((p) => p.id),
+      deletedProductIds: delta.deletedProductIds,
+      upsertedCategories: cleanCategories,
+      deletedCategoryIds: delta.deletedCategoryIds,
+      settings: delta.settings || {},
+      updatedAt: new Date().toISOString(),
+      upsertedProducts: firestoreSafeInlineProducts,
     };
 
     const deltaRef = doc(db, SETTINGS_COLLECTION, CATALOG_DELTA_DOC_ID);
-    await Promise.all([
-      pushDeltaToCloudRelay(fullCloudPayload),
+    await Promise.allSettled([
+      pushDeltaToCloudRelay(fullCloudPayload).catch(() => {}),
       syncServerCatalog({
         action: 'syncDelta',
         delta: fullCloudPayload,
         fullProducts: effectiveProducts.length > 0 ? effectiveProducts : undefined,
+      }).catch(() => {}),
+      withFirestoreTimeout(setDoc(deltaRef, firestorePayload, { merge: true }), 3000).catch((err) => {
+        console.warn('Firestore delta setDoc notice:', err);
       }),
-      withFirestoreTimeout(setDoc(deltaRef, firestorePayload, { merge: true }), 2000),
+      // Also persist recent individual products to their own documents in Firestore
+      ...allUpsertedList.slice(0, 20).map(async (p) => {
+        try {
+          const docRef = doc(db, PRODUCTS_COLLECTION, p.id);
+          const pData = fullCloudUpsertedProducts[p.id] || p;
+          await withFirestoreTimeout(setDoc(docRef, pData, { merge: true }), 2500);
+        } catch {}
+      }),
     ]);
   } catch (err) {
     console.warn('Firestore delta sync notice:', err);

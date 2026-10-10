@@ -1,11 +1,10 @@
 import React from 'react';
 import {
-  ShoppingBag,
-  Layers,
-  Phone,
-  Clock,
   MapPin,
   Lock,
+  ChevronDown,
+  Bell,
+  MessageCircle,
 } from 'lucide-react';
 import {
   AccessibilitySettings,
@@ -22,6 +21,7 @@ interface HeaderProps {
   favoritesCount?: number;
   products: Product[];
   categories: Category[];
+  selectedCategoryId?: string;
   productCounts: Record<string, number>;
   searchQuery: string;
   onSearchChange: (q: string) => void;
@@ -41,17 +41,15 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
   config,
-  cartCount,
   products,
   categories,
+  selectedCategoryId = 'cat-all',
   productCounts,
   searchQuery,
   onSearchChange,
   lang,
   onLanguageChange,
-  onOpenCart,
   onOpenAdmin,
-  onOpenCatalog,
   onSelectCategory,
   onSelectSymptom,
   onOpenProduct,
@@ -60,39 +58,54 @@ export const Header: React.FC<HeaderProps> = ({
   const isKz = lang === 'kz';
 
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/90 shadow-xs">
-      {/* 1. Top Ribbon: Location, Hours, Phone, Language */}
-      <div className="bg-slate-900 text-white text-[11px] sm:text-xs py-1.5 px-3 sm:px-6 border-b border-slate-800">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 sm:gap-4 truncate">
-            <span className="flex items-center gap-1.5 text-slate-300 shrink-0">
-              <MapPin className="w-3.5 h-3.5 text-[#C5A059]" />
-              <span className="font-semibold">{config.city}, ТД «Дина Байзар», Бутик №24</span>
+    <header
+      id="main-header"
+      className="sticky top-0 z-50 w-full bg-[#15803d] text-white shadow-md select-none transition-all pt-[env(safe-area-inset-top,0px)]"
+    >
+      {/* 1. Top Bar (iHerb style): Delivery Location + Quick Icons */}
+      <div className="px-3.5 sm:px-6 pt-2.5 pb-2">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
+          {/* Location selector */}
+          <div className="flex items-center gap-1.5 text-white/95 font-bold text-xs sm:text-sm truncate cursor-pointer hover:text-white transition-opacity">
+            <MapPin className="w-4 h-4 text-emerald-200 shrink-0" />
+            <span className="truncate">
+              {config.city || 'Атырау'}, {config.boutiqueNumber || 'Бутик №24'}
             </span>
-            <span className="hidden md:flex items-center gap-1.5 text-slate-400">
-              <Clock className="w-3 h-3 text-[#C5A059]" />
-              <span>{isKz ? config.workingHoursKz : config.workingHoursRu}</span>
-            </span>
+            <ChevronDown className="w-3.5 h-3.5 text-white/70 shrink-0" />
           </div>
 
-          <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+          {/* Right Actions: WhatsApp, Bell, Language switch, Admin Lock */}
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            {/* WhatsApp direct contact */}
             <a
-              href={`tel:+${config.whatsappNumber || '77781754241'}`}
-              className="flex items-center gap-1 text-slate-200 hover:text-white font-bold transition-colors"
+              href={`https://wa.me/${config.whatsappNumber || '77781754241'}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-1.5 rounded-full hover:bg-white/15 text-white transition-colors"
+              title="Написать в WhatsApp"
+              aria-label="WhatsApp"
             >
-              <Phone className="w-3 h-3 text-[#C5A059]" />
-              <span className="font-mono">+{config.whatsappNumber || '7 778 175 42 41'}</span>
+              <MessageCircle className="w-4 h-4 text-emerald-100" />
             </a>
 
-            {/* Language Switcher */}
-            <div className="flex items-center bg-slate-800 rounded-lg p-0.5 border border-slate-700 text-[10px] font-bold">
+            {/* Notification / Promo Bell */}
+            <div
+              className="relative p-1.5 rounded-full hover:bg-white/15 text-white transition-colors cursor-pointer"
+              title="Акции и скидки"
+            >
+              <Bell className="w-4 h-4 text-emerald-100" />
+              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-amber-400" />
+            </div>
+
+            {/* Language Switcher RU/KZ */}
+            <div className="flex items-center bg-black/20 rounded-full p-0.5 border border-white/20 text-[11px] font-black">
               <button
                 type="button"
                 onClick={() => onLanguageChange('ru')}
-                className={`px-2 py-0.5 rounded-md transition-colors cursor-pointer ${
+                className={`px-2 py-0.5 rounded-full transition-all cursor-pointer ${
                   !isKz
-                    ? 'bg-[#C5A059] text-slate-950 font-black'
-                    : 'text-slate-300 hover:text-white'
+                    ? 'bg-white text-emerald-950 font-black shadow-xs'
+                    : 'text-white/80 hover:text-white'
                 }`}
               >
                 RU
@@ -100,22 +113,22 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 type="button"
                 onClick={() => onLanguageChange('kz')}
-                className={`px-2 py-0.5 rounded-md transition-colors cursor-pointer ${
+                className={`px-2 py-0.5 rounded-full transition-all cursor-pointer ${
                   isKz
-                    ? 'bg-[#C5A059] text-slate-950 font-black'
-                    : 'text-slate-300 hover:text-white'
+                    ? 'bg-white text-emerald-950 font-black shadow-xs'
+                    : 'text-white/80 hover:text-white'
                 }`}
               >
                 KZ
               </button>
             </div>
 
-            {/* Inconspicuous Admin Lock Button in Top Bar */}
+            {/* Discreet Admin Lock Button */}
             <button
               type="button"
               id="header-admin-lock-btn"
               onClick={onOpenAdmin}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
+              className="p-1.5 rounded-full text-white/50 hover:text-white hover:bg-white/15 transition-colors cursor-pointer"
               title="Вход"
               aria-label="Вход"
             >
@@ -123,117 +136,72 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           </div>
         </div>
-      </div>
 
-      {/* 2. Main Store Header: Modern Responsive 2-Row / 1-Row layout */}
-      <div className="px-3 sm:px-6 py-2.5 sm:py-3">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-2.5 md:gap-5">
-          {/* Row 1 on Mobile / Left Column on Desktop: Brand + Catalog + Mobile Actions */}
-          <div className="flex items-center justify-between gap-3 w-full md:w-auto shrink-0">
-            {/* Brand Mark */}
-            <div
-              onClick={() => {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className="flex flex-col cursor-pointer select-none group"
-              title="MUSLIM SHOP Атырау"
-            >
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-slate-900 group-hover:text-black transition-colors font-sans">
-                  MUSLIM SHOP
-                </span>
-                <span className="w-2.5 h-2.5 rounded-full bg-[#C5A059]" />
-              </div>
-              <span className="text-[10px] sm:text-xs font-black tracking-widest text-slate-500 uppercase mt-0.5">
-                АТЫРАУ • БУТИК 24
-              </span>
-            </div>
-
-            {/* Quick Catalog Button (Desktop & Tablet) */}
-            {onOpenCatalog && (
-              <button
-                type="button"
-                onClick={onOpenCatalog}
-                className="hidden md:flex items-center gap-2 px-3.5 sm:px-4 h-12 rounded-xl sm:rounded-2xl bg-slate-900 hover:bg-black text-white text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer shrink-0"
-              >
-                <Layers className="w-4 h-4 text-[#C5A059]" />
-                <span>{isKz ? 'Каталог' : 'Каталог'}</span>
-              </button>
-            )}
-
-            {/* Right Buttons on Mobile: Catalog + Cart */}
-            <div className="flex items-center gap-1.5 sm:gap-2 md:hidden">
-              {onOpenCatalog && (
-                <button
-                  type="button"
-                  onClick={onOpenCatalog}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs cursor-pointer"
-                  title="Каталог товаров"
-                >
-                  <Layers className="w-3.5 h-3.5 text-[#C5A059]" />
-                  <span>{isKz ? 'Каталог' : 'Каталог'}</span>
-                </button>
-              )}
-
-              <button
-                type="button"
-                id="header-cart-btn-mobile"
-                onClick={onOpenCart}
-                className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-slate-900 text-white shadow-xs cursor-pointer"
-                title="Корзина"
-              >
-                <ShoppingBag className="w-5 h-5 text-[#C5A059]" />
-                {cartCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-rose-600 text-white font-mono font-extrabold text-[10px] flex items-center justify-center shadow-xs">
-                    {cartCount > 99 ? '99+' : cartCount}
-                  </span>
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* Full-Width Search Bar on Mobile / Centered Search on Desktop */}
-          <div className="w-full md:flex-1 md:max-w-2xl md:mx-4 relative">
-            <SmartSearchBar
-              inputId="header-search-input"
-              searchQuery={searchQuery}
-              onSearchChange={onSearchChange}
-              products={products}
-              categories={categories}
-              productCounts={productCounts}
-              lang={lang}
-              onSelectCategory={onSelectCategory}
-              onSelectSymptom={onSelectSymptom}
-              onOpenProduct={onOpenProduct}
-              onAddToCart={onAddToCart}
-              placeholder={isKz ? 'Өнімдерді, дәрумендерді іздеу...' : 'Поиск товаров по названию или категории...'}
-            />
-          </div>
-
-          {/* Desktop Right Actions: Cart */}
-          <div className="hidden md:flex items-center gap-2.5 sm:gap-3 shrink-0">
-            <button
-              type="button"
-              id="header-cart-btn-desktop"
-              onClick={onOpenCart}
-              className="relative flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-slate-900 hover:bg-black text-white text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer shrink-0"
-              title={isKz ? 'Себетті ашу' : 'Открыть корзину'}
-            >
-              <div className="relative">
-                <ShoppingBag className="w-5 h-5 text-[#C5A059]" />
-                {cartCount > 0 && (
-                  <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-rose-600 text-white font-mono font-extrabold text-[11px] flex items-center justify-center shadow-xs">
-                    {cartCount > 99 ? '99+' : cartCount}
-                  </span>
-                )}
-              </div>
-              <span className="font-bold">
-                {isKz ? 'Себет' : 'Корзина'}
-              </span>
-            </button>
-          </div>
+        {/* 2. Large Search Bar (iHerb style) */}
+        <div className="max-w-7xl mx-auto mt-2">
+          <SmartSearchBar
+            inputId="header-search-input"
+            searchQuery={searchQuery}
+            onSearchChange={onSearchChange}
+            products={products}
+            categories={categories}
+            productCounts={productCounts}
+            lang={lang}
+            onSelectCategory={onSelectCategory}
+            onSelectSymptom={onSelectSymptom}
+            onOpenProduct={onOpenProduct}
+            onAddToCart={onAddToCart}
+            placeholder={
+              isKz
+                ? 'muslimshop.kz-тен іздеу (витаминдер, тмин, ББҚ)...'
+                : 'Поиск на muslimshop.kz (витамины, тмин, БАДы)...'
+            }
+          />
         </div>
       </div>
+
+      {/* 3. Horizontal Categories Navigation with Green Underline (iHerb reference) */}
+      <nav
+        aria-label="Категории товаров"
+        className="w-full bg-white text-slate-800 border-b border-slate-200/90 shadow-2xs overflow-hidden"
+      >
+        <div className="max-w-7xl mx-auto px-2 sm:px-4">
+          <div className="flex items-center overflow-x-auto no-scrollbar scroll-smooth whitespace-nowrap gap-5 sm:gap-7 py-2.5 px-2">
+            {categories.map((cat) => {
+              const isSelected = selectedCategoryId === cat.id;
+              const name = isKz && cat.nameKz ? cat.nameKz : cat.nameRu;
+
+              return (
+                <button
+                  key={cat.id}
+                  id={`header-cat-${cat.id}`}
+                  type="button"
+                  onClick={() => {
+                    if (onSelectCategory) {
+                      onSelectCategory(cat.id);
+                    }
+                  }}
+                  className={`group relative text-sm sm:text-[15px] pb-1.5 transition-colors cursor-pointer shrink-0 ${
+                    isSelected
+                      ? 'text-emerald-700 font-black'
+                      : 'text-slate-600 hover:text-slate-900 font-semibold'
+                  }`}
+                >
+                  <span className="flex items-center gap-1.5">
+                    {cat.icon && <span className="text-base leading-none">{cat.icon}</span>}
+                    <span>{name}</span>
+                  </span>
+
+                  {/* Active green underline bar (like in iHerb) */}
+                  {isSelected && (
+                    <span className="absolute bottom-0 inset-x-0 h-[3px] bg-emerald-600 rounded-full animate-in fade-in duration-200" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </nav>
     </header>
   );
 };

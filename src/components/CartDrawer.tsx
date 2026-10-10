@@ -110,15 +110,15 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-lg bg-white text-slate-800 border-l border-slate-200 h-full flex flex-col shadow-2xl overflow-hidden"
       >
-        {/* Flip.kz Signature Deep Blue Header */}
+        {/* Clean iHerb Emerald Header with iOS Safe Area */}
         <div
           id="cart-header"
-          className="px-4 py-3 sm:py-3.5 bg-[#0567BA] text-white flex items-center justify-between gap-2 border-b border-[#045294] shrink-0"
+          className="px-4 pt-[max(env(safe-area-inset-top),0.6rem)] pb-3.5 bg-[#15803d] text-white flex items-center justify-between gap-2 border-b border-emerald-800 shrink-0 shadow-xs"
         >
           <button
             type="button"
             onClick={onClose}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-white font-bold text-xs sm:text-sm transition-colors cursor-pointer shrink-0"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white font-extrabold text-xs sm:text-sm transition-colors cursor-pointer shrink-0 min-h-[44px]"
             title={lang === 'kz' ? 'Артқа' : 'Назад в каталог'}
           >
             <ArrowLeft className="w-4 h-4 text-white shrink-0" />
@@ -126,11 +126,11 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
           </button>
 
           <div className="flex items-center justify-center gap-2 min-w-0">
-            <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5 text-[#ffbd00] shrink-0" />
+            <ShoppingBag className="w-5 h-5 text-emerald-200 shrink-0" />
             <h2 className="font-black text-base sm:text-lg font-sans whitespace-nowrap">
               {lang === 'kz' ? 'Себет' : 'Корзина'}
             </h2>
-            <span className="text-[11px] sm:text-xs px-2 py-0.5 rounded-full bg-white/20 text-white font-black whitespace-nowrap shrink-0">
+            <span className="text-[11px] sm:text-xs px-2.5 py-0.5 rounded-full bg-white/20 text-white font-black whitespace-nowrap shrink-0">
               {totalQty} {lang === 'kz' ? 'дана' : 'шт.'}
             </span>
           </div>
@@ -139,7 +139,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
             type="button"
             id="cart-close-btn"
             onClick={onClose}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-white bg-white/15 hover:bg-white/25 font-bold text-xs sm:text-sm transition-colors cursor-pointer shrink-0"
+            className="flex items-center gap-1 px-3 py-2 rounded-xl text-white bg-white/15 hover:bg-white/25 font-extrabold text-xs sm:text-sm transition-colors cursor-pointer shrink-0 min-h-[44px]"
             title={lang === 'kz' ? 'Жабу' : 'Закрыть корзину'}
           >
             <X className="w-4 h-4 text-white shrink-0" />
@@ -223,17 +223,17 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
         ) : (
           <div id="cart-scroll-body" className="flex-1 overflow-y-auto overscroll-contain bg-[#f8fafc]">
             {/* Top Bar inside Cart: Items Count & Clear All Cart Button */}
-            <div className="px-4 py-2.5 flex items-center justify-between gap-2 border-b border-slate-200 bg-white">
-              <span className="text-xs sm:text-sm font-bold text-slate-700">
+            <div className="px-4 py-3 flex items-center justify-between gap-2 border-b border-slate-200 bg-white">
+              <span className="text-xs sm:text-sm font-extrabold text-slate-800">
                 {lang === 'kz' ? 'Таңдалған тауарлар:' : 'Ваши товары в корзине:'}
               </span>
               <button
                 type="button"
                 id="clear-cart-btn"
                 onClick={onClearCart}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-xs font-bold transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-xs font-bold transition-colors cursor-pointer min-h-[44px]"
               >
-                <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                <Trash2 className="w-4 h-4 shrink-0" />
                 <span>{lang === 'kz' ? 'Себетті тазалау' : 'Очистить корзину'}</span>
               </button>
             </div>
@@ -323,26 +323,26 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     </div>
 
                     {/* Quantity Counter & Delete Button */}
-                    <div className="flex items-center justify-between gap-2 mt-3 pt-2.5 border-t border-slate-100">
-                      <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-xl border border-slate-200">
+                    <div className="flex items-center justify-between gap-3 mt-3 pt-3 border-t border-slate-100">
+                      <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-2xl border border-slate-200">
                         <button
                           type="button"
                           onClick={() => onUpdateQuantity(item.product.id, -1)}
-                          className="w-8 h-8 rounded-lg bg-white hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-colors cursor-pointer shadow-2xs font-bold"
+                          className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl bg-white hover:bg-slate-200 text-slate-800 flex items-center justify-center transition-colors cursor-pointer shadow-2xs font-extrabold text-base"
                           title={lang === 'kz' ? 'Азайту' : 'Уменьшить'}
                         >
-                          <Minus className="w-3.5 h-3.5" />
+                          <Minus className="w-4 h-4 stroke-[2.5]" />
                         </button>
-                        <span className="text-xs sm:text-sm font-black text-slate-900 px-2.5 font-sans">
-                          {item.quantity} {lang === 'kz' ? 'дана' : 'шт.'}
+                        <span className="text-sm font-black text-slate-900 px-3 font-sans min-w-[36px] text-center">
+                          {item.quantity}
                         </span>
                         <button
                           type="button"
                           onClick={() => onUpdateQuantity(item.product.id, 1)}
-                          className="w-8 h-8 rounded-lg bg-white hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-colors cursor-pointer shadow-2xs font-bold"
+                          className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl bg-white hover:bg-slate-200 text-slate-800 flex items-center justify-center transition-colors cursor-pointer shadow-2xs font-extrabold text-base"
                           title={lang === 'kz' ? 'Көбейту' : 'Увеличить'}
                         >
-                          <Plus className="w-3.5 h-3.5" />
+                          <Plus className="w-4 h-4 stroke-[2.5]" />
                         </button>
                       </div>
 
@@ -350,10 +350,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                         type="button"
                         id={`remove-cart-item-${item.product.id}`}
                         onClick={() => onRemoveItem(item.product.id)}
-                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-xs font-bold transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-xs font-bold transition-colors cursor-pointer min-h-[44px]"
                         title={lang === 'kz' ? 'Тауарды өшіру' : 'Удалить'}
                       >
-                        <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                        <Trash2 className="w-4 h-4 shrink-0" />
                         <span>{lang === 'kz' ? 'Өшіру' : 'Удалить'}</span>
                       </button>
                     </div>
@@ -532,14 +532,14 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                         {formatPrice(total)}
                       </span>
                     )}
-                    <span className="text-xl sm:text-2xl font-black text-[#0567BA] font-sans">
+                    <span className="text-xl sm:text-2xl font-black text-emerald-900 font-sans">
                       {formatPrice(finalTotal)}
                     </span>
                   </div>
                 </div>
               </div>
 
-              <p className="text-[11px] text-slate-500 text-center">
+              <p className="text-[11px] text-slate-500 text-center font-medium">
                 💳 {lang === 'kz' ? 'Kaspi Gold / Kaspi QR арқылы төлем' : 'Оплата Kaspi Gold / Kaspi QR при получении'}
               </p>
 
@@ -547,26 +547,26 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               <button
                 id="cart-submit-whatsapp-btn"
                 type="submit"
-                className="w-full py-3 px-4 rounded-xl bg-[#25D366] hover:bg-[#20ba5a] active:bg-[#1caa52] text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer uppercase tracking-wider select-none"
+                className="w-full min-h-[54px] py-3.5 px-4 rounded-2xl bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white font-black text-sm sm:text-base flex items-center justify-center gap-2.5 shadow-md transition-all cursor-pointer select-none"
               >
-                <MessageCircle className="w-5 h-5 text-white" />
-                <span>{lang === 'kz' ? 'WhatsApp арқылы рәсімдеу' : 'Оформить через WhatsApp'}</span>
+                <MessageCircle className="w-5 h-5 text-white shrink-0" />
+                <span>{lang === 'kz' ? 'WhatsApp арқылы рәсімдеу' : 'Оформить заказ в WhatsApp'}</span>
               </button>
 
               {/* Bottom Back / Close Buttons */}
-              <div className="grid grid-cols-2 gap-2 pt-1">
+              <div className="grid grid-cols-2 gap-2 pt-1 pb-[max(env(safe-area-inset-bottom),0.5rem)]">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="py-2 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  className="min-h-[44px] py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                 >
-                  <ArrowLeft className="w-4 h-4 text-slate-500 shrink-0" />
+                  <ArrowLeft className="w-4 h-4 text-slate-600 shrink-0" />
                   <span>{lang === 'kz' ? 'Саудаға оралу' : 'Назад к покупкам'}</span>
                 </button>
                 <button
                   type="button"
                   onClick={onClose}
-                  className="py-2 px-3 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  className="min-h-[44px] py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                 >
                   <X className="w-4 h-4 text-rose-500 shrink-0" />
                   <span>{lang === 'kz' ? 'Себетті жабу' : 'Закрыть корзину'}</span>

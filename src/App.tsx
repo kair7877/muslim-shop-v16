@@ -1159,8 +1159,16 @@ export default function App() {
           if (!p.isHit) return false;
         } else if (selectedCategoryId === 'cat-new') {
           if (!p.isNew) return false;
-        } else if (selectedCategoryId !== 'cat-all' && p.categoryId !== selectedCategoryId) {
-          return false;
+        } else if (selectedCategoryId !== 'cat-all') {
+          const directMatch = p.categoryId === selectedCategoryId;
+          const aliasMatch =
+            (selectedCategoryId === 'cat-kids' && doesProductMatchSymptom(p, 'kids')) ||
+            (selectedCategoryId === 'cat-syrups' && p.categoryId === 'cat-mudtm3gz') ||
+            (selectedCategoryId === 'cat-perfume' && p.categoryId === 'cat-1789842214142') ||
+            (selectedCategoryId === 'cat-weight' && p.categoryId === 'cat-1789672741016') ||
+            (selectedCategoryId === 'cat-collagen' && ((p.titleRu || '').toLowerCase().includes('коллаген') || p.categoryId === 'cat-beauty')) ||
+            (selectedCategoryId === 'cat-hijama' && ((p.titleRu || '').toLowerCase().includes('хиджам') || p.categoryId === 'cat-misc'));
+          if (!directMatch && !aliasMatch) return false;
         }
 
         return true;
@@ -1243,7 +1251,7 @@ export default function App() {
       setVisibleLimit(filteredProducts.length);
     }, 40);
     return () => clearTimeout(timer);
-  }, [filteredProducts.length, selectedCategoryId, searchQuery, sortBy]);
+  }, [filteredProducts.length, selectedCategoryId, selectedSymptom, searchQuery, sortBy]);
 
   return (
     <div
@@ -1308,7 +1316,7 @@ export default function App() {
         onSelectCategory={handleSelectCategoryAndScroll}
       />
 
-      {/* 8. Quick View Boutique Stories Bar right on the website */}
+      {/* Quick View Boutique Stories Bar */}
       <BoutiqueStories
         products={products}
         config={config}
@@ -1318,29 +1326,8 @@ export default function App() {
         onSelectCategory={handleSelectCategoryAndScroll}
       />
 
-      {/* 9. Dynamic Interactive Bundle Showcase: «Польза в комплексе» (-10%) */}
+      {/* Smart Product Selector by Symptom / Health Goal (Pills row, only on All Products without active search) */}
       {selectedCategoryId === 'cat-all' && searchQuery.trim() === '' && (
-        <FeaturedHealthBundleWidget
-          products={products}
-          config={config}
-          lang={lang}
-          onOpenProduct={handleOpenDetail}
-          onAddBundleToCart={handleAddBundleToCart}
-        />
-      )}
-
-      {/* Category Nav Filter — All visible side-by-side without horizontal scrolling */}
-      <CategoryFilter
-        categories={categories}
-        selectedCategoryId={selectedCategoryId}
-        onSelectCategory={handleSelectCategoryAndScroll}
-        lang={lang}
-        productCounts={productCounts}
-        onOpenAdminCategories={() => setIsAdminOpen(true)}
-      />
-
-      {/* 2. Smart Product Selector by Symptom / Health Goal («Что вас беспокоит?») — Hidden when a specific category is selected so products appear immediately */}
-      {selectedCategoryId === 'cat-all' && (
         <SymptomSelector
           products={products}
           selectedSymptom={selectedSymptom}
@@ -1351,7 +1338,7 @@ export default function App() {
       )}
 
       {/* Main Catalog Content */}
-      <main id="catalog-section" className="scroll-mt-24 max-w-7xl mx-auto px-4 py-7 sm:py-12 flex-1 w-full">
+      <main id="catalog-section" className="scroll-mt-24 max-w-7xl mx-auto px-3 sm:px-6 py-5 sm:py-10 flex-1 w-full pb-28">
         {/* Active Filter / Search Back & Close Bar */}
         {(selectedCategoryId !== 'cat-all' || selectedSymptom !== 'all' || searchQuery.trim() !== '') && (
           <div
@@ -1524,11 +1511,7 @@ export default function App() {
         ) : (
           <div
             id="products-grid"
-            className={
-              cardViewMode === 'large'
-                ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6 sm:gap-8 mt-7'
-                : 'grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3.5 sm:gap-6 mt-7'
-            }
+            className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4.5 md:gap-6 mt-6"
           >
             {filteredProducts.slice(0, visibleLimit).map((product) => (
               <ProductCard

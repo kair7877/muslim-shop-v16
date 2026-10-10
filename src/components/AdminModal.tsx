@@ -609,13 +609,18 @@ export const AdminModal: React.FC<AdminModalProps> = ({
     isSubmittingAddProductRef.current = true;
     setIsSaving(true);
     const newId = `prod-${Date.now()}`;
+    const targetCategory =
+      newCategory ||
+      categories.find((c) => c.id !== 'cat-all')?.id ||
+      'cat-health';
+
     const newProd: Product = {
       id: newId,
       titleRu: newTitleRu.trim(),
       titleKz: newTitleKz.trim() || newTitleRu.trim(),
       price: cleanPrice,
       oldPrice: cleanOldPrice,
-      categoryId: newCategory || (categories.find((c) => c.id !== 'cat-all')?.id || 'cat-health'),
+      categoryId: targetCategory,
       descriptionRu: newDescRu.trim() || 'Описание товара',
       descriptionKz: '',
       specsRu: newSpecsRu.trim(),
@@ -637,7 +642,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
 
       // 2. Persist in background to Server, IndexedDB & Firestore
       saveProductToFirestore(newProd).catch((err: any) => {
-        console.warn('Firestore product sync warning (saved locally):', err);
+        console.warn('Firestore product sync notice (saved locally):', err);
       });
 
       const addedTitle = newProd.titleRu;
@@ -653,7 +658,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
       setNewIsNew(true);
       setSavedSuccess(true);
       setCopyFeedbackMsg(
-        `✅ Товар «${addedTitle}» успешно добавлен в каталог и базу данных!`
+        `✅ Товар «${addedTitle}» успешно добавлен в каталог и опубликован!`
       );
       setTimeout(() => {
         setSavedSuccess(false);
@@ -692,10 +697,22 @@ export const AdminModal: React.FC<AdminModalProps> = ({
         return true;
       })
       .sort((a, b) => {
-        // Show newest first in admin panel for easy visibility of freshly added products
-        const timeA = a.createdAt || (a.id.startsWith('prod-') ? a.id.replace('prod-', '') : '');
-        const timeB = b.createdAt || (b.id.startsWith('prod-') ? b.id.replace('prod-', '') : '');
-        return timeB.localeCompare(timeA);
+        // Show newest first in admin panel using precise timestamp sorting
+        const getTs = (p: Product) => {
+          if (p.createdAt) {
+            const t = new Date(p.createdAt).getTime();
+            if (!isNaN(t) && t > 0) return t;
+          }
+          if (p.id && p.id.startsWith('prod-')) {
+            const num = Number(p.id.replace('prod-', ''));
+            if (!isNaN(num) && num > 1000000) return num;
+          }
+          return 0;
+        };
+        const tsA = getTs(a);
+        const tsB = getTs(b);
+        if (tsA !== tsB) return tsB - tsA;
+        return (a.titleRu || '').localeCompare(b.titleRu || '');
       });
   }, [products, adminCategoryFilter, adminSearch]);
 
@@ -757,12 +774,14 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                       await pushDeltaToFirestore(products, categories, currentConfig);
                       setCloudSyncedNotice(true);
                       setCopyFeedbackMsg(
-                        `✅ Все товары (${products.length} шт.) успешно синхронизированы во все браузеры!`
+                        `✅ Все товары (${products.length} шт.) успешно синхронизированы в реальном времени!`
                       );
                       setTimeout(() => {
                         setCloudSyncedNotice(false);
                         setCopyFeedbackMsg(null);
                       }, 4500);
+                    } catch (err: any) {
+                      setCopyFeedbackMsg(`⚠️ Ошибка синхронизации: ${err?.message || 'Проверьте соединение'}`);
                     } finally {
                       setIsSyncingCloud(false);
                     }
@@ -1896,11 +1915,12 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                     <div>
                       <label className="block text-xs font-bold text-stone-700 mb-1">Цена (₸)*</label>
                       <input
-                        type="number"
+                        type="text"
+                        inputMode="numeric"
                         value={newPrice}
                         onChange={(e) => setNewPrice(e.target.value)}
                         placeholder="5500"
-                        className="w-full px-3 py-2 text-xs rounded-xl border border-stone-300 focus:ring-1 focus:ring-emerald-700"
+                        className="w-full px-3 py-2 text-xs rounded-xl border border-stone-300 focus:ring-1 focus:ring-emerald-700 bg-white"
                         required
                       />
                     </div>
@@ -1909,11 +1929,12 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                         Старая цена (₸)
                       </label>
                       <input
-                        type="number"
+                        type="text"
+                        inputMode="numeric"
                         value={newOldPrice}
                         onChange={(e) => setNewOldPrice(e.target.value)}
                         placeholder="7000 (не обязательно)"
-                        className="w-full px-3 py-2 text-xs rounded-xl border border-stone-300 focus:ring-1 focus:ring-emerald-700"
+                        className="w-full px-3 py-2 text-xs rounded-xl border border-stone-300 focus:ring-1 focus:ring-emerald-700 bg-white"
                       />
                     </div>
                   </div>
@@ -2814,7 +2835,11 @@ export const AdminModal: React.FC<AdminModalProps> = ({
 
               {/* STATS & ANALYTICS TAB */}
               {activeTab === 'stats' && !editingProduct && (
-                <AnalyticsTab products={products} currency={currentConfig.currency || '₸'} />
+                <AnalyticsTab
+                  products={products}
+                  currency={currentConfig.currency || '₸'}
+                  onBack={() => setActiveTab('products')}
+                />
               )}
             </div>
           </div>
