@@ -1511,7 +1511,11 @@ export default function App() {
         ) : (
           <div
             id="products-grid"
-            className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4.5 md:gap-6 mt-6"
+            className={
+              cardViewMode === 'large'
+                ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6 mt-6'
+                : 'grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 md:gap-6 mt-6'
+            }
           >
             {filteredProducts.slice(0, visibleLimit).map((product) => (
               <ProductCard

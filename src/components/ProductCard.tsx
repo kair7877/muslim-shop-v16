@@ -80,33 +80,34 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     <article
       id={`product-card-${product.id}`}
       onClick={() => onOpenDetail(product)}
-      className="group relative rounded-2xl sm:rounded-3xl overflow-hidden flex flex-col justify-between bg-white border border-slate-200 hover:border-emerald-500/50 shadow-xs hover:shadow-md transition-all duration-200 w-full cursor-pointer p-3 sm:p-4 select-none"
+      className="group relative rounded-2xl overflow-hidden flex flex-col justify-between bg-white border border-slate-200/90 hover:border-emerald-500 shadow-sm hover:shadow-md transition-all duration-200 w-full cursor-pointer select-none"
     >
       <div>
-        {/* Photo Container */}
-        <div className="relative w-full aspect-square bg-[#fbfbfb] rounded-xl sm:rounded-2xl overflow-hidden flex items-center justify-center p-2 sm:p-3 mb-2.5">
+        {/* Photo Container: Edge-to-edge Marketplace style without thick white margins */}
+        <div className="relative w-full aspect-[4/5] bg-stone-100 overflow-hidden flex items-center justify-center">
           <img
             src={product.images?.[0] || 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=800&q=80'}
             alt={`${title} — MUSLIM SHOP`}
             loading="lazy"
             referrerPolicy="no-referrer"
-            className="w-full h-full object-contain object-center drop-shadow-2xs group-hover:scale-105 transition-transform duration-200"
+            className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
+            style={{ imageRendering: 'auto' }}
           />
 
           {/* Badges: Hit, New, Discount */}
           <div className="absolute top-2 left-2 flex flex-col gap-1 z-10 pointer-events-none">
             {discountPercent && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] sm:text-xs font-black bg-rose-600 text-white shadow-xs">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] sm:text-xs font-black bg-rose-600 text-white shadow-sm">
                 -{discountPercent}%
               </span>
             )}
             {product.isHit && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-black uppercase tracking-wider bg-amber-500 text-slate-950 shadow-xs">
+              <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[11px] sm:text-xs font-black uppercase tracking-wider bg-amber-500 text-slate-950 shadow-sm">
                 ХИТ
               </span>
             )}
             {product.isNew && !product.isHit && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-black uppercase tracking-wider bg-emerald-700 text-white shadow-xs">
+              <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[11px] sm:text-xs font-black uppercase tracking-wider bg-emerald-700 text-white shadow-sm">
                 {isKz ? 'ЖАҢА' : 'NEW'}
               </span>
             )}
@@ -120,52 +121,63 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               e.stopPropagation();
               onToggleFavorite(product);
             }}
-            className={`absolute top-2 right-2 w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-colors shadow-2xs cursor-pointer z-10 border ${
+            className={`absolute top-2 right-2 w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-colors shadow-sm cursor-pointer z-10 backdrop-blur-xs border ${
               isFavorite
                 ? 'bg-rose-50 border-rose-200 text-rose-600'
-                : 'bg-white/90 hover:bg-white text-slate-400 hover:text-rose-600 border-slate-200/80'
+                : 'bg-white/85 hover:bg-white text-slate-500 hover:text-rose-600 border-white/60'
             }`}
             title={isKz ? 'Таңдаулыға қосу' : 'В избранное'}
           >
-            <Heart className={`w-4.5 h-4.5 sm:w-5 sm:h-5 ${isFavorite ? 'fill-rose-600 text-rose-600' : ''}`} />
+            <Heart className={`w-5 h-5 ${isFavorite ? 'fill-rose-600 text-rose-600' : ''}`} />
           </button>
         </div>
 
-        {/* Rating stars & status */}
-        <div className="flex items-center gap-1.5 text-xs text-amber-500 font-bold mb-1.5">
-          <div className="flex text-amber-400">{'★★★★★'}</div>
-          <span className="text-slate-600 font-semibold font-sans text-xs">5.0</span>
-          {product.inStock ? (
-            <span className="text-emerald-700 text-[11px] font-bold ml-auto bg-emerald-50 px-2 py-0.5 rounded-md">
-              {isKz ? 'Бар' : 'В наличии'}
+        {/* Product Details Section */}
+        <div className={isLargeView ? 'p-3.5 sm:p-4 flex flex-col' : 'p-3 sm:p-3.5 flex flex-col'}>
+          {/* Price: Big bold marketplace style */}
+          <div className="flex items-baseline gap-2 flex-wrap">
+            <span
+              className={`font-black text-slate-950 font-sans tracking-tight leading-none ${
+                isLargeView ? 'text-xl sm:text-3xl' : 'text-lg sm:text-2xl'
+              }`}
+            >
+              {formatPrice(product.price)}
             </span>
-          ) : (
-            <span className="text-slate-500 text-[11px] font-bold ml-auto">
-              {isKz ? 'Тапсырыспен' : 'Под заказ'}
-            </span>
-          )}
-        </div>
+            {product.oldPrice && product.oldPrice > product.price && (
+              <span className="text-xs sm:text-base text-slate-400 line-through font-semibold font-sans">
+                {formatPrice(product.oldPrice)}
+              </span>
+            )}
+          </div>
 
-        {/* Title: Big & bold iHerb style */}
-        <h3 className="font-extrabold text-slate-900 group-hover:text-emerald-800 transition-colors line-clamp-2 leading-snug text-sm sm:text-base min-h-[38px] sm:min-h-[44px]">
-          {title}
-        </h3>
+          {/* Title: Legible, crisp & clear */}
+          <h3
+            className={`font-bold text-slate-900 group-hover:text-emerald-800 transition-colors line-clamp-2 leading-snug mt-1.5 ${
+              isLargeView ? 'text-sm sm:text-base min-h-[38px] sm:min-h-[46px]' : 'text-xs sm:text-sm min-h-[34px] sm:min-h-[40px]'
+            }`}
+          >
+            {title}
+          </h3>
 
-        {/* Large legible price */}
-        <div className="flex items-baseline gap-1.5 mt-2 flex-wrap">
-          <span className="font-black text-slate-950 font-sans text-lg sm:text-xl lg:text-2xl tracking-tight">
-            {formatPrice(product.price)}
-          </span>
-          {product.oldPrice && product.oldPrice > product.price && (
-            <span className="text-xs sm:text-sm text-slate-400 line-through font-semibold font-sans">
-              {formatPrice(product.oldPrice)}
-            </span>
-          )}
+          {/* Rating stars & status */}
+          <div className="flex items-center gap-1.5 text-xs text-amber-500 font-bold mt-2">
+            <div className="flex text-amber-400 text-xs">{'★★★★★'}</div>
+            <span className="text-slate-600 font-bold font-sans text-xs">5.0</span>
+            {product.inStock ? (
+              <span className="text-emerald-700 text-[11px] sm:text-xs font-bold ml-auto bg-emerald-50 px-2 py-0.5 rounded-md">
+                {isKz ? 'Бар' : 'В наличии'}
+              </span>
+            ) : (
+              <span className="text-slate-500 text-[11px] sm:text-xs font-bold ml-auto">
+                {isKz ? 'Тапсырыспен' : 'Под заказ'}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Cart Button: Comfortable touch target >= 44px */}
-      <div className="mt-3 pt-2">
+      <div className="p-3 sm:p-3.5 pt-0">
         {product.inStock ? (
           <button
             type="button"
