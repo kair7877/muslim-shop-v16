@@ -34,10 +34,10 @@ import {
   AlertTriangle,
   BarChart3,
   ArrowLeft,
+  Download,
 } from 'lucide-react';
 import { Category, Language, Product, StoreConfig } from '../types';
 import { AnalyticsTab } from './AnalyticsTab';
-import { StoriesGeneratorModal } from './StoriesGeneratorModal';
 import { BulkPriceEditorTab } from './BulkPriceEditorTab';
 import {
   saveProductToFirestore,
@@ -46,6 +46,7 @@ import {
   saveCategoryToFirestore,
   deleteCategoryFromFirestore,
   pushDeltaToFirestore,
+  downloadFullHighQualityBackup,
 } from '../services/firestoreService';
 import {
   getProductDirectUrl,
@@ -100,7 +101,7 @@ interface AdminModalProps {
   onAddCategory?: (category: Category) => void;
   onUpdateCategory?: (category: Category) => void;
   onDeleteCategory?: (categoryId: string) => void;
-  initialTab?: 'products' | 'pricelist' | 'stories' | 'settings' | 'add' | 'categories' | 'stats';
+  initialTab?: 'products' | 'pricelist' | 'settings' | 'add' | 'categories' | 'stats' | 'backup';
   onClose: () => void;
 }
 
@@ -127,9 +128,8 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   const [errorMsg, setErrorMsg] = useState('');
   const [currentConfig, setCurrentConfig] = useState<StoreConfig>(config);
   const [activeTab, setActiveTab] = useState<
-    'products' | 'pricelist' | 'stories' | 'settings' | 'add' | 'categories' | 'stats'
+    'products' | 'pricelist' | 'settings' | 'add' | 'categories' | 'stats' | 'backup'
   >(initialTab || 'products');
-  const [storyProduct, setStoryProduct] = useState<Product | null>(null);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSyncingCloud, setIsSyncingCloud] = useState(false);
@@ -274,6 +274,96 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   const [newIsHit, setNewIsHit] = useState(false);
   const [newIsNew, setNewIsNew] = useState(true);
   const [isCompressingImage, setIsCompressingImage] = useState(false);
+  const [isExportingBackup, setIsExportingBackup] = useState(false);
+  const [isImportingBackup, setIsImportingBackup] = useState(false);
+  const [backupRestorePreview, setBackupRestorePreview] = useState<{
+    products: Product[];
+    categories?: Category[];
+    config?: StoreConfig;
+    filename: string;
+    exportedAt?: string;
+  } | null>(null);
+
+  const handleDownloadBackupClick = async () => {
+    setIsExportingBackup(true);
+    try {
+      const res = await downloadFullHighQualityBackup(products, categories, currentConfig);
+      setCopyFeedbackMsg(`💾 Полный бэкап высокого качества сохранен! Файл: ${res.filename} (${res.productCount} товаров)`);
+      setTimeout(() => setCopyFeedbackMsg(null), 6000);
+    } catch (err: any) {
+      alert('Ошибка при создании резервной копии: ' + (err?.message || 'Попробуйте снова'));
+    } finally {
+      setIsExportingBackup(false);
+    }
+  };
+
+  const handleBackupFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = event.target?.result as string;
+        const parsed = JSON.parse(text);
+        const incomingProducts: Product[] = Array.isArray(parsed.products)
+          ? parsed.products
+          : Array.isArray(parsed)
+          ? parsed
+          : [];
+        if (incomingProducts.length === 0) {
+          alert('В файле не найден список товаров (products)');
+          return;
+        }
+        setBackupRestorePreview({
+          products: incomingProducts,
+          categories: Array.isArray(parsed.categories) ? parsed.categories : undefined,
+          config: parsed.config || parsed.settings || undefined,
+          filename: file.name,
+          exportedAt: parsed.exportedAt || parsed.updatedAt || undefined,
+        });
+      } catch (err: any) {
+        alert('Ошибка при чтении JSON-файла бэкапа: ' + (err?.message || 'Неверный формат JSON'));
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleApplyRestoreBackup = async () => {
+    if (!backupRestorePreview) return;
+    const count = backupRestorePreview.products.length;
+    if (
+      !window.confirm(
+        `Вы уверены, что хотите восстановить каталог? Будет загружено ${count} товаров из файла «${backupRestorePreview.filename}».`
+      )
+    ) {
+      return;
+    }
+    setIsImportingBackup(true);
+    try {
+      if (onBulkUpdateProducts) {
+        onBulkUpdateProducts(backupRestorePreview.products);
+      } else {
+        backupRestorePreview.products.forEach((p) => onUpdateProduct(p));
+      }
+      if (backupRestorePreview.config) {
+        setCurrentConfig(backupRestorePreview.config);
+        onUpdateConfig(backupRestorePreview.config);
+      }
+      await pushDeltaToFirestore(
+        backupRestorePreview.products,
+        backupRestorePreview.categories || categories,
+        backupRestorePreview.config || currentConfig
+      );
+      setCopyFeedbackMsg(`✅ Успешно восстановлено ${count} товаров из резервной копии!`);
+      setTimeout(() => setCopyFeedbackMsg(null), 5000);
+      setBackupRestorePreview(null);
+      setActiveTab('products');
+    } catch (err: any) {
+      alert('Ошибка при восстановлении: ' + (err?.message || 'Ошибка'));
+    } finally {
+      setIsImportingBackup(false);
+    }
+  };
 
   const handleImageFileUpload = async (
     file: File,
@@ -282,7 +372,8 @@ export const AdminModal: React.FC<AdminModalProps> = ({
     if (!file) return;
     setIsCompressingImage(true);
     try {
-      const compressedDataUrl = await compressImageFile(file, 720, 720, 0.78);
+      // High-quality image preservation (1440x1920, quality 0.90) to keep default original crispness
+      const compressedDataUrl = await compressImageFile(file, 1440, 1920, 0.90);
       if (target === 'new') {
         setNewImageUrl(compressedDataUrl);
       } else if (editingProduct) {
@@ -734,37 +825,51 @@ export const AdminModal: React.FC<AdminModalProps> = ({
         className="w-full max-w-5xl xl:max-w-6xl bg-white rounded-3xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden"
       >
         {/* Header */}
-        <div className="p-4 sm:p-5 bg-stone-900 text-white flex items-center justify-between gap-2 border-b border-stone-800">
-          <div className="flex items-center gap-2.5 min-w-0">
+        <div className="p-3.5 sm:p-5 bg-stone-900 text-white border-b border-stone-800 flex flex-col gap-2.5">
+          {/* Top row: Back / Title / Close */}
+          <div className="flex items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <button
+                type="button"
+                onClick={() => {
+                  if (editingProduct) {
+                    setEditingProduct(null);
+                  } else {
+                    onClose();
+                  }
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-400/15 hover:bg-amber-400/25 text-amber-300 border border-amber-400/40 font-extrabold text-xs transition-colors cursor-pointer shrink-0"
+                title={editingProduct ? 'Назад к списку товаров' : 'Назад в магазин'}
+              >
+                <ArrowLeft className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>{editingProduct ? 'К списку' : 'В магазин'}</span>
+              </button>
+              <Lock className="w-4 h-4 text-amber-400 hidden sm:inline shrink-0" />
+              <div className="min-w-0">
+                <h3 className="font-bold text-sm sm:text-base font-serif leading-tight truncate">
+                  {editingProduct ? 'Редактирование товара' : 'Панель администратора • MUSLIM SHOP'}
+                </h3>
+                <p className="text-[11px] text-stone-400 truncate">
+                  г. Атырау, Бутик №24 • Firestore онлайн
+                </p>
+              </div>
+            </div>
+
             <button
               type="button"
-              onClick={() => {
-                if (editingProduct) {
-                  setEditingProduct(null);
-                } else {
-                  onClose();
-                }
-              }}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-amber-400/15 hover:bg-amber-400/25 text-amber-300 border border-amber-400/40 font-extrabold text-xs transition-colors cursor-pointer shrink-0"
-              title={editingProduct ? 'Назад к списку товаров' : 'Назад в магазин'}
+              onClick={onClose}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-800 hover:bg-rose-700 text-stone-100 hover:text-white border border-stone-700 font-bold text-xs transition-colors cursor-pointer shrink-0 shadow-xs"
+              title="Закрыть окно (сессия 10 минут сохраняется)"
             >
-              <ArrowLeft className="w-4 h-4 text-amber-400 shrink-0" />
-              <span>{editingProduct ? 'Назад к списку' : 'Назад'}</span>
+              <X className="w-4 h-4 text-amber-300" />
+              <span>Закрыть</span>
             </button>
-            <Lock className="w-5 h-5 text-amber-400 hidden sm:inline shrink-0" />
-            <div className="min-w-0">
-              <h3 className="font-bold text-sm sm:text-base font-serif leading-tight truncate">
-                Панель администратора • MUSLIM SHOP
-              </h3>
-              <p className="text-[11px] text-stone-400 hidden sm:block">
-                г. Атырау, Бутик №24 • Firestore онлайн
-              </p>
-            </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            {isAuthenticated && (
-              <>
+          {/* Sub-bar: Actions & status (cleanly separated, flex-wrap, zero overlaps) */}
+          {isAuthenticated && (
+            <div className="flex items-center justify-between gap-2 flex-wrap pt-2 border-t border-stone-800/80">
+              <div className="flex items-center gap-2 flex-wrap">
                 <button
                   type="button"
                   onClick={async () => {
@@ -786,7 +891,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                       setIsSyncingCloud(false);
                     }
                   }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-semibold transition-colors cursor-pointer shadow-xs"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold transition-colors cursor-pointer shadow-xs"
                   title="Мгновенно отправить все новые товары во все браузеры (Яндекс, Safari, телефоны клиентов)"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${isSyncingCloud ? 'animate-spin' : ''}`} />
@@ -798,6 +903,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                       : 'Обновить для всех'}
                   </span>
                 </button>
+
                 {todayVisitors && (
                   <button
                     type="button"
@@ -805,7 +911,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                       setEditingProduct(null);
                       setActiveTab('stats');
                     }}
-                    className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs ${
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs ${
                       activeTab === 'stats'
                         ? 'bg-emerald-400 text-emerald-950 font-black'
                         : 'bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-700/80 text-emerald-300'
@@ -813,16 +919,28 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                     title="Открыть статистику посещений"
                   >
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-                    <span>{todayVisitors.unique} гостей сегодня</span>
+                    <span>{todayVisitors.unique} гостей</span>
                   </button>
                 )}
+
+                <button
+                  id="admin-header-backup-btn"
+                  onClick={handleDownloadBackupClick}
+                  disabled={isExportingBackup}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-amber-400/20 hover:bg-amber-400/30 text-amber-300 border border-amber-400/40 text-xs font-bold transition-colors cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
+                  title="Скачать полную резервную копию высокого качества (muslim-shop-full-backup...json)"
+                >
+                  <Download className={`w-3.5 h-3.5 text-amber-300 ${isExportingBackup ? 'animate-bounce' : ''}`} />
+                  <span>{isExportingBackup ? 'Выгрузка...' : '💾 Скачать бэкап (.json)'}</span>
+                </button>
+
                 <button
                   id="admin-header-settings-btn"
                   onClick={() => {
                     setEditingProduct(null);
                     setActiveTab('settings');
                   }}
-                  className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
                     activeTab === 'settings'
                       ? 'bg-amber-400 text-stone-950 shadow-xs'
                       : 'bg-stone-800 hover:bg-stone-700 text-stone-200'
@@ -830,37 +948,31 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                   title="Перейти к смене пароля и настройкам бутика"
                 >
                   <KeyRound className="w-3.5 h-3.5 text-amber-300" />
-                  <span>Сменить пароль</span>
+                  <span>Пароль</span>
                 </button>
+              </div>
 
+              <div className="flex items-center gap-2">
                 <div
-                  className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-800/80 text-[11px] text-emerald-300"
+                  className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-800/80 text-[11px] text-emerald-300"
                   title="Сессия автоматически продлевается при любых ваших действиях в панели"
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   <span>Сессия: {sessionRemainingMinutes} мин</span>
                 </div>
+
                 <button
                   id="admin-logout-btn"
                   onClick={handleLogout}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-800 hover:bg-rose-950/80 text-stone-300 hover:text-rose-200 border border-stone-700 hover:border-rose-800/60 text-xs font-semibold transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-800 hover:bg-rose-950/80 text-stone-300 hover:text-rose-200 border border-stone-700 text-xs font-semibold transition-colors cursor-pointer"
                   title="Завершить сессию администратора и заблокировать вход"
                 >
                   <LogOut className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Выйти</span>
+                  <span>Выйти</span>
                 </button>
-              </>
-            )}
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-stone-800 hover:bg-rose-700 text-stone-100 hover:text-white border border-stone-700 font-bold text-xs transition-colors cursor-pointer shrink-0"
-              title="Закрыть окно (сессия 10 минут сохраняется)"
-            >
-              <X className="w-4 h-4 text-amber-300" />
-              <span>Закрыть</span>
-            </button>
-          </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {!isAuthenticated ? (
@@ -996,19 +1108,19 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                 <span>Каталоги ({categories.filter((c) => c.id !== 'cat-all').length})</span>
               </button>
               <button
-                id="admin-tab-stories"
+                id="admin-tab-backup"
                 onClick={() => {
                   setEditingProduct(null);
-                  setActiveTab('stories');
+                  setActiveTab('backup');
                 }}
                 className={`pb-2.5 border-b-2 transition-colors flex items-center gap-1.5 shrink-0 ${
-                  activeTab === 'stories'
+                  activeTab === 'backup'
                     ? 'border-emerald-800 text-emerald-950 font-extrabold'
                     : 'border-transparent text-stone-500 hover:text-stone-800'
                 }`}
               >
-                <Camera className="w-3.5 h-3.5 text-amber-600" />
-                <span>Stories / Статус</span>
+                <Download className="w-3.5 h-3.5 text-emerald-700" />
+                <span>Бэкап и Резерв</span>
               </button>
               <button
                 id="admin-tab-settings"
@@ -1085,26 +1197,37 @@ export const AdminModal: React.FC<AdminModalProps> = ({
               {/* EDIT PRODUCT SUB-VIEW */}
               {editingProduct ? (
                 <form onSubmit={handleSaveEditedProduct} className="space-y-4 max-w-xl mx-auto">
-                  <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-stone-200">
-                    <h4 className="font-bold text-stone-900 text-sm">
-                      Редактирование: {editingProduct.titleRu}
-                    </h4>
-                    <div className="flex items-center gap-2">
+                  {/* Sticky Top Action Bar */}
+                  <div className="sticky -top-4 sm:-top-5 z-20 bg-white/95 backdrop-blur-md -mx-4 sm:-mx-5 px-4 sm:px-5 py-3 border-b border-stone-200/90 flex items-center justify-between gap-2 shadow-xs mb-4">
+                    <button
+                      type="button"
+                      onClick={() => setEditingProduct(null)}
+                      className="px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                    >
+                      <ArrowLeft className="w-4 h-4 text-stone-600" />
+                      <span>К списку</span>
+                    </button>
+                    <div className="min-w-0 flex-1 px-1">
+                      <h4 className="font-bold text-stone-900 text-xs sm:text-sm truncate">
+                        {editingProduct.titleRu}
+                      </h4>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
                       <button
-                        type="button"
-                        onClick={() => handleDelete(editingProduct)}
-                        className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
-                        title="Удалить этот товар из каталога"
+                        type="submit"
+                        disabled={isSaving}
+                        className="px-4 py-1.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-black text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
                       >
-                        <Trash2 className="w-3.5 h-3.5 shrink-0" />
-                        <span>Удалить товар</span>
+                        <Save className="w-3.5 h-3.5 text-amber-300" />
+                        <span>{isSaving ? 'Сохранение...' : 'Сохранить'}</span>
                       </button>
                       <button
                         type="button"
-                        onClick={() => setEditingProduct(null)}
-                        className="px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-xs transition-colors cursor-pointer"
+                        onClick={() => handleDelete(editingProduct)}
+                        className="p-1.5 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 text-xs font-bold transition-colors cursor-pointer"
+                        title="Удалить товар"
                       >
-                        Отмена
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
@@ -1475,10 +1598,10 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                       По вашему запросу товары не найдены
                     </div>
                   ) : adminViewMode === 'grid' ? (
-                    /* 1. LARGE VISUAL CARDS GRID (9:16 VERTICAL RATIO) */
+                    /* 1. BALANCED VISUAL CARDS GRID */
                     <div
                       id="admin-products-grid"
-                      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4.5 max-h-[60vh] overflow-y-auto pr-1 p-0.5"
+                      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-8"
                     >
                       {filteredAdminProducts.map((p) => {
                         const directUrl = getProductDirectUrl(p.id);
@@ -1491,12 +1614,12 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                             id={`admin-card-${p.id}`}
                             className="bg-white rounded-2xl border border-stone-200 hover:border-amber-400/80 hover:shadow-md transition-all flex flex-col justify-between overflow-hidden relative group"
                           >
-                            {/* TOP DIRECT LINK BAR (Над каждым товаром - по запросу пользователя) */}
+                            {/* TOP DIRECT LINK BAR */}
                             <div className="p-2.5 bg-stone-50 border-b border-stone-200/80 flex items-center justify-between gap-2">
                               <button
                                 type="button"
                                 onClick={() => handleCopyDirectLink(p)}
-                                className={`flex-1 px-2.5 py-1.5 rounded-xl font-bold text-[11px] sm:text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap shadow-2xs ${
+                                className={`flex-1 px-3 py-1.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap shadow-2xs ${
                                   isCopied
                                     ? 'bg-emerald-600 text-white'
                                     : 'bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300/60'
@@ -1520,25 +1643,16 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                                 href={directUrl}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="p-1.5 rounded-xl bg-white border border-stone-200 text-stone-600 hover:text-stone-950 hover:bg-stone-100 transition-colors shrink-0"
+                                className="p-2 rounded-xl bg-white border border-stone-200 text-stone-600 hover:text-stone-950 hover:bg-stone-100 transition-colors shrink-0 shadow-2xs"
                                 title="Открыть прямую ссылку в новой вкладке"
                               >
                                 <ExternalLink className="w-3.5 h-3.5" />
                               </a>
-
-                              <button
-                                type="button"
-                                onClick={() => handleDelete(p)}
-                                className="p-1.5 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border border-rose-200 transition-colors cursor-pointer shrink-0"
-                                title="Удалить товар"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
                             </div>
 
-                            {/* LARGE VISUAL IMAGE (9:16 Vertical Ratio) */}
+                            {/* BALANCED VISUAL IMAGE */}
                             <div
-                              className="relative aspect-[9/16] max-h-72 w-full bg-stone-100 overflow-hidden cursor-pointer flex items-center justify-center border-b border-stone-100"
+                              className="relative aspect-[4/3] sm:aspect-square max-h-52 w-full bg-stone-100 overflow-hidden cursor-pointer flex items-center justify-center border-b border-stone-100"
                               onClick={() => setEditingProduct(p)}
                               title="Нажмите для редактирования"
                             >
@@ -1667,12 +1781,12 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                                 )}
                               </div>
 
-                              {/* Action Buttons */}
-                              <div className="flex items-center gap-1.5 pt-2.5 border-t border-stone-100">
+                              {/* Action Buttons: Clean, spacious, zero overlap */}
+                              <div className="flex items-center gap-2 pt-2.5 border-t border-stone-100">
                                 <button
                                   type="button"
                                   onClick={() => setEditingProduct(p)}
-                                  className="flex-1 py-1.5 px-2 rounded-xl bg-emerald-900 hover:bg-emerald-950 text-white font-bold text-xs flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                                  className="flex-1 py-2 px-3 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
                                   title="Редактировать описание, фото и характеристики"
                                 >
                                   <Edit2 className="w-3.5 h-3.5 text-amber-300 shrink-0" />
@@ -1681,36 +1795,22 @@ export const AdminModal: React.FC<AdminModalProps> = ({
 
                                 <button
                                   type="button"
-                                  onClick={() => {
-                                    setStoryProduct(p);
-                                    setEditingProduct(null);
-                                    setActiveTab('stories');
-                                  }}
-                                  className="py-1.5 px-2.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300/70 font-bold text-xs flex items-center justify-center gap-1 transition-colors cursor-pointer shrink-0"
-                                  title="Создать красивую карточку для Instagram Stories и WhatsApp Status в 1 клик"
+                                  onClick={() => handleToggleStock(p)}
+                                  className={`py-2 px-2.5 rounded-xl font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer shrink-0 border ${
+                                    p.inStock
+                                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
+                                      : 'bg-rose-50 text-rose-800 border-rose-200 hover:bg-rose-100'
+                                  }`}
+                                  title="Переключить статус наличия"
                                 >
-                                  <Camera className="w-3.5 h-3.5 text-amber-800 shrink-0" />
-                                  <span>Stories</span>
+                                  <span className={`w-2 h-2 rounded-full shrink-0 ${p.inStock ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                                  <span>{p.inStock ? 'В наличии' : 'Нет'}</span>
                                 </button>
-
-                                {onPreviewProduct && (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      onPreviewProduct(p);
-                                      onClose();
-                                    }}
-                                    className="p-1.5 rounded-xl border border-stone-300 text-stone-700 hover:text-emerald-900 hover:bg-stone-50 transition-colors cursor-pointer"
-                                    title="Посмотреть на сайте (как видит клиент)"
-                                  >
-                                    <Eye className="w-3.5 h-3.5" />
-                                  </button>
-                                )}
 
                                 <button
                                   type="button"
                                   onClick={() => handleDelete(p)}
-                                  className="py-1.5 px-2.5 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 font-bold text-xs flex items-center justify-center gap-1 transition-colors cursor-pointer shrink-0"
+                                  className="py-2 px-2.5 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 font-bold text-xs flex items-center justify-center gap-1 transition-colors cursor-pointer shrink-0"
                                   title="Удалить товар из базы данных"
                                 >
                                   <Trash2 className="w-3.5 h-3.5 shrink-0" />
@@ -1724,7 +1824,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                     </div>
                   ) : (
                     /* 2. COMPACT LIST VIEW */
-                    <div className="divide-y divide-stone-100 border border-stone-200 rounded-2xl overflow-hidden bg-white max-h-[60vh] overflow-y-auto">
+                    <div className="divide-y divide-stone-100 border border-stone-200 rounded-2xl overflow-hidden bg-white pb-6">
                       {filteredAdminProducts.map((p) => {
                         const directUrl = getProductDirectUrl(p.id);
                         const isCopied = copiedProductId === p.id;
@@ -1831,41 +1931,27 @@ export const AdminModal: React.FC<AdminModalProps> = ({
 
                               <button
                                 onClick={() => handleToggleStock(p)}
-                                className={`px-2.5 py-1 rounded-full font-bold text-[10px] sm:text-[11px] transition-colors cursor-pointer ${
+                                className={`px-2.5 py-1.5 rounded-xl font-bold text-[11px] transition-colors cursor-pointer border ${
                                   p.inStock
-                                    ? 'bg-emerald-100 text-emerald-800 hover:bg-rose-100 hover:text-rose-800'
-                                    : 'bg-rose-100 text-rose-800 hover:bg-emerald-100 hover:text-emerald-800'
+                                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
+                                    : 'bg-rose-50 text-rose-800 border-rose-200 hover:bg-rose-100'
                                 }`}
                               >
                                 {p.inStock ? 'В наличии' : 'Нет'}
                               </button>
 
                               <button
-                                type="button"
-                                onClick={() => {
-                                  setStoryProduct(p);
-                                  setEditingProduct(null);
-                                  setActiveTab('stories');
-                                }}
-                                className="px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-950 font-bold text-[10px] sm:text-[11px] flex items-center gap-1 transition-colors cursor-pointer"
-                                title="Создать карточку для Instagram Stories / WhatsApp Status"
-                              >
-                                <Camera className="w-3 h-3 text-amber-800" />
-                                <span>Stories</span>
-                              </button>
-
-                              <button
                                 onClick={() => setEditingProduct(p)}
-                                className="px-2.5 py-1 rounded-lg bg-stone-100 hover:bg-emerald-50 text-stone-700 hover:text-emerald-900 font-bold text-[10px] sm:text-[11px] flex items-center gap-1 transition-colors cursor-pointer"
+                                className="px-3 py-1.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-[11px] flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
                                 title="Редактировать товар"
                               >
-                                <Edit2 className="w-3 h-3" />
+                                <Edit2 className="w-3 h-3 text-amber-300" />
                                 <span>Изменить</span>
                               </button>
 
                               <button
                                 onClick={() => handleDelete(p)}
-                                className="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 font-bold text-[10px] sm:text-[11px] flex items-center gap-1 transition-colors cursor-pointer"
+                                className="px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 font-bold text-[11px] flex items-center gap-1 transition-colors cursor-pointer"
                                 title="Удалить из каталога"
                               >
                                 <Trash2 className="w-3 h-3 shrink-0" />
@@ -1880,9 +1966,30 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                 </div>
               ) : activeTab === 'add' ? (
                 <form onSubmit={handleAddNewProduct} className="space-y-4 max-w-xl mx-auto">
-                  <h4 className="font-bold text-stone-900 text-sm">
-                    Добавление нового товара в каталог
-                  </h4>
+                  {/* Sticky Top Action Bar for Adding Product */}
+                  <div className="sticky -top-4 sm:-top-5 z-20 bg-white/95 backdrop-blur-md -mx-4 sm:-mx-5 px-4 sm:px-5 py-3 border-b border-stone-200/90 flex items-center justify-between gap-2 shadow-xs mb-4">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('products')}
+                      className="px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                    >
+                      <ArrowLeft className="w-4 h-4 text-stone-600" />
+                      <span>К списку</span>
+                    </button>
+                    <div className="min-w-0 flex-1 px-1">
+                      <h4 className="font-bold text-stone-900 text-xs sm:text-sm truncate">
+                        Новый товар в каталог
+                      </h4>
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={isSaving}
+                      className="px-4 py-1.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-black text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs active:scale-95 disabled:opacity-50 shrink-0"
+                    >
+                      <Plus className="w-3.5 h-3.5 text-amber-300" />
+                      <span>{isSaving ? 'Сохранение...' : 'Опубликовать'}</span>
+                    </button>
+                  </div>
 
                   <div>
                     <label className="block text-xs font-bold text-stone-700 mb-1">
@@ -2806,6 +2913,137 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                 </div>
               ) : null}
 
+              {/* BACKUP & RESTORE TAB */}
+              {activeTab === 'backup' && !editingProduct && (
+                <div className="space-y-6 max-w-2xl mx-auto pb-10">
+                  <div className="pb-3 border-b border-stone-200">
+                    <h3 className="font-serif font-bold text-lg text-emerald-950 flex items-center gap-2">
+                      <Download className="w-5 h-5 text-emerald-800" />
+                      <span>Резервная копия каталога (Full Backup)</span>
+                    </h3>
+                    <p className="text-xs text-stone-500 mt-1">
+                      Создание и восстановление полных резервных копий всех товаров с сохранением исходного высокого качества фотографий.
+                    </p>
+                  </div>
+
+                  {/* Card 1: Export Full Backup */}
+                  <div className="p-5 bg-gradient-to-br from-emerald-50/70 via-white to-amber-50/40 rounded-2xl border-2 border-emerald-800/20 shadow-xs space-y-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-base">
+                            💾
+                          </span>
+                          <h4 className="font-bold text-sm text-stone-900">
+                            Выгрузка полного бэкапа высокого качества
+                          </h4>
+                        </div>
+                        <p className="text-xs text-stone-600 mt-1.5 leading-relaxed">
+                          Файл формируется в формате: <code className="bg-stone-100 px-1.5 py-0.5 rounded text-[11px] font-mono text-emerald-900 font-bold">muslim-shop-full-backup-ГГГГ-ММ-ДД-ЧЧ-ММ.json</code>.
+                          Включает в себя все {products.length} товаров с полными изображениями исходного качества, каталоги и настройки бутика.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-white rounded-xl border border-stone-200 text-xs space-y-1.5 text-stone-700">
+                      <div className="flex justify-between">
+                        <span>Товаров в бэкапе:</span>
+                        <b className="text-stone-900 font-bold">{products.length} шт.</b>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Категорий:</span>
+                        <b className="text-stone-900 font-bold">{categories.length} шт.</b>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Качество фотографий:</span>
+                        <b className="text-emerald-700 font-bold">Оригинальное высокое (High Quality)</b>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Формат имени файла:</span>
+                        <b className="font-mono text-[11px] text-stone-800">muslim-shop-full-backup-*.json</b>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleDownloadBackupClick}
+                      disabled={isExportingBackup}
+                      className="w-full py-3 px-4 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-extrabold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md active:scale-98 disabled:opacity-50"
+                    >
+                      <Download className={`w-4 h-4 text-amber-300 ${isExportingBackup ? 'animate-bounce' : ''}`} />
+                      <span>{isExportingBackup ? 'Формирование файла...' : 'Скачать полную резервную копию высокого качества (.json)'}</span>
+                    </button>
+                  </div>
+
+                  {/* Card 2: Restore from Backup */}
+                  <div className="p-5 bg-white rounded-2xl border border-stone-200 shadow-xs space-y-4">
+                    <div className="flex items-center gap-2">
+                      <span className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-base">
+                        📥
+                      </span>
+                      <h4 className="font-bold text-sm text-stone-900">
+                        Восстановление каталога из резервной копии
+                      </h4>
+                    </div>
+                    <p className="text-xs text-stone-600 leading-relaxed">
+                      Вы можете загрузить сохраненный файл <code className="bg-stone-100 px-1.5 py-0.5 rounded text-[11px] font-mono">muslim-shop-full-backup...json</code> или <code className="bg-stone-100 px-1.5 py-0.5 rounded text-[11px] font-mono">catalog-snapshot.json</code> для быстрого восстановления товаров.
+                    </p>
+
+                    <label className="block p-4 border-2 border-dashed border-stone-300 hover:border-emerald-600 rounded-xl text-center cursor-pointer transition-colors bg-stone-50/50 hover:bg-emerald-50/30">
+                      <Upload className="w-6 h-6 mx-auto text-stone-400 mb-1.5" />
+                      <span className="text-xs font-bold text-stone-800 block">
+                        Выберите файл резервной копии .json
+                      </span>
+                      <span className="text-[11px] text-stone-500 block mt-0.5">
+                        Нажмите для выбора файла с телефона или компьютера
+                      </span>
+                      <input
+                        type="file"
+                        accept=".json,application/json"
+                        className="hidden"
+                        onChange={handleBackupFileSelect}
+                      />
+                    </label>
+
+                    {backupRestorePreview && (
+                      <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-emerald-950 truncate max-w-xs">
+                            Файл: {backupRestorePreview.filename}
+                          </span>
+                          <span className="text-[11px] font-mono font-bold text-emerald-800 bg-white px-2 py-0.5 rounded-md border border-emerald-200 shrink-0">
+                            {backupRestorePreview.products.length} товаров
+                          </span>
+                        </div>
+                        {backupRestorePreview.exportedAt && (
+                          <p className="text-[11px] text-stone-600">
+                            Дата создания бэкапа: {new Date(backupRestorePreview.exportedAt).toLocaleString('ru-RU')}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={handleApplyRestoreBackup}
+                            disabled={isImportingBackup}
+                            className="flex-1 py-2 px-3 rounded-lg bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-50"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>{isImportingBackup ? 'Восстановление...' : 'Применить и восстановить каталог'}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setBackupRestorePreview(null)}
+                            className="py-2 px-3 rounded-lg bg-white border border-stone-300 text-stone-700 font-bold text-xs hover:bg-stone-50 cursor-pointer"
+                          >
+                            Отмена
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* FAST PRICE LIST / BULK EDITOR TAB */}
               {activeTab === 'pricelist' && !editingProduct && (
                 <BulkPriceEditorTab
@@ -2815,21 +3053,6 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                   onUpdateProduct={onUpdateProduct}
                   onBulkUpdateProducts={onBulkUpdateProducts}
                   onDeleteProduct={(prod) => handleDelete(prod)}
-                  onOpenStoriesForProduct={(prod) => {
-                    setStoryProduct(prod);
-                    setActiveTab('stories');
-                  }}
-                />
-              )}
-
-              {/* INSTAGRAM STORIES & WHATSAPP STATUS GENERATOR TAB */}
-              {activeTab === 'stories' && !editingProduct && (
-                <StoriesGeneratorModal
-                  products={products}
-                  categories={categories}
-                  config={currentConfig}
-                  initialProduct={storyProduct}
-                  onClose={() => setActiveTab('products')}
                 />
               )}
 

@@ -1538,6 +1538,8 @@ export async function pushDeltaToFirestore(
       (b.createdAt || b.id).localeCompare(a.createdAt || a.id)
     );
 
+    // Full cloud upserted products (for Cloud Relay & Server cache without size restrictions)
+    const fullCloudUpsertedProducts: Record<string, any> = {};
     // Safe lightweight payload strictly for Firestore's 1MB document limit
     const firestoreSafeInlineProducts: Record<string, any> = {};
     let approxFirestoreBytes = 0;
@@ -2476,4 +2478,67 @@ export async function createOrderInFirestore(orderData: {
   const ordersRef = collection(db, ORDERS_COLLECTION);
   const res = await addDoc(ordersRef, orderData);
   return res.id;
+}
+
+/**
+ * Generates and downloads a complete, full-resolution backup of all products,
+ * categories, and store configurations in the requested naming format:
+ * muslim-shop-full-backup-YYYY-MM-DD-HH-mm.json
+ */
+export async function downloadFullHighQualityBackup(
+  products: Product[],
+  categories: Category[],
+  config: StoreConfig
+): Promise<{ filename: string; productCount: number; categoryCount: number }> {
+  // Reconcile each product with its original full-quality uncompressed images
+  const fullProducts = products.map((p) => {
+    const memImgs = inMemoryProductImages.get(p.id);
+    const snapImgs = rawNetworkSnapshotMap.get(p.id)?.images;
+    const resolvedImgs =
+      memImgs && memImgs.length > 0 && !memImgs[0].includes('photo-1584308666744-24d5c474f2ae')
+        ? memImgs
+        : snapImgs && snapImgs.length > 0 && !snapImgs[0].includes('photo-1584308666744-24d5c474f2ae')
+        ? snapImgs
+        : p.images;
+    return {
+      ...p,
+      images: resolvedImgs && resolvedImgs.length > 0 ? resolvedImgs : p.images,
+    };
+  });
+
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  const timeStr = `${pad(now.getHours())}-${pad(now.getMinutes())}`;
+  const filename = `muslim-shop-full-backup-${dateStr}-${timeStr}.json`;
+
+  const backupData = {
+    version: '1.0',
+    format: 'muslim-shop-full-backup',
+    exportedAt: now.toISOString(),
+    storeName: config.storeName || 'MUSLIM SHOP (Бутик №24)',
+    city: 'г. Атырау, ТД Дина Байзар, Бутик №24',
+    totalProducts: fullProducts.length,
+    totalCategories: categories.length,
+    products: fullProducts,
+    categories: categories,
+    config: config,
+  };
+
+  const jsonContent = JSON.stringify(backupData, null, 2);
+  const blob = new Blob([jsonContent], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  return {
+    filename,
+    productCount: fullProducts.length,
+    categoryCount: categories.length,
+  };
 }

@@ -1201,7 +1201,7 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ products, currency, 
             <div className="p-3 bg-amber-50/80 rounded-2xl border border-amber-200 text-xs text-amber-950 flex items-start gap-2.5">
               <Sparkles className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
               <p className="leading-relaxed">
-                <strong>Совет для максимальных продаж:</strong> Пик активности приходится на вечернее время (18:00 – 22:00). Публикуйте Stories и статусы WhatsApp в 17:30 – 18:30, чтобы получить максимум заказов!
+                <strong>Совет для максимальных продаж:</strong> Пик активности приходится на вечернее время (18:00 – 22:00). Публикуйте обновления и статусы WhatsApp в 17:30 – 18:30, чтобы получить максимум заказов!
               </p>
             </div>
           </div>
@@ -1447,7 +1447,7 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ products, currency, 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1 text-[11px] text-stone-600 leading-relaxed">
           <div className="p-3 bg-white rounded-2xl border border-stone-200 shadow-2xs">
             <strong className="text-stone-900 block mb-1">1. Публикуйте в пиковые часы</strong>
-            Смотрите график «Пиковые часы активности». За 30 минут до пика (обычно 17:30 – 18:30) выкладывайте новинки в Stories Instagram и статусы WhatsApp.
+            Смотрите график «Пиковые часы активности». За 30 минут до пика (обычно 17:30 – 18:30) выкладывайте новинки в соцсети и статусы WhatsApp.
           </div>
           <div className="p-3 bg-white rounded-2xl border border-stone-200 shadow-2xs">
             <strong className="text-stone-900 block mb-1">2. Следите за популярными товарами</strong>

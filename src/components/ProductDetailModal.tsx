@@ -844,7 +844,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   </div>
                 )}
 
-                {/* Direct Share Link block for Stories & WhatsApp */}
+                {/* Direct Share Link block for WhatsApp & social sharing */}
                 <div className="pt-2">
                   <button
                     id="modal-share-product-btn"
@@ -860,7 +860,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         ? 'bg-emerald-50 border-emerald-300 text-emerald-700 shadow-xs'
                         : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700'
                     }`}
-                    title="Скопировать ссылку для вставки в Instagram Сторис или отправки клиенту"
+                    title="Скопировать прямую ссылку на товар для отправки клиенту"
                   >
                     {isLinkCopied ? (
                       <>

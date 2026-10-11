@@ -95,8 +95,8 @@ export const SymptomSelector: React.FC<SymptomSelectorProps> = ({
           )}
         </div>
 
-        {/* Horizontal scrollable pills */}
-        <div className="flex items-center overflow-x-auto no-scrollbar scroll-smooth gap-2 pb-1">
+        {/* Responsive Grid: All 8 health directions fully visible on main screen */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 pt-1">
           {SYMPTOM_GOALS.map((goal) => {
             const isActive = selectedSymptom === goal.id;
             const count = symptomCounts[goal.id] || 0;
@@ -113,17 +113,19 @@ export const SymptomSelector: React.FC<SymptomSelectorProps> = ({
                     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                   }
                 }}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shrink-0 border whitespace-nowrap min-h-[38px] ${
+                className={`flex items-center justify-between gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer border min-h-[44px] text-left shadow-2xs active:scale-97 ${
                   isActive
-                    ? 'bg-emerald-700 text-white border-emerald-700 shadow-xs'
-                    : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200/90'
+                    ? 'bg-emerald-800 text-white border-emerald-800 shadow-md ring-2 ring-emerald-500/30'
+                    : 'bg-slate-50 hover:bg-emerald-50/70 hover:border-emerald-300 text-slate-800 border-slate-200/90'
                 }`}
               >
-                {getIcon(goal.id, isActive)}
-                <span>{isKz ? goal.titleKz : goal.titleRu}</span>
+                <div className="flex items-center gap-1.5 min-w-0">
+                  {getIcon(goal.id, isActive)}
+                  <span className="truncate leading-tight">{isKz ? goal.titleKz : goal.titleRu}</span>
+                </div>
                 <span
-                  className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
-                    isActive ? 'bg-white/20 text-white' : 'bg-slate-200/80 text-slate-600'
+                  className={`text-[10px] font-mono tabular-nums px-1.5 py-0.5 rounded-md shrink-0 font-semibold ${
+                    isActive ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
                   }`}
                 >
                   {count}

@@ -10,7 +10,6 @@ import {
   Percent,
   CheckSquare,
   Square,
-  Camera,
   Loader2,
   Trash2,
 } from 'lucide-react';
@@ -24,7 +23,6 @@ interface BulkPriceEditorTabProps {
   onUpdateProduct: (product: Product) => void;
   onBulkUpdateProducts?: (updatedProducts: Product[]) => void;
   onDeleteProduct?: (product: Product) => void;
-  onOpenStoriesForProduct?: (product: Product) => void;
 }
 
 interface DraftRow {
@@ -42,7 +40,6 @@ export const BulkPriceEditorTab: React.FC<BulkPriceEditorTabProps> = ({
   onUpdateProduct,
   onBulkUpdateProducts,
   onDeleteProduct,
-  onOpenStoriesForProduct,
 }) => {
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -564,9 +561,6 @@ export const BulkPriceEditorTab: React.FC<BulkPriceEditorTabProps> = ({
                 <th className="p-3 w-36">Старая цена ({currency})</th>
                 <th className="p-3 w-32 text-center">Наличие</th>
                 <th className="p-3 w-28 text-center">Метки</th>
-                {onOpenStoriesForProduct && (
-                  <th className="p-3 w-28 text-center">Stories</th>
-                )}
                 {onDeleteProduct && (
                   <th className="p-3 w-28 text-center">Удаление</th>
                 )}
@@ -707,20 +701,6 @@ export const BulkPriceEditorTab: React.FC<BulkPriceEditorTabProps> = ({
                         </button>
                       </div>
                     </td>
-
-                    {onOpenStoriesForProduct && (
-                      <td className="p-2.5 text-center">
-                        <button
-                          type="button"
-                          onClick={() => onOpenStoriesForProduct(p)}
-                          className="px-2.5 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-950 font-bold text-[11px] inline-flex items-center gap-1 transition-colors cursor-pointer"
-                          title="Создать карточку для Instagram Stories / WhatsApp Status"
-                        >
-                          <Camera className="w-3.5 h-3.5 text-amber-800" />
-                          <span>Stories</span>
-                        </button>
-                      </td>
-                    )}
 
                     {onDeleteProduct && (
                       <td className="p-2.5 text-center">

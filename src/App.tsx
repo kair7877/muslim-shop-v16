@@ -10,7 +10,6 @@ import {
 import { CATEGORIES, INITIAL_CONFIG } from './data/storeData';
 import { Header } from './components/Header';
 import { HeroBanner } from './components/HeroBanner';
-import { BoutiqueStories } from './components/BoutiqueStories';
 import { CategoryFilter } from './components/CategoryFilter';
 import { SymptomSelector } from './components/SymptomSelector';
 import { SmartHealthBundles } from './components/SmartHealthBundles';
@@ -589,11 +588,18 @@ export default function App() {
     return undefined;
   }, []);
 
+  const initialDeepLinkResolvedRef = useRef<boolean>(false);
+
   // Deep linking: Automatically open product detail modal if URL has ?p=prod-id or #prod-id
   useEffect(() => {
     let isCancelled = false;
 
-    const resolveDirectLink = async () => {
+    const resolveDirectLink = async (isManualTrigger = false) => {
+      // Never hijack the screen if user is currently inside AdminModal
+      if (isAdminOpen) {
+        return;
+      }
+
       const targetId = extractProductIdFromUrl();
       if (!targetId) {
         // If there is no targetId in URL (e.g. user navigated Back via browser button), close detail modal
@@ -601,9 +607,15 @@ export default function App() {
         return;
       }
 
+      // If already resolved initial link and not triggered by user browser navigation (popstate/hashchange), skip
+      if (!isManualTrigger && initialDeepLinkResolvedRef.current) {
+        return;
+      }
+
       // 1. Check if already loaded in current state
       const existing = findProductMatch(products, targetId);
       if (existing) {
+        initialDeepLinkResolvedRef.current = true;
         setSelectedProductForDetail(existing);
         applyProductSeoMeta(existing, config, lang);
         return;
@@ -616,6 +628,7 @@ export default function App() {
           const cachedList = JSON.parse(cachedRaw);
           const cachedMatch = findProductMatch(cachedList, targetId);
           if (cachedMatch) {
+            initialDeepLinkResolvedRef.current = true;
             setSelectedProductForDetail(cachedMatch);
             applyProductSeoMeta(cachedMatch, config, lang);
             return;
@@ -630,6 +643,7 @@ export default function App() {
         if (isCancelled) return;
 
         if (directProd) {
+          initialDeepLinkResolvedRef.current = true;
           setSelectedProductForDetail(directProd);
           applyProductSeoMeta(directProd, config, lang);
 
@@ -658,10 +672,12 @@ export default function App() {
       }
     };
 
-    resolveDirectLink();
+    if (!initialDeepLinkResolvedRef.current) {
+      resolveDirectLink(false);
+    }
 
     const handleUrlChange = () => {
-      resolveDirectLink();
+      resolveDirectLink(true);
     };
 
     window.addEventListener('popstate', handleUrlChange);
@@ -672,7 +688,7 @@ export default function App() {
       window.removeEventListener('popstate', handleUrlChange);
       window.removeEventListener('hashchange', handleUrlChange);
     };
-  }, [products, isLoadingProducts, lang, config.storeName, findProductMatch]);
+  }, [products, isLoadingProducts, lang, config.storeName, findProductMatch, isAdminOpen]);
 
   // Track visitor traffic safely
   useEffect(() => {
@@ -729,8 +745,15 @@ export default function App() {
     try {
       const url = new URL(window.location.href);
       ['p', 'product', 'prod', 'id', 'sku', 'item'].forEach((k) => url.searchParams.delete(k));
-      const cleanPath = url.pathname + (url.search ? url.search : '');
-      window.history.replaceState({ muslimShopGuard: true }, '', cleanPath);
+      let cleanPath = url.pathname;
+      if (cleanPath.includes('/product/') || cleanPath.includes('/p/')) {
+        cleanPath = '/';
+      }
+      if (url.hash && !url.hash.startsWith('#cat-') && !url.hash.startsWith('#catalog')) {
+        url.hash = '';
+      }
+      const finalUrl = cleanPath + (url.search ? url.search : '') + (url.hash ? url.hash : '');
+      window.history.replaceState({ muslimShopGuard: true }, '', finalUrl);
     } catch {}
   }, [config, lang]);
 
@@ -1316,18 +1339,8 @@ export default function App() {
         onSelectCategory={handleSelectCategoryAndScroll}
       />
 
-      {/* Quick View Boutique Stories Bar */}
-      <BoutiqueStories
-        products={products}
-        config={config}
-        lang={lang}
-        onOpenProduct={handleOpenDetail}
-        onAddToCart={handleAddToCart}
-        onSelectCategory={handleSelectCategoryAndScroll}
-      />
-
-      {/* Smart Product Selector by Symptom / Health Goal (Pills row, only on All Products without active search) */}
-      {selectedCategoryId === 'cat-all' && searchQuery.trim() === '' && (
+      {/* Smart Product Selector by Symptom / Health Goal (Always visible on the main screen) */}
+      {searchQuery.trim() === '' && (
         <SymptomSelector
           products={products}
           selectedSymptom={selectedSymptom}
@@ -1413,39 +1426,8 @@ export default function App() {
             </p>
           </div>
 
-          {/* Controls: View Mode + Sort selector */}
+          {/* Controls: Sort selector */}
           <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
-            {/* View Mode Toggle: Large cards (1-col on mobile) vs Compact (2-col) */}
-            <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-300 text-xs font-bold text-slate-700">
-              <button
-                type="button"
-                id="view-mode-large-btn"
-                onClick={() => setCardViewMode('large')}
-                className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
-                  cardViewMode === 'large'
-                    ? 'bg-slate-900 text-white shadow-xs font-black'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-                title={lang === 'kz' ? 'Ірі карточкалар' : 'Крупные карточки'}
-              >
-                <span>{lang === 'kz' ? 'Ірі' : 'Крупно'}</span>
-              </button>
-              <button
-                type="button"
-                id="view-mode-compact-btn"
-                onClick={() => setCardViewMode('compact')}
-                className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
-                  cardViewMode === 'compact'
-                    ? 'bg-slate-900 text-white shadow-xs font-black'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-                title={lang === 'kz' ? 'Ықшам тор' : 'Сетка'}
-              >
-                <span>{lang === 'kz' ? 'Тор' : 'Сетка'}</span>
-              </button>
-            </div>
-
-            {/* Sort selector */}
             <div className="flex items-center gap-1.5">
               <SlidersHorizontal className="w-4 h-4 text-slate-500" />
               <select
@@ -1511,11 +1493,7 @@ export default function App() {
         ) : (
           <div
             id="products-grid"
-            className={
-              cardViewMode === 'large'
-                ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6 mt-6'
-                : 'grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 md:gap-6 mt-6'
-            }
+            className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-2.5 sm:gap-4 md:gap-5 mt-5 sm:mt-6"
           >
             {filteredProducts.slice(0, visibleLimit).map((product) => (
               <ProductCard
@@ -1523,7 +1501,7 @@ export default function App() {
                 product={product}
                 lang={lang}
                 accessibility={accessibility}
-                isLargeView={cardViewMode === 'large'}
+                isLargeView={true}
                 isFavorite={favorites.some((f) => f.id === product.id)}
                 isInCart={cart.some((c) => c.product.id === product.id)}
                 isInCompare={compareList.some((c) => c.id === product.id)}
